@@ -30,7 +30,7 @@ using strange.extensions.mediation.api;
 
 namespace strange.extensions.mediation.impl
 {
-	public class View :  IView
+	public class View :  IView, System.IDisposable
 	{
 		/// Leave this value true most of the time. If for some reason you want
 		/// a view to exist outside a context you can set it to false. The only
@@ -71,7 +71,31 @@ namespace strange.extensions.mediation.impl
 			set { registerWithContext = value; }
 		}
 
+		private bool m_enable = true;
+		public bool enabled 
+		{
+			get
+			{
+				return m_enable;
+			}
+			set
+			{
+				m_enable = value;
+				if (m_enable)
+				{
+					OnEnable();
+				}
+				else
+				{
+					OnDisable();
+				}
+			}
+		}
+
+
 		public bool registeredWithContext { get; set; }
+
+		public Mediator mediator { get; set; }
 
 		private ContextView m_selfContextView;
 	
@@ -81,49 +105,46 @@ namespace strange.extensions.mediation.impl
 			m_selfContextView = contextView;
 		}
 
-		/// A MonoBehaviour Awake handler.
-		/// The View will attempt to connect to the Context at this moment.
-		protected virtual void Awake()
+		public void Dispose()
 		{
-			if (autoRegisterWithContext && !registeredWithContext && shouldRegister)
-				bubbleToContext(this, BubbleType.Add, false);
+			OnDispose();
 		}
 
-		/// A MonoBehaviour Start handler
-		/// If the View is not yet registered with the Context, it will 
-		/// attempt to connect again at this moment.
-		protected virtual void Start()
+		protected virtual void OnAwake()
 		{
 			if (autoRegisterWithContext && !registeredWithContext && shouldRegister)
-				bubbleToContext(this, BubbleType.Add, true);
+				bubbleToContext(this, BubbleType.Add);
+
+			OnEnable();
 		}
 
-		/// A MonoBehaviour OnDestroy handler
-		/// The View will inform the Context that it is about to be
-		/// destroyed.
-		protected virtual void OnDestroy()
+
+		protected virtual void OnDispose()
 		{
-			bubbleToContext(this, BubbleType.Remove, false);
+			OnDisable();
+
+			bubbleToContext(this, BubbleType.Remove);
 		}
+
 
 		/// A MonoBehaviour OnEnable handler
 		/// The View will inform the Context that it was enabled
 		protected virtual void OnEnable()
 		{
-			bubbleToContext(this, BubbleType.Enable, false);
+			bubbleToContext(this, BubbleType.Enable);
 		}
 
 		/// A MonoBehaviour OnDisable handler
 		/// The View will inform the Context that it was disabled
 		protected virtual void OnDisable()
 		{
-			bubbleToContext(this, BubbleType.Disable, false);
+			bubbleToContext(this, BubbleType.Disable);
 		}
 
 		/// Recurses through Transform.parent to find the GameObject to which ContextView is attached
 		/// Has a loop limit of 100 levels.
 		/// By default, raises an Exception if no Context is found.
-		virtual protected void bubbleToContext(View view, BubbleType type, bool finalTry)
+		virtual protected void bubbleToContext(View view, BubbleType type)
 		{
 			ContextView contextView = m_selfContextView;
 			if (contextView.context != null)
@@ -151,7 +172,7 @@ namespace strange.extensions.mediation.impl
 
 			}
 
-			if (requiresContext && finalTry && type == BubbleType.Add)
+			if (requiresContext && !registeredWithContext && type == BubbleType.Add)
 			{
 				//last ditch. If there's a Context anywhere, we'll use it!
 				if (Context.firstContext != null)
@@ -167,9 +188,10 @@ namespace strange.extensions.mediation.impl
 					MediationExceptionType.NO_CONTEXT);
 			}
 		}
-		public bool enabled { get; set; }
 
-		public bool shouldRegister { get { return enabled; } }
+ 
+
+        public bool shouldRegister { get { return enabled; } }
 	}
 }
 

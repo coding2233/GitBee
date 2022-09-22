@@ -12,7 +12,7 @@ using Wanderer.Common;
 
 namespace Wanderer.App
 {
-    internal class AppContextView : ContextView
+    public class AppContextView : ContextView
     {
         private Sdl2Window m_sdl2Window;
         private GraphicsDevice m_graphicsDevice;
@@ -36,9 +36,10 @@ namespace Wanderer.App
                 {
                     break;
                 }
-                m_imGuiController.Update(1/30.0f, snapshot);
+                m_imGuiController.Update(1/60.0f, snapshot);
 
-                ImGuiExample.Show();
+                ImGuiView.Render();
+                //ImGuiExample.Show();
 
                 m_commandList.Begin();
                 m_commandList.SetFramebuffer(m_graphicsDevice.MainSwapchain.Framebuffer);

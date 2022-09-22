@@ -47,7 +47,9 @@ namespace strange.extensions.mediation.impl
 		{
 			//MonoBehaviour mono = view as MonoBehaviour;
 			//return mono.GetComponent(mediatorType) != null;
-			throw new Exception("protected override bool HasMediator(IView view, Type mediatorType)");
+
+			return (view as View).mediator != null;
+			//throw new Exception("protected override bool HasMediator(IView view, Type mediatorType)");
 		}
 
 		/// Create a new Mediator object based on the mediatorType on the provided view
@@ -55,7 +57,10 @@ namespace strange.extensions.mediation.impl
 		{
 			//MonoBehaviour mono = view as MonoBehaviour;
 			//return mono.gameObject.AddComponent(mediatorType);
-			throw new Exception("protected override object CreateMediator(IView view, Type mediatorType)");
+			//throw new Exception("protected override object CreateMediator(IView view, Type mediatorType)");
+			var mediator = Activator.CreateInstance(mediatorType);
+			(view as View).mediator = (Mediator)mediator;
+			return mediator;
 		}
 
 		/// Destroy the Mediator on the provided view object based on the mediatorType
@@ -66,7 +71,13 @@ namespace strange.extensions.mediation.impl
 			//if (mediator != null)
 			//	mediator.OnRemove();
 			//return mediator;
-			throw new Exception("protected override IMediator DestroyMediator(IView view, Type mediatorType)");
+
+			var mediator = (view as View).mediator;
+			if (mediator != null)
+			{
+				mediator.OnRemove();
+			}
+			return mediator;
 		}
 
 		protected override object EnableMediator(IView view, Type mediatorType)
@@ -77,8 +88,12 @@ namespace strange.extensions.mediation.impl
 			//	mediator.OnEnabled();
 
 			//return mediator;
-
-			throw new Exception("protected override object EnableMediator(IView view, Type mediatorType)");
+			var mediator = (view as View).mediator;
+			if (mediator != null)
+			{
+				mediator.OnEnabled();
+			}
+			return mediator;
 		}
 
 		protected override object DisableMediator(IView view, Type mediatorType)
@@ -89,7 +104,12 @@ namespace strange.extensions.mediation.impl
 			//	mediator.OnDisabled();
 
 			//return mediator;
-			throw new Exception("protected override object DisableMediator(IView view, Type mediatorType)");
+			var mediator = (view as View).mediator;
+			if (mediator != null)
+			{
+				mediator.OnDisabled();
+			}
+			return mediator;
 		}
 
 		protected override void ThrowNullMediatorError(Type viewType, Type mediatorType)
