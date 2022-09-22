@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.2.32630.192
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HoneyBee.Git.Gui", "HoneyBee.Git.Gui\HoneyBee.Git.Gui.csproj", "{C3EA67B4-5354-4AAD-A231-DC4886F3B4D4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StrangeIoc", "StrangeIoc\StrangeIoc.csproj", "{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C3EA67B4-5354-4AAD-A231-DC4886F3B4D4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C3EA67B4-5354-4AAD-A231-DC4886F3B4D4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C3EA67B4-5354-4AAD-A231-DC4886F3B4D4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C3EA67B4-5354-4AAD-A231-DC4886F3B4D4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E46B2600-1AA1-4D52-A9BC-35B90521F31E}
+	EndGlobalSection
+EndGlobal
