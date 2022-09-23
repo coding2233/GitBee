@@ -53,7 +53,8 @@ namespace Wanderer.Common
                 args = new object[] { contextView };
             }
             T view = Activator.CreateInstance(typeof(T), args) as T;
-            if (defaultPriority != 0)
+            s_imGuiViews.Add(view);
+            if (defaultPriority > 0)
             {
                 view.priority = defaultPriority;
             }

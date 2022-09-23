@@ -36,7 +36,7 @@ namespace Wanderer.App
                 {
                     break;
                 }
-                m_imGuiController.Update(1/60.0f, snapshot);
+                m_imGuiController.Update(1/30.0f, snapshot);
 
                 ImGuiView.Render();
                 //ImGuiExample.Show();
