@@ -23,7 +23,7 @@ namespace Wanderer.App.Controller
 
         public override void Execute()
         {
-            ImGuiView.Create<DemoView>(context);
+            //ImGuiView.Create<DemoView>(context);
 
             //打开默认仓库
             string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../.git");

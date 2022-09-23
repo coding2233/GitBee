@@ -25,7 +25,8 @@ namespace Wanderer.GitRepository.Controller
                 {
                     Log.Info("ShowGitRepoCommand: {0}",gitPath);
 
-                    ImGuiView.Create<GitRepoView>(context);
+                    var gitRepoView = ImGuiView.Create<GitRepoView>(context);
+                    gitRepoView.SetGitRepoPath(gitPath);
                 }
                 else
                 {

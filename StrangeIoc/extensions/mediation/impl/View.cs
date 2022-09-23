@@ -116,13 +116,13 @@ namespace strange.extensions.mediation.impl
 			if (autoRegisterWithContext && !registeredWithContext && shouldRegister)
 				bubbleToContext(this, BubbleType.Add);
 
-			OnEnable();
+			//OnEnable();
 		}
 
 
 		protected virtual void OnDispose()
 		{
-			OnDisable();
+			//OnDisable();
 
 			bubbleToContext(this, BubbleType.Remove);
 		}

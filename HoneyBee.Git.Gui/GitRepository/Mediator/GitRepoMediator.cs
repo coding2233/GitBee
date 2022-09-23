@@ -4,10 +4,34 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.GitRepository.Common;
+using Wanderer.GitRepository.Service;
+using Wanderer.GitRepository.View;
 
 namespace Wanderer.GitRepository.Mediator
 {
-    internal class GitRepoMediator:EventMediator
+    public class GitRepoMediator:EventMediator
     {
+        [Inject]
+        public IGitRepoService gitRepoService { get; set; }
+
+        [Inject]
+        public GitRepoView gitRepoView { get; set; }
+
+        public override void OnEnabled()
+        {
+            base.OnEnabled();
+        }
+
+        public override void OnDisabled()
+        {
+            base.OnDisabled();
+        }
+
+        public GitRepo GetGitRepo(string gitPath)
+        {
+            return gitRepoService.GetGitRepo(gitPath);
+        }
+
     }
 }
