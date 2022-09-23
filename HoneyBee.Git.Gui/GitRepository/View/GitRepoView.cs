@@ -1,6 +1,5 @@
 ﻿using ImGuiNET;
 using strange.extensions.context.api;
-using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -8,17 +7,17 @@ using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
 
-namespace Wanderer.App.View
+namespace Wanderer.GitRepository.View
 {
-    public class DemoView : ImGuiView
+    internal class GitRepoView : ImGuiView
     {
-        public DemoView(IContext context) : base(context)
+        public GitRepoView(IContext context) : base(context)
         {
         }
 
         public override void OnDraw()
         {
-            ImGui.ShowDemoWindow();
+            ImGui.Button("Git Repo View");
         }
     }
 }

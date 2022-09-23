@@ -30,9 +30,9 @@ namespace strange.extensions.mediation.api
 {
 	public interface IMediator
 	{
-        /// Get/set the GameObject that represents the top-most item in this Context
-        [Obsolete("object作为类型有拆装箱的性能消耗")]
-		object contextView {get;set;}
+  //      /// Get/set the GameObject that represents the top-most item in this Context
+  //      [Obsolete("object作为类型有拆装箱的性能消耗")]
+		//object contextView {get;set;}
 
 		/// This method fires immediately after instantiation, but before injection.
 		/// Override to handle anything that needs to happen prior to injection.

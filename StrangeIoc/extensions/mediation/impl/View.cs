@@ -97,12 +97,13 @@ namespace strange.extensions.mediation.impl
 
 		public Mediator mediator { get; set; }
 
-		private ContextView m_selfContextView;
+		protected IContext context;
 	
-
-		public View(ContextView contextView)
+		public View(IContext context)
 		{
-			m_selfContextView = contextView;
+			this.context = context==null ? Context.firstContext:context;
+
+			OnAwake();
 		}
 
 		public void Dispose()
@@ -146,11 +147,10 @@ namespace strange.extensions.mediation.impl
 		/// By default, raises an Exception if no Context is found.
 		virtual protected void bubbleToContext(View view, BubbleType type)
 		{
-			ContextView contextView = m_selfContextView;
-			if (contextView.context != null)
-			{
-				IContext context = contextView.context;
+		
 
+			if (context != null)
+			{
 				switch (type)
 				{
 					case BubbleType.Add:
@@ -171,17 +171,8 @@ namespace strange.extensions.mediation.impl
 				}
 
 			}
-
-			if (requiresContext && !registeredWithContext && type == BubbleType.Add)
+			else
 			{
-				//last ditch. If there's a Context anywhere, we'll use it!
-				if (Context.firstContext != null)
-				{
-					Context.firstContext.AddView(view);
-					registeredWithContext = true;
-					return;
-				}
-
 				string msg = "A view couldn't find a context. Loop limit reached.";
 				msg += "\nView: " + view.ToString();
 				throw new MediationException(msg,

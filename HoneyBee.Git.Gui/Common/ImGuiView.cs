@@ -1,4 +1,5 @@
-﻿using strange.extensions.context.impl;
+﻿using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
@@ -29,7 +30,7 @@ namespace Wanderer.Common
             }
         }
 
-        public ImGuiView(ContextView contextView) : base(contextView)
+        public ImGuiView(IContext context) : base(context)
         {
         }
 
@@ -45,12 +46,12 @@ namespace Wanderer.Common
         }
 
 
-        public static T Create<T>(ContextView contextView,int defaultPriority=0) where T: ImGuiView
+        public static T Create<T>(IContext context,int defaultPriority=0) where T: ImGuiView
         {
             object[] args = null;
-            if (contextView != null)
+            if (context != null)
             {
-                args = new object[] { contextView };
+                args = new object[] { context };
             }
             T view = Activator.CreateInstance(typeof(T), args) as T;
             s_imGuiViews.Add(view);

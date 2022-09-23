@@ -9,8 +9,8 @@ namespace Wanderer.App
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
-       
+            Log.Info("Hello, Honey Bee - Git!");
+
             var gitGuiContextView =  new AppContextView();
             gitGuiContextView.Loop();
             gitGuiContextView.Dispose();

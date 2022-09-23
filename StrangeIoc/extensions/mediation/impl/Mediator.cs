@@ -31,8 +31,8 @@ namespace strange.extensions.mediation.impl
 	public class Mediator :  IMediator
 	{
 
-		[Inject(ContextKeys.CONTEXT_VIEW)]
-		public object contextView{get;set;}
+		//[Inject(ContextKeys.CONTEXT_VIEW)]
+		//public object contextView{get;set;}
 
 		public Mediator ()
 		{

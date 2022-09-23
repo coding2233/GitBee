@@ -7,10 +7,17 @@
     <!--<Nullable>enable</Nullable>-->
     <RootNamespace>Wanderer</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <ApplicationIcon>bee.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="bee.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.87.3" />
+    <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
+    <PackageReference Include="LiteDB" Version="5.0.12" />
     <PackageReference Include="Veldrid.ImageSharp" Version="4.8.0" />
     <PackageReference Include="Veldrid.ImGui" Version="5.72.0" />
     <PackageReference Include="Veldrid.StartupUtilities" Version="4.8.0" />

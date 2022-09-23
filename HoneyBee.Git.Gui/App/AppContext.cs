@@ -6,18 +6,22 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Controller;
+using Wanderer.App.Service;
 
 namespace Wanderer.App
 {
     public class AppContext : MVCSContext
     {
-        public AppContext(ContextView contextView) : base(contextView)
+        public AppContext(ContextView contextView, ContextStartupFlags flags) : base(contextView, flags)
         {
 
         }
 
         protected override void mapBindings()
         {
+            crossContextBridge.Bind(AppEvent.ShowGitRepo);
+
+            injectionBinder.Bind<IDatabaseService>().To<DatabaseService>().ToSingleton().CrossContext();
 
             commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once();
         }

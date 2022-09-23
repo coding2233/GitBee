@@ -1,4 +1,5 @@
-﻿using strange.extensions.context.impl;
+﻿using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ using Veldrid;
 using Veldrid.Sdl2;
 using Veldrid.StartupUtilities;
 using Wanderer.Common;
+using Wanderer.GitRepository;
 
 namespace Wanderer.App
 {
@@ -22,9 +24,14 @@ namespace Wanderer.App
 
         public AppContextView()
         {
-            context = new AppContext(this);
             //窗口
             CreateWindowAndGraphicsDevice();
+            //
+            context = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
+            //添加子Context
+            AddChildContext();
+            //启动
+            context.Launch();
         }
 
         public void Loop()
@@ -82,5 +89,11 @@ namespace Wanderer.App
             };
         }
 
+
+        private void AddChildContext()
+        {
+            //Git仓库 
+            new GitRepositoryContext(this);
+        }
     }
 }
