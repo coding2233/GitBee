@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository;
@@ -16,7 +17,7 @@ namespace Wanderer.App.Controller
     public class StartCommand:EventCommand
     {
         [Inject(ContextKeys.CONTEXT_VIEW)]
-        public ContextView contextView { get; set; }
+        public MonoBehaviour contextView { get; set; }
 
         [Inject(ContextKeys.CONTEXT)]
         public IContext context { get; set; }

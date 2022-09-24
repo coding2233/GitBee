@@ -49,13 +49,7 @@ namespace strange.extensions.context.api
 		
 		/// Remove a view from this context
 		void RemoveView(object view);
-
-		/// Enables a view in this context
-		void EnableView(object view);
-
-		/// Disables a view in this context
-		void DisableView(object view);
-
+		
 		/// Get the ContextView
 		object GetContextView();
 

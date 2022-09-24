@@ -58,7 +58,7 @@ namespace Wanderer.App
             }
         }
 
-        protected override void OnDispose()
+        protected override void OnDestroy()
         {
             m_graphicsDevice?.WaitForIdle();
 
@@ -66,7 +66,7 @@ namespace Wanderer.App
             m_commandList?.Dispose();
             m_graphicsDevice?.Dispose();
 
-            base.OnDispose();
+            base.OnDestroy();
         }
 
         private void CreateWindowAndGraphicsDevice()

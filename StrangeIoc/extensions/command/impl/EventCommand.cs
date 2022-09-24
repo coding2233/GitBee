@@ -23,12 +23,15 @@
  * Commands which extend Event Command will automatically inject the source IEvent.
  */
 
+using System;
 using strange.extensions.context.api;
 using strange.extensions.dispatcher.eventdispatcher.api;
+using strange.extensions.command.impl;
+using strange.extensions.pool.api;
 
 namespace strange.extensions.command.impl
 {
-	public abstract class EventCommand : Command
+	public class EventCommand : Command
 	{
 		[Inject(ContextKeys.CONTEXT_DISPATCHER)]
 		public IEventDispatcher dispatcher{ get; set;}

@@ -31,7 +31,7 @@ namespace strange.framework.impl
 	{
 		protected object[] objectValue;
 
-		public BindingConstraintType constraint{ get; set;}
+		public Enum constraint{ get; set;}
 		public bool uniqueValues{ get; set;}
 
 		public SemiBinding ()

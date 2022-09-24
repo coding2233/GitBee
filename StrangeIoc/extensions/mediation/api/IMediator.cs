@@ -23,16 +23,16 @@
  * @see strange.extensions.mediation.api.IMediationBinder
  */
 
+using strange.extensions.context.api;
 using System;
-
+using UnityEngine;
 
 namespace strange.extensions.mediation.api
 {
 	public interface IMediator
 	{
-  //      /// Get/set the GameObject that represents the top-most item in this Context
-  //      [Obsolete("object作为类型有拆装箱的性能消耗")]
-		//object contextView {get;set;}
+		/// Get/set the GameObject that represents the top-most item in this Context
+		MonoBehaviour contextView { get; set; }
 
 		/// This method fires immediately after instantiation, but before injection.
 		/// Override to handle anything that needs to happen prior to injection.
@@ -45,12 +45,6 @@ namespace strange.extensions.mediation.api
 		/// This method fires just before a GameObject will be destroyed.
 		/// Override to clean up any listeners, or anything else that might keep the View/Mediator pair from being garbage collected.
 		void OnRemove();
-
-		/// This method fires when the GameObject is enabled.
-		void OnEnabled();
-
-		/// This method fires when the GameObject is disabled.
-		void OnDisabled();
 	}
 }
 

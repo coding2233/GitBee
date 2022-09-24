@@ -27,7 +27,6 @@
 
 using System;
 using strange.extensions.context.api;
-using strange.extensions.context.impl;
 using strange.extensions.dispatcher.eventdispatcher.api;
 
 namespace strange.extensions.mediation.impl
@@ -36,11 +35,11 @@ namespace strange.extensions.mediation.impl
 	{
 		[Inject]
 		public IEventDispatcher dispatcher{ get; set;}
-		public EventView(IContext context):base(context)
+
+		public EventView(IContext context) : base(context)
 		{
-
+			
 		}
-
-	}
+    }
 }
 

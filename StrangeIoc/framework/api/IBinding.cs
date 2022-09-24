@@ -109,10 +109,10 @@ namespace strange.framework.api
 		object value{ get; }
 
 		/// Get or set a MANY or ONE constraint on the Key
-		BindingConstraintType keyConstraint{ get; set;}
+		Enum keyConstraint{ get; set;}
 
 		/// Get or set a MANY or ONE constraint on the Value
-		BindingConstraintType valueConstraint{ get; set;}
+		Enum valueConstraint{ get; set;}
 
 		//Mark a binding as weak, so that any new binding will override it
 		IBinding Weak();

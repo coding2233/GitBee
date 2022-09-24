@@ -33,13 +33,13 @@
 
  */
 
+using UnityEngine;
 using System;
-
 using strange.extensions.context.api;
 
 namespace strange.extensions.context.impl
 {
-	public class ContextView : IContextView,IDisposable
+	public class ContextView : MonoBehaviour, IContextView
 	{
 		public IContext context{get;set;}
 		
@@ -47,30 +47,23 @@ namespace strange.extensions.context.impl
 		{
 		}
 
-		/// <summary>
-		/// When a ContextView is Destroyed, automatically removes the associated Context.
-		/// </summary>
-		protected virtual void OnDispose()
+        /// <summary>
+        /// When a ContextView is Destroyed, automatically removes the associated Context.
+        /// </summary>
+        protected override void OnDestroy()
 		{
-			if (context != null && Context.firstContext != null)
-				Context.firstContext.RemoveContext(context);
-		}
+			base.OnDestroy();
+            if (context != null && Context.firstContext != null)
+                Context.firstContext.RemoveContext(context);
+        }
 
-        public void Dispose()
-        {
-			OnDispose();
-		}
+		#region IView implementation
 
-        #region IView implementation
-
-        public bool requiresContext {get;set;}
+		public bool requiresContext {get;set;}
 
 		public bool registeredWithContext {get;set;}
 
 		public bool autoRegisterWithContext{ get; set; }
-		public bool shouldRegister { get { return true; }}
-
-		public bool enabled { get; }
 
 		#endregion
 	}

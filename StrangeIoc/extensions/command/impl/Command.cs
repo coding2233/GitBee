@@ -33,13 +33,15 @@
  * has no effect on Commands operating in parallel.
  */
 
+using System;
 using strange.extensions.command.api;
 using strange.extensions.injector.api;
+using strange.framework.api;
 using strange.extensions.pool.api;
 
 namespace strange.extensions.command.impl
 {
-	public abstract class Command : ICommand, IPoolable
+	public class Command : ICommand, IPoolable
 	{
 		/// Back reference to the CommandBinder that instantiated this Commmand
 		[Inject]
@@ -65,7 +67,10 @@ namespace strange.extensions.command.impl
 			IsClean = false;
 		}
 
-		public abstract void Execute();
+		virtual public void Execute()
+		{
+			throw new CommandException ("You must override the Execute method in every Command", CommandExceptionType.EXECUTE_OVERRIDE);
+		}
 
 		public virtual void Retain()
 		{

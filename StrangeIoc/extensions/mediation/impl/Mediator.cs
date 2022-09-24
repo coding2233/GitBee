@@ -24,15 +24,15 @@
 
 using strange.extensions.context.api;
 using strange.extensions.mediation.api;
-
+using UnityEngine;
 
 namespace strange.extensions.mediation.impl
 {
-	public class Mediator :  IMediator
+	public class Mediator : MonoBehaviour, IMediator
 	{
 
-		//[Inject(ContextKeys.CONTEXT_VIEW)]
-		//public object contextView{get;set;}
+		[Inject(ContextKeys.CONTEXT_VIEW)]
+		public MonoBehaviour contextView { get; set; }
 
 		public Mediator ()
 		{
@@ -60,20 +60,6 @@ namespace strange.extensions.mediation.impl
 		 * Override and place your cleanup code here
 		 */
 		virtual public void OnRemove()
-		{
-		}
-
-		/**
-		 * Fires on enabling of view.
-		 */
-		virtual public void OnEnabled()
-		{
-		}
-
-		/**
-		 * Fires on disabling of view.
-		 */
-		virtual public void OnDisabled()
 		{
 		}
 	}

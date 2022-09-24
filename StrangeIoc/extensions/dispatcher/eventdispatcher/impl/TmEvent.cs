@@ -64,11 +64,13 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 		public void Retain()
 		{
 			retainCount++;
+			System.Console.WriteLine ("Retain: " + retainCount);
 		}
 
 		public void Release()
 		{
 			retainCount--;
+			System.Console.WriteLine ("Release: " + retainCount);
 			if (retainCount == 0)
 			{
 				target.ReleaseEvent (this);

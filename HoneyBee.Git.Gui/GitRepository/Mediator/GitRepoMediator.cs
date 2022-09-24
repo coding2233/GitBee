@@ -18,16 +18,6 @@ namespace Wanderer.GitRepository.Mediator
         [Inject]
         public GitRepoView gitRepoView { get; set; }
 
-        public override void OnEnabled()
-        {
-            base.OnEnabled();
-        }
-
-        public override void OnDisabled()
-        {
-            base.OnDisabled();
-        }
-
         public GitRepo GetGitRepo(string gitPath)
         {
             return gitRepoService.GetGitRepo(gitPath);

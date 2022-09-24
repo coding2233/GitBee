@@ -17,9 +17,6 @@ namespace Wanderer.GitRepository.View
     {
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 2, 200);
 
-        [Inject]
-        public GitRepoMediator repoMediator { get; set; }
-
         private GitRepo m_gitRepo;
 
         public GitRepoView(IContext context) : base(context)
@@ -28,7 +25,7 @@ namespace Wanderer.GitRepository.View
 
         public void SetGitRepoPath(string repoPath)
         {
-            m_gitRepo = repoMediator.GetGitRepo(repoPath);
+            m_gitRepo = (mediator as GitRepoMediator).GetGitRepo(repoPath);
         }
 
         public override void OnDraw()

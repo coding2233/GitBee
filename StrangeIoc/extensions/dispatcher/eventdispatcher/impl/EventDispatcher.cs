@@ -48,10 +48,12 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 {
 	public class EventDispatcher : Binder, IEventDispatcher, ITriggerProvider, ITriggerable
 	{
-		/// The list of clients that will be triggered as a consequence of an Event firing.
-		protected HashSet<ITriggerable> triggerClients;
-		protected HashSet<ITriggerable> triggerClientRemovals;
-		protected bool isTriggeringClients;
+        /// The list of clients that will be triggered as a consequence of an Event firing.
+        //protected HashSet<ITriggerable> triggerClients;
+        //protected HashSet<ITriggerable> triggerClientRemovals;
+        protected List<ITriggerable> triggerClients;
+        protected List<ITriggerable> triggerClientRemovals;
+        protected bool isTriggeringClients;
 
 		/// The eventPool is shared across all EventDispatchers for efficiency
 		public static IPool<TmEvent> eventPool;
@@ -84,6 +86,7 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 		{
 			//Scrub the data to make eventType and data conform if possible
 			IEvent evt = conformDataToEvent (eventType, data);
+
 			if (evt is IPoolable)
 			{
 				(evt as IPoolable).Retain ();
@@ -93,23 +96,24 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			if (triggerClients != null)
 			{
 				isTriggeringClients = true;
-				foreach (ITriggerable trigger in triggerClients)
-				{
-					try 
+                for (int i = 0; i < triggerClients.Count; i++)
+                {
+					ITriggerable trigger = triggerClients[i];
+					if (!trigger.Trigger(eventType, evt))
 					{
-						if (!trigger.Trigger(evt.type, evt))
-						{
-							continueDispatch = false;
-							break;
-						}
+						continueDispatch = false;
+						break;
 					}
-					catch (Exception ex) //If trigger throws, we still want to cleanup!
-					{
-						internalReleaseEvent(evt);
-						throw (ex);
-					}
-					
+
 				}
+				//foreach (ITriggerable trigger in triggerClients)
+				//{
+				//	if (!trigger.Trigger(eventType, evt))
+				//	{
+				//		continueDispatch = false;
+				//		break;
+				//	}
+				//}
 				if (triggerClientRemovals != null)
 				{
 					flushRemovals();
@@ -123,7 +127,7 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 				return;
 			}
 
-			IEventBinding binding = GetBinding (evt.type) as IEventBinding;
+			IEventBinding binding = GetBinding (eventType) as IEventBinding;
 			if (binding == null)
 			{
 				internalReleaseEvent (evt);
@@ -302,9 +306,12 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 		{
 			if (triggerClients == null)
 			{
-				triggerClients = new HashSet<ITriggerable>();
+				triggerClients = new List<ITriggerable>();
 			}
-			triggerClients.Add(target);
+			if (!triggerClients.Contains(target))
+			{
+				triggerClients.Add(target);
+			}
 		}
 
 		public void RemoveTriggerable(ITriggerable target)
@@ -313,9 +320,12 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 			{
 				if (triggerClientRemovals == null)
 				{
-					triggerClientRemovals = new HashSet<ITriggerable>();
+					triggerClientRemovals = new List<ITriggerable>();
 				}
-				triggerClientRemovals.Add (target);
+				if (!triggerClientRemovals.Contains(target))
+				{
+					triggerClientRemovals.Add(target);
+				}
 				if (!isTriggeringClients)
 				{
 					flushRemovals();

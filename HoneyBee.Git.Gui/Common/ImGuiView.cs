@@ -261,7 +261,7 @@ namespace Wanderer.Common
                     }
                 }
 
-                view.OnDispose();
+                view.Dispose();
                 view = null;
             }
         }

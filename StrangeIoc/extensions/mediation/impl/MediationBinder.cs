@@ -17,104 +17,163 @@
 /**
  * @class strange.extensions.mediation.impl.MediationBinder
  * 
- * Binds Views to Mediators. This is the base class for all MediationBinders
- * that work with MonoBehaviours.
+ * Binds Views to Mediators.
  * 
  * Please read strange.extensions.mediation.api.IMediationBinder
  * where I've extensively explained the purpose of View mediation
  */
 
 using System;
-using System.Linq;
-
+using System.Collections;
+using UnityEngine;
+using strange.extensions.injector.api;
 using strange.extensions.mediation.api;
+using strange.framework.api;
+using strange.framework.impl;
 
 namespace strange.extensions.mediation.impl
 {
-	public class MediationBinder : AbstractMediationBinder, IMediationBinder
+	public class MediationBinder : Binder, IMediationBinder
 	{
+
+		[Inject]
+		public IInjectionBinder injectionBinder{ get; set;}
+
 		public MediationBinder ()
 		{
 		}
 
-		protected override IView[] GetViews(IView view)
+
+		public override IBinding GetRawBinding ()
 		{
-			IView[] views = new IView[] { view };
-			return views;
+			return new MediationBinding (resolver) as IBinding;
 		}
 
-		protected override bool HasMediator(IView view, Type mediatorType)
+		public void Trigger(MediationEvent evt, IView view)
 		{
-			//MonoBehaviour mono = view as MonoBehaviour;
-			//return mono.GetComponent(mediatorType) != null;
-
-			return (view as View).mediator != null;
-			//throw new Exception("protected override bool HasMediator(IView view, Type mediatorType)");
-		}
-
-		/// Create a new Mediator object based on the mediatorType on the provided view
-		protected override object CreateMediator(IView view, Type mediatorType)
-		{
-			//MonoBehaviour mono = view as MonoBehaviour;
-			//return mono.gameObject.AddComponent(mediatorType);
-			//throw new Exception("protected override object CreateMediator(IView view, Type mediatorType)");
-			var mediator = Activator.CreateInstance(mediatorType);
-			(view as View).mediator = (Mediator)mediator;
-			return mediator;
-		}
-
-		/// Destroy the Mediator on the provided view object based on the mediatorType
-		protected override IMediator DestroyMediator(IView view, Type mediatorType)
-		{
-			//MonoBehaviour mono = view as MonoBehaviour;
-			//IMediator mediator = mono.GetComponent(mediatorType) as IMediator;
-			//if (mediator != null)
-			//	mediator.OnRemove();
-			//return mediator;
-
-			var mediator = (view as View).mediator;
-			if (mediator != null)
+			Type viewType = view.GetType();
+			IMediationBinding binding = GetBinding (viewType) as IMediationBinding;
+			if (binding != null)
 			{
-				mediator.OnRemove();
+				switch(evt)
+				{
+					case MediationEvent.AWAKE:
+						injectViewAndChildren(view);
+						mapView (view, binding);
+						break;
+					case MediationEvent.DESTROYED:
+						unmapView (view, binding);
+						break;
+					default:
+						break;
+				}
 			}
-			return mediator;
-		}
-
-		protected override object EnableMediator(IView view, Type mediatorType)
-		{
-			//MonoBehaviour mono = view as MonoBehaviour;
-			//IMediator mediator = mono.GetComponent(mediatorType) as IMediator;
-			//if (mediator != null)
-			//	mediator.OnEnabled();
-
-			//return mediator;
-			var mediator = (view as View).mediator;
-			if (mediator != null)
+			else if (evt == MediationEvent.AWAKE)
 			{
-				mediator.OnEnabled();
+				//Even if not mapped, Views (and their children) have potential to be injected
+				injectViewAndChildren(view);
 			}
-			return mediator;
+		}
+		
+		/// Initialize all IViews within this view
+		virtual protected void injectViewAndChildren(IView view)
+		{
+			MonoBehaviour mono = view as MonoBehaviour;
+			//Component[] views = mono.GetComponentsInChildren(typeof(IView), true) as Component[];
+			
+			//int aa = views.Length;
+			//for (int a = aa - 1; a > -1; a--)
+			//{
+			//	IView iView = views[a] as IView;
+			//	if (iView != null)
+			//	{
+			//		if (iView.autoRegisterWithContext && iView.registeredWithContext)
+			//		{
+			//			continue;
+			//		}
+			//		iView.registeredWithContext = true;
+			//		if (iView.Equals(mono) == false)
+			//			Trigger (MediationEvent.AWAKE, iView);
+			//	}
+			//}
+			injectionBinder.injector.Inject (mono, false);
 		}
 
-		protected override object DisableMediator(IView view, Type mediatorType)
+		public override IBinding Bind<T> ()
 		{
-			//MonoBehaviour mono = view as MonoBehaviour;
-			//IMediator mediator = mono.GetComponent(mediatorType) as IMediator;
-			//if (mediator != null)
-			//	mediator.OnDisabled();
+			return base.Bind<T> ();
+		}
 
-			//return mediator;
-			var mediator = (view as View).mediator;
-			if (mediator != null)
+		public IMediationBinding BindView<T>() where T : MonoBehaviour
+		{
+			return base.Bind<T> () as IMediationBinding;
+		}
+
+		/// Creates and registers one or more Mediators for a specific View instance.
+		/// Takes a specific View instance and a binding and, if a binding is found for that type, creates and registers a Mediator.
+		virtual protected void mapView(IView view, IMediationBinding binding)
+		{
+			Type viewType = view.GetType();
+
+			if (bindings.ContainsKey(viewType))
 			{
-				mediator.OnDisabled();
+				object[] values = binding.value as object[];
+				int aa = values.Length;
+				for (int a = 0; a < aa; a++)
+				{
+                    //MonoBehaviour mono = view as MonoBehaviour;
+                    View monoView = view as View;
+                    Type mediatorType = values [a] as Type;
+					if (mediatorType == viewType)
+					{
+						throw new MediationException(viewType + "mapped to itself. The result would be a stack overflow.", MediationExceptionType.MEDIATOR_VIEW_STACK_OVERFLOW);
+					}
+                    //MonoBehaviour mediator = mono.gameObject.AddComponent(mediatorType) as MonoBehaviour;
+                    //if (mediator == null)
+                    //	throw new MediationException ("The view: " + viewType.ToString() + " is mapped to mediator: " + mediatorType.ToString() + ". AddComponent resulted in null, which probably means " + mediatorType.ToString().Substring(mediatorType.ToString().LastIndexOf(".")+1) + " is not a MonoBehaviour.", MediationExceptionType.NULL_MEDIATOR);
+					MonoBehaviour mediator = (MonoBehaviour)Activator.CreateInstance(mediatorType);
+					monoView.mediator = mediator as IMediator;
+                    if (mediator is IMediator)
+						((IMediator)mediator).PreRegister ();
+					injectionBinder.Bind (viewType).ToValue (view).ToInject(false);
+					injectionBinder.injector.Inject (mediator);
+					injectionBinder.Unbind(viewType);
+					if (mediator is IMediator)
+						((IMediator)mediator).OnRegister ();
+				}
 			}
-			return mediator;
 		}
 
-		protected override void ThrowNullMediatorError(Type viewType, Type mediatorType)
+		/// Removes a mediator when its view is destroyed
+		virtual protected void unmapView(IView view, IMediationBinding binding)
 		{
-			throw new MediationException("The view: " + viewType.ToString() + " is mapped to mediator: " + mediatorType.ToString() + ". AddComponent resulted in null, which probably means " + mediatorType.ToString().Substring(mediatorType.ToString().LastIndexOf(".") + 1) + " is not a MonoBehaviour.", MediationExceptionType.NULL_MEDIATOR);
+			Type viewType = view.GetType();
+
+			if (bindings.ContainsKey(viewType))
+			{
+				object[] values = binding.value as object[];
+				int aa = values.Length;
+				for (int a = 0; a < aa; a++)
+				{
+					Type mediatorType = values[a] as Type;
+                    //MonoBehaviour mono = view as MonoBehaviour;			
+                    //IMediator mediator = mono.GetComponent(mediatorType) as IMediator;		
+                    View monoView = view as View;
+					IMediator mediator = monoView.mediator;
+                    if (mediator != null)
+					{
+						mediator.OnRemove();
+					}
+				}
+			}
+		}
+
+		private void enableView(IView view)
+		{
+		}
+
+		private void disableView(IView view)
+		{
 		}
 	}
 }

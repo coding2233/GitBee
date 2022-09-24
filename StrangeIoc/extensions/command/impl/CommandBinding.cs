@@ -40,12 +40,10 @@ namespace strange.extensions.command.impl
 
 		public CommandBinding() : base()
 		{
-			_value.uniqueValues = false;
 		}
 
 		public CommandBinding (Binder.BindingResolver resolver) : base(resolver)
 		{
-			_value.uniqueValues = false;
 		}
 
 		public ICommandBinding Once()

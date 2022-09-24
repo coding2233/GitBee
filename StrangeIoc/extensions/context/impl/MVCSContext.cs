@@ -86,7 +86,7 @@
  * `dispatcher` is injected into all EventMediators, EventCommands
  * and EventSequenceCommands, and may be injected elsewhere with:
 
-		[Inject(ContextKeys.CONTEXT_DISPATCHER)]
+ 		[Inject(ContextKeys.CONTEXT_DISPATCHER)]
 		public IEventDispatcher dispatcher{ get; set;}
 
  * For examples, see IEventDispatcher. Generally you don't map the dispatcher's
@@ -105,39 +105,37 @@
  * 
  * <li>commandBinder</li>
  * 
- * Maps signals that result in the creation and execution of Commands.
- * Any signal may be used to trigger Commands.
+ * Maps events that result in the creation and execution of Commands.
+ * Events from dispatcher can be used to trigger Commands.
  * 
  * `commandBinder` is automatically injected into all Commands.
  * 
  * Examples:
 
-		commandBinder.Bind<MissileHitSignal>().To<MissileHitCommand>(); //MissileHitCommand fires whenever MISSILE_HIT is dispatched
-		commandBinder.Bind<MissileHitSignal>().To<IncrementScoreCommand>().To<UpdateServerCommand>(); //Both Commands fire
-		commandBinder.Bind<StartSignal>().To<StartCommand>().Once(); //StartCommand fires when START fires, then unmaps itself
-		var myMissileHitSignal = new Signal<ITarget>();
-		commandBinder.Bind(myMissileHitSignal).To<MissileHitCommand>(); //You can also bind arbitrary (signature matching) signals to commands!
+		commandBinder.Bind(GameEvent.MISSILE_HIT).To<MissileHitCommand>(); //MissileHitCommand fires whenever MISSILE_HIT is dispatched
+		commandBinder.Bind(GameEvent.MISSILE_HIT).To<IncrementScoreCommand>().To<UpdateServerCommand>(); //Both Commands fire
+		commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once(); //StartCommand fires when START fires, then unmaps itself
 
+ * 
+ * <li>sequencer</li>
+ * 
+ * Maps events that result in the creation and execution of Sequences,
+ * which are just like Commands, except they run sequentially, rather than
+ * in parallel.
+ * 
+ * 'sequencer' is automatically injected into all SequenceCommands.
+ * 
+ * In the following example, `TestMissileHitCommand` runs logic to determine
+ * whether the missile hit is valid. If it's not, it may call `BreakSeqeunce()`.
+ * so neither of the other Commands will fire.
+
+		sequencer.Bind(GameEvent.MISSILE_HIT).To<TestMissileHitCommand>().To<IncrementScoreCommand>().To<UpdateServerCommand>();
+
+ * 
  * <li>mediationBinder</li>
  * 
- * Maps Views to Mediators in order to insulate Views from direct 
+ * Maps Views to Mediators in order to insultate Views from direct 
  * linkage to the application.
- * 
- * As of v1.0 MediationBinder now defaults to SignalMediationBinder, which 
- * enables the ListensTo annotation to automatically handle
- * boilerplate signal injection, listening and cleanup
- * Examples
-
-		[ListensTo(typeof(MissileHitSignal)]
-		public void OnMissileHit(IMissile missle)
-		{
-			//Do a missle thing!
-		}
- * 
- * This removes the need to [Inject] the MissleHitSignal, one line in OnRegister for MissileHitSignal.AddListener(OnMissileHit)
- * and one line in OnRemove for MissileHitSignal.RemoveListener
- * I've found most of my signals follow these boilerplate templates, and hopefully you find it useful!
- 
  * 
  * MediationBinder isn't automatically injected anywhere. It is
  * possible, however, that you might want to change mediation bindings
@@ -159,7 +157,7 @@
 
 using strange.extensions.implicitBind.api;
 using strange.extensions.implicitBind.impl;
-
+using UnityEngine;
 using strange.extensions.command.api;
 using strange.extensions.command.impl;
 using strange.extensions.context.api;
@@ -168,18 +166,17 @@ using strange.extensions.dispatcher.eventdispatcher.api;
 using strange.extensions.dispatcher.eventdispatcher.impl;
 using strange.extensions.injector.api;
 using strange.extensions.mediation.api;
+using strange.extensions.mediation.impl;
 using strange.extensions.sequencer.api;
 using strange.extensions.sequencer.impl;
 using strange.framework.api;
 using strange.framework.impl;
-using strange.extensions.mediation;
-using strange.extensions.mediation.impl;
 
 namespace strange.extensions.context.impl
 {
 	public class MVCSContext : CrossContext
 	{
-		/// A Binder that maps Signals to Commands
+		/// A Binder that maps Events to Commands
 		public ICommandBinder commandBinder{get;set;}
 
 		/// A Binder that serves as the Event bus for the Context
@@ -204,15 +201,15 @@ namespace strange.extensions.context.impl
 		/// The recommended Constructor
 		/// Just pass in the instance of your ContextView. Everything will begin automatically.
 		/// Other constructors offer the option of interrupting startup at useful moments.
-		public MVCSContext(ContextView view) : base(view)
+		public MVCSContext(MonoBehaviour view) : base(view)
 		{
 		}
 
-		public MVCSContext(ContextView view, ContextStartupFlags flags) : base(view, flags)
+		public MVCSContext(MonoBehaviour view, ContextStartupFlags flags) : base(view, flags)
 		{
 		}
 
-		public MVCSContext(ContextView view, bool autoMapping) : base(view, autoMapping)
+		public MVCSContext(MonoBehaviour view, bool autoMapping) : base(view, autoMapping)
 		{
 		}
 		
@@ -251,7 +248,7 @@ namespace strange.extensions.context.impl
 			{
 				throw new ContextException("MVCSContext requires a ContextView of type MonoBehaviour", ContextExceptionType.NO_CONTEXT_VIEW);
 			}
-			injectionBinder.Bind<ContextView>().ToValue(contextView).ToName(ContextKeys.CONTEXT_VIEW);
+			injectionBinder.Bind<MonoBehaviour>().ToValue(contextView).ToName(ContextKeys.CONTEXT_VIEW);
 			commandBinder = injectionBinder.GetInstance<ICommandBinder>() as ICommandBinder;
 			
 			dispatcher = injectionBinder.GetInstance<IEventDispatcher>(ContextKeys.CONTEXT_DISPATCHER) as IEventDispatcher;
@@ -268,7 +265,7 @@ namespace strange.extensions.context.impl
 			//It's possible for views to fire their Awake before bindings. This catches any early risers and attaches their Mediators.
 			mediateViewCache();
 			//Ensure that all Views underneath the ContextView are triggered
-			mediationBinder.Trigger(MediationEvent.AWAKE, (ContextView)contextView);
+			mediationBinder.Trigger(MediationEvent.AWAKE, contextView as ContextView);
 		}
 
 		/// Fires ContextEvent.START
@@ -310,7 +307,7 @@ namespace strange.extensions.context.impl
 			}
 			else
 			{
-				cacheView((IView)view);
+				cacheView(view as MonoBehaviour);
 			}
 		}
 		
@@ -319,23 +316,13 @@ namespace strange.extensions.context.impl
 			mediationBinder.Trigger(MediationEvent.DESTROYED, view as IView);
 		}
 
-		override public void EnableView(object view)
-		{
-			mediationBinder.Trigger(MediationEvent.ENABLED, view as IView);
-		}
-
-		override public void DisableView(object view)
-		{
-			mediationBinder.Trigger(MediationEvent.DISABLED, view as IView);
-		}
-
 		/// Caches early-riser Views.
 		/// 
 		/// If a View is on stage at startup, it's possible for that
 		/// View to be Awake before this Context has finished initing.
 		/// `cacheView()` maintains a list of such 'early-risers'
 		/// until the Context is ready to mediate them.
-		virtual protected void cacheView(IView view)
+		virtual protected void cacheView(MonoBehaviour view)
 		{
 			if (viewCache.constraint.Equals(BindingConstraintType.ONE))
 			{
