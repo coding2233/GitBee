@@ -15,6 +15,7 @@ namespace Wanderer.GitRepository.View
         private int m_commitViewIndex = 0;
         private int m_commitViewMax = 100;
         private float m_lastCommitScrollY = 0.0f;
+        private int m_commitReadIndex = 0;
 
         private List<GitRepoCommit> m_cacheCommits;
 

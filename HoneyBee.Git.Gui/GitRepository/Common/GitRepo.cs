@@ -27,50 +27,30 @@ namespace Wanderer.GitRepository.Common
             Name = Path.GetFileName(RootPath);
             m_liteDb = db;
             m_repository = new Repository(RootPath);
-
-            //从数据库中读取数据
-            SyncFromDatabase();
-            ////将git数据同步到数据库
-            //SyncGitRepoToDatabase();
         }
 
-        private void SyncFromDatabase()
+        //将git数据同步到数据库
+        public async void SyncGitRepoToDatabase(Action onComplete)
         {
-            //本地分支
-            var localBranchNodesCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
-            LocalBranchNodes = localBranchNodesCol.Query().ToList();
-            //远端分支
-            var remoteBranchNodesCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
-            RemoteBranchNodes = remoteBranchNodesCol.Query().ToList();
-            //分支
-            Tags = m_liteDb.GetCollection<GitTag>().Query().ToList();
-        }
+            //分支更新到数据库
+            await Task.Run(SetBranchNodes);
+            //var localBranchCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
+            //localBranchCol.DeleteAll();
+            //localBranchCol.Insert(LocalBranchNodes);
+            //var remoteBranchCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
+            //remoteBranchCol.DeleteAll();
+            //remoteBranchCol.Insert(RemoteBranchNodes);
 
-        public void SyncGitRepoToDatabase(Action onComplete)
-        {
-            Task.Run(async () => {
+            //Tags更新到数据
 
-                //分支更新到数据库
-                await Task.Run(SetBranchNodes);
-                var localBranchCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
-                localBranchCol.DeleteAll();
-                localBranchCol.Insert(LocalBranchNodes);
-                var remoteBranchCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
-                remoteBranchCol.DeleteAll();
-                remoteBranchCol.Insert(RemoteBranchNodes);
+            //本地提交更新到数据
+            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+            var commits = await SetRepoCommits();
+            commitCol.DeleteAll();
+            commitCol.Insert(commits);
 
-                //Tags更新到数据
-
-                //本地提交更新到数据
-                var commits = await SetRepoCommits();
-                var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
-                commitCol.DeleteAll();
-                commitCol.Insert(commits);
-
-                //完成回调
-                onComplete?.Invoke();
-            });
-
+            //完成回调
+            onComplete?.Invoke();
         }
 
        

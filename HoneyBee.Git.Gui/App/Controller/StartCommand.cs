@@ -27,7 +27,7 @@ namespace Wanderer.App.Controller
             //ImGuiView.Create<DemoView>(context);
 
             //打开默认仓库
-            string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../.git");
+            string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");
             dispatcher.Dispatch(AppEvent.ShowGitRepo, defaultGitRepo);
         }
     }

@@ -26,6 +26,7 @@ namespace Wanderer.GitRepository.View
 
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 2, 200);
 
+        private GitRepoMediator m_gitRepoMediator;
 
         #region 子模块
         private DrawCommitHistoryView m_drawCommitHistoryView;
@@ -38,7 +39,8 @@ namespace Wanderer.GitRepository.View
 
         public void SetGitRepoPath(string repoPath)
         {
-            m_gitRepo = (mediator as GitRepoMediator).GetGitRepo(repoPath);
+            m_gitRepoMediator = mediator as GitRepoMediator;
+            m_gitRepo = m_gitRepoMediator.GetGitRepo(repoPath);
             if (m_gitRepo != null)
             {
                 m_drawCommitHistoryView = new DrawCommitHistoryView(m_gitRepo);
@@ -135,8 +137,7 @@ namespace Wanderer.GitRepository.View
         private void DrawTreeNodeHead(string name, Action onDraw)
         {
             string key = $"TreeNode_{name}";
-            //bool oldTreeNodeOpen = userSettingsModel.Get<bool>(key, false);
-            bool oldTreeNodeOpen = true;
+            bool oldTreeNodeOpen = m_gitRepoMediator.GetUserData<bool>(key);
             ImGui.SetNextItemOpen(oldTreeNodeOpen);
             bool treeNodeOpen = ImGui.TreeNode(name);
             if (treeNodeOpen)
@@ -144,10 +145,10 @@ namespace Wanderer.GitRepository.View
                 onDraw();
                 ImGui.TreePop();
             }
-            //if (treeNodeOpen != oldTreeNodeOpen)
-            //{
-            //    userSettingsModel.Set<bool>(key, treeNodeOpen);
-            //}
+            if (treeNodeOpen != oldTreeNodeOpen)
+            {
+                m_gitRepoMediator.SetUserData<bool>(key, treeNodeOpen);
+            }
         }
 
         private void DrawBranchTreeNode(GitBranchNode branchNode)
