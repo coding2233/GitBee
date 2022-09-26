@@ -17,6 +17,7 @@ namespace Wanderer.Common
                 if (!string.IsNullOrEmpty(m_dataPath))
                 {
                     m_dataPath = Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]);
+                    Log.Info("DataPath: {0}", m_dataPath);
                 }
                 if (!Directory.Exists(m_dataPath))
                 {
@@ -32,14 +33,15 @@ namespace Wanderer.Common
         {
             get
             {
-                if (!string.IsNullOrEmpty(m_userPath))
+                if (string.IsNullOrEmpty(m_userPath))
                 {
                     m_userPath = Environment.GetEnvironmentVariable("USERPROFILE");
                     if (string.IsNullOrEmpty(m_userPath))
                     {
                         m_userPath = "./";
                     }
-                    m_userPath = Path.Combine(m_userPath, AppDomain.CurrentDomain.FriendlyName);
+                    m_userPath = Path.Combine(m_userPath, $".{AppDomain.CurrentDomain.FriendlyName}");
+                    Log.Info("UserPath: {0}",m_userPath);
                 }
                 if (!Directory.Exists(m_userPath))
                 {
@@ -47,6 +49,15 @@ namespace Wanderer.Common
                 }
                 return m_userPath;
             }
+        }
+
+
+        public static string GetStringMd5(string str)
+        {
+            System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
+            byte[] toData = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str));
+            string fileMD5 = BitConverter.ToString(toData).Replace("-", "").ToLower();
+            return fileMD5;
         }
 
     }

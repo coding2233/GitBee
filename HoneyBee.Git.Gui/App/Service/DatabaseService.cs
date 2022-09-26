@@ -23,7 +23,7 @@ namespace Wanderer.App.Service
             LiteDatabase database = null;
             if (!m_dbs.TryGetValue(name, out database))
             {
-                string dbPath = Path.Combine(Application.UserPath, $".{name}.db");
+                string dbPath = Path.Combine(Application.UserPath, $"{name}.db");
                 database = new LiteDatabase(dbPath);
                 m_dbs.Add(name, database);
             }

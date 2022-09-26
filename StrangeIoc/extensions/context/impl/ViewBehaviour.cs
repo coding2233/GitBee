@@ -9,11 +9,9 @@ namespace UnityEngine
     {
         public bool enable { get; set; }
 
-
         public MonoBehaviour()
         {
-            Awake();
-            Start();
+          
         }
 
         protected virtual void OnEnable()

@@ -30,8 +30,8 @@ namespace Wanderer.GitRepository.Common
 
             //从数据库中读取数据
             SyncFromDatabase();
-            //将git数据同步到数据库
-            SyncGitRepoToDatabase();
+            ////将git数据同步到数据库
+            //SyncGitRepoToDatabase();
         }
 
         private void SyncFromDatabase()
@@ -46,24 +46,31 @@ namespace Wanderer.GitRepository.Common
             Tags = m_liteDb.GetCollection<GitTag>().Query().ToList();
         }
 
-        private async void SyncGitRepoToDatabase()
+        public void SyncGitRepoToDatabase(Action onComplete)
         {
-            //分支更新到数据库
-            await Task.Run(SetBranchNodes);
-            var localBranchCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
-            localBranchCol.DeleteAll();
-            localBranchCol.Insert(LocalBranchNodes);
-            var remoteBranchCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
-            remoteBranchCol.DeleteAll();
-            remoteBranchCol.Insert(RemoteBranchNodes);
+            Task.Run(async () => {
 
-            //Tags更新到数据
+                //分支更新到数据库
+                await Task.Run(SetBranchNodes);
+                var localBranchCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
+                localBranchCol.DeleteAll();
+                localBranchCol.Insert(LocalBranchNodes);
+                var remoteBranchCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
+                remoteBranchCol.DeleteAll();
+                remoteBranchCol.Insert(RemoteBranchNodes);
 
-            //本地提交更新到数据
-            var commits = await SetRepoCommits();
-            var commitCol =  m_liteDb.GetCollection<GitRepoCommit>();
-            commitCol.DeleteAll();
-            commitCol.Insert(commits);
+                //Tags更新到数据
+
+                //本地提交更新到数据
+                var commits = await SetRepoCommits();
+                var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+                commitCol.DeleteAll();
+                commitCol.Insert(commits);
+
+                //完成回调
+                onComplete?.Invoke();
+            });
+
         }
 
        
@@ -120,14 +127,14 @@ namespace Wanderer.GitRepository.Common
                 }
                 if (branch.IsRemote)
                 {
-                    JointBranchNode(RemoteBranchNodes, nameTree, branch);
+                    JointBranchNode(remotebranchNodes, nameTree, branch);
                 }
                 else
                 {
-                    JointBranchNode(LocalBranchNodes, nameTree, branch);
+                    JointBranchNode(localbranchNodes, nameTree, branch);
                 }
             }
-            foreach (var item in LocalBranchNodes)
+            foreach (var item in localbranchNodes)
             {
                 item.UpdateByIndex();
             }

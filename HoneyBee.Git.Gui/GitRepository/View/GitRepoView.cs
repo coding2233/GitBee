@@ -15,23 +15,41 @@ namespace Wanderer.GitRepository.View
 {
     public class GitRepoView : ImGuiTabView
     {
+        private enum WorkSpaceRadio
+        {
+            WorkTree,
+            CommitHistory,
+        }
+        
+        private GitRepo m_gitRepo;
+        private WorkSpaceRadio m_workSpaceRadio;
+
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 2, 200);
 
-        private GitRepo m_gitRepo;
+
+        #region 子模块
+        private DrawCommitHistoryView m_drawCommitHistoryView;
+        #endregion
 
         public GitRepoView(IContext context) : base(context)
         {
+            m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
         }
 
         public void SetGitRepoPath(string repoPath)
         {
             m_gitRepo = (mediator as GitRepoMediator).GetGitRepo(repoPath);
+            if (m_gitRepo != null)
+            {
+                m_drawCommitHistoryView = new DrawCommitHistoryView(m_gitRepo);
+            }
+            m_gitRepo.SyncGitRepoToDatabase(() => {
+                Log.Info("SyncGitRepoToDatabase complete");
+            });
         }
 
         public override void OnDraw()
         {
-            ImGui.Button("Git Repo View");
-            
             if (m_gitRepo == null)
                 return;
 
@@ -45,16 +63,16 @@ namespace Wanderer.GitRepository.View
         private void OnRepoKeysDraw()
         {
             DrawTreeNodeHead("Workspace", () => {
-                //if (ImGui.RadioButton("Work tree", _workSpaceRadio == WorkSpaceRadio.WorkTree))
-                //{
-                //    _workSpaceRadio = WorkSpaceRadio.WorkTree;
-                //    _git.Status();
-                //}
+                if (ImGui.RadioButton("Work tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
+                {
+                    m_workSpaceRadio = WorkSpaceRadio.WorkTree;
+                    //_git.Status();
+                }
 
-                //if (ImGui.RadioButton("Commit history", _workSpaceRadio == WorkSpaceRadio.CommitHistory))
-                //{
-                //    _workSpaceRadio = WorkSpaceRadio.CommitHistory;
-                //}
+                if (ImGui.RadioButton("Commit history", m_workSpaceRadio == WorkSpaceRadio.CommitHistory))
+                {
+                    m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
+                }
             });
 
             DrawTreeNodeHead("Branch", () => {
@@ -87,7 +105,31 @@ namespace Wanderer.GitRepository.View
         }
 
         private void OnRepoContentDraw()
-        {}
+        {
+            if (m_workSpaceRadio == WorkSpaceRadio.CommitHistory)
+            {
+                OnDrawCommitHistory();
+            }
+            else
+            {
+                OnDrawWorkTree();
+            }
+        }
+
+        private void OnDrawWorkTree()
+        {
+            //_workTreeView.OnDraw(_git, _git.CurrentStatuses, _git.Diff);
+        }
+
+    
+
+        private void OnDrawCommitHistory()
+        {
+            if (m_drawCommitHistoryView != null)
+            {
+                m_drawCommitHistoryView.Draw();
+            }
+        }
 
 
         private void DrawTreeNodeHead(string name, Action onDraw)

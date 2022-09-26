@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Wanderer.App;
 using Wanderer.GitRepository.Controller;
 using Wanderer.GitRepository.Mediator;
+using Wanderer.GitRepository.Service;
 using Wanderer.GitRepository.View;
 
 namespace Wanderer.GitRepository
@@ -21,6 +22,8 @@ namespace Wanderer.GitRepository
         protected override void mapBindings()
         {
             base.mapBindings();
+
+            injectionBinder.Bind<IGitRepoService>().To<GitRepoService>().ToSingleton();
 
             commandBinder.Bind(AppEvent.ShowGitRepo).To<ShowGitRepoCommand>();
 

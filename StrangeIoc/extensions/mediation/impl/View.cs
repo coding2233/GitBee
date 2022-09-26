@@ -70,11 +70,14 @@ namespace strange.extensions.mediation.impl
 		public View(IContext context)
 		{
 			this.context = context;
+
+            Awake();
+            Start();
         }
 
         /// A MonoBehaviour Awake handler.
         /// The View will attempt to connect to the Context at this moment.
-        protected virtual void Awake ()
+        protected override void Awake ()
 		{
 			if (autoRegisterWithContext && !registeredWithContext)
  				bubbleToContext(this, true, false);
@@ -83,7 +86,7 @@ namespace strange.extensions.mediation.impl
 		/// A MonoBehaviour Start handler
 		/// If the View is not yet registered with the Context, it will 
 		/// attempt to connect again at this moment.
-		protected virtual void Start ()
+		protected override void Start ()
 		{
 			if (autoRegisterWithContext && !registeredWithContext)
 				bubbleToContext(this, true, true);
@@ -92,7 +95,7 @@ namespace strange.extensions.mediation.impl
 		/// A MonoBehaviour OnDestroy handler
 		/// The View will inform the Context that it is about to be
 		/// destroyed.
-		protected virtual void OnDestroy ()
+		protected override void OnDestroy ()
 		{
 			bubbleToContext(this, false, false);
 		}
@@ -102,7 +105,7 @@ namespace strange.extensions.mediation.impl
 		/// By default, raises an Exception if no Context is found.
 		virtual protected void bubbleToContext(MonoBehaviour view, bool toAdd, bool finalTry)
 		{
-			IContext bubbleContext = context == null ? Context.firstContext : context;
+			IContext bubbleContext = this.context == null ? Context.firstContext : context;
 			if (bubbleContext != null)
 			{
                 if (toAdd)

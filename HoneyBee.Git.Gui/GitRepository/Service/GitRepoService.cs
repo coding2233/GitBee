@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
+using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
 namespace Wanderer.GitRepository.Service
@@ -39,7 +40,7 @@ namespace Wanderer.GitRepository.Service
             {
                 if (m_gitRepo != null)
                 {
-                    database.ReleaseDb(GetPathHash(m_repoPath));
+                    database.ReleaseDb(GetPathDbName(m_repoPath));
                     m_gitRepo.Dispose();
                     m_gitRepo = null;
                 }
@@ -49,18 +50,18 @@ namespace Wanderer.GitRepository.Service
             if (Directory.Exists(repoPath)&& repoPath.EndsWith("/.git"))
             {
                 m_repoPath = repoPath;
-                m_gitRepo = new GitRepo(repoPath, database.GetLiteDb(GetPathHash(repoPath)));
+                m_gitRepo = new GitRepo(repoPath, database.GetLiteDb(GetPathDbName(repoPath)));
             }
 
             return m_gitRepo;
         }
 
 
-        private string GetPathHash(string path)
+        private string GetPathDbName(string path)
         {
-            string hashPath = path.GetHashCode().ToString();
-            Log.Info("hash code: {0} -> {1}", path, hashPath);
-            return hashPath;
+            string md5 = Application.GetStringMd5(path);
+            Log.Info("path md5 code: {0} -> {1}", path, md5);
+            return md5;
         }
        
     }
