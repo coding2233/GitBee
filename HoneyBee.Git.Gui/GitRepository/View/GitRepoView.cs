@@ -1,5 +1,4 @@
-﻿using HoneyBee.Diff.Gui;
-using ImGuiNET;
+﻿using ImGuiNET;
 using strange.extensions.context.api;
 using System;
 using System.Collections.Generic;
@@ -24,12 +23,13 @@ namespace Wanderer.GitRepository.View
         private GitRepo m_gitRepo;
         private WorkSpaceRadio m_workSpaceRadio;
 
-        private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 2, 200);
+        private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
 
         private GitRepoMediator m_gitRepoMediator;
 
         #region 子模块
-        private DrawCommitHistoryView m_drawCommitHistoryView;
+        private DrawWorkTreeView m_workTreeView;
+        private DrawCommitHistoryView m_commitHistoryView;
         #endregion
 
         public GitRepoView(IContext context) : base(context)
@@ -43,7 +43,8 @@ namespace Wanderer.GitRepository.View
             m_gitRepo = m_gitRepoMediator.GetGitRepo(repoPath);
             if (m_gitRepo != null)
             {
-                m_drawCommitHistoryView = new DrawCommitHistoryView(m_gitRepo);
+                m_workTreeView = new DrawWorkTreeView(m_gitRepo);
+                m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
             }
             m_gitRepo.SyncGitRepoToDatabase(() => {
                 Log.Info("SyncGitRepoToDatabase complete");
@@ -84,13 +85,6 @@ namespace Wanderer.GitRepository.View
                 }
             });
 
-            DrawTreeNodeHead("Tag", () => {
-                foreach (var item in m_gitRepo.Tags)
-                {
-                    ImGui.Button($"{item.FriendlyName}");
-                }
-            });
-
             DrawTreeNodeHead("Remote", () => {
                 foreach (var item in m_gitRepo.RemoteBranchNodes)
                 {
@@ -98,10 +92,29 @@ namespace Wanderer.GitRepository.View
                 }
             });
 
+            DrawTreeNodeHead("Tag", () => {
+                foreach (var item in m_gitRepo.Tags)
+                {
+                    ImGui.Button($"{item.FriendlyName}");
+                }
+            });
+
             DrawTreeNodeHead("Submodule", () => {
                 foreach (var item in m_gitRepo.Submodules)
                 {
                     ImGui.Button($"{item.Name}");
+                }
+            });
+
+            DrawTreeNodeHead("Stashes", () => {
+                foreach (var item in m_gitRepo.Stashes)
+                {
+                    ImGui.Button($"{item.Message}");
+                }
+
+                if (ImGui.Button("Save Stashe"))
+                {
+                    
                 }
             });
         }
@@ -120,16 +133,19 @@ namespace Wanderer.GitRepository.View
 
         private void OnDrawWorkTree()
         {
-            //_workTreeView.OnDraw(_git, _git.CurrentStatuses, _git.Diff);
+            if (m_workTreeView != null)
+            {
+                m_workTreeView.Draw();
+            }
         }
 
     
 
         private void OnDrawCommitHistory()
         {
-            if (m_drawCommitHistoryView != null)
+            if (m_commitHistoryView != null)
             {
-                m_drawCommitHistoryView.Draw();
+                m_commitHistoryView.Draw();
             }
         }
 

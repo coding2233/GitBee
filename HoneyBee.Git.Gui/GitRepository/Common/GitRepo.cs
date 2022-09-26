@@ -20,6 +20,7 @@ namespace Wanderer.GitRepository.Common
         public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
         public List<GitTag> Tags { get; private set; } = new List<GitTag>();
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
+        public StashCollection Stashes => m_repository.Stashes;
 
         internal GitRepo(string m_repoPath, LiteDatabase db)
         {
@@ -34,32 +35,46 @@ namespace Wanderer.GitRepository.Common
         {
             //分支更新到数据库
             await Task.Run(SetBranchNodes);
-            //var localBranchCol = m_liteDb.GetCollection<GitBranchNode>("LocalBranchNodes");
-            //localBranchCol.DeleteAll();
-            //localBranchCol.Insert(LocalBranchNodes);
-            //var remoteBranchCol = m_liteDb.GetCollection<GitBranchNode>("RemoteBranchNodes");
-            //remoteBranchCol.DeleteAll();
-            //remoteBranchCol.Insert(RemoteBranchNodes);
 
             //Tags更新到数据
+            new Task(SetTags).Start();
+
+            //子模块更新到数据
+            new Task(SetSubmodules).Start();
 
             //本地提交更新到数据
             var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
             var commits = await SetRepoCommits();
-            commitCol.DeleteAll();
-            commitCol.Insert(commits);
+            //判断一下 ， 不需要更新数据库的操作，避免强制刷新
+            if (commitCol.Count() != commits.Count())
+            {
+                commitCol.DeleteAll();
+                commitCol.Insert(commits);
+            }
 
+            Log.Info($"commits count: {commits}");
             //完成回调
             onComplete?.Invoke();
         }
 
-       
 
-        public List<GitRepoCommit> GetCommits(int startIndex, int endIndex=100)
+        public int GetCommitCount()
+        {
+            var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
+            int count = commitsCol.Query().Count();
+            return count;
+        }
+
+        public List<GitRepoCommit> GetCommits(int startIndex, int endIndex)
         {
             var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
             var commits= commitsCol.Query().Where(x => x.Id >= startIndex && x.Id < endIndex).ToList();
             return commits;
+        }
+
+        public Commit GetCommit(int index)
+        {
+            return m_repository.Commits.ElementAt(index);
         }
 
         public void Dispose()
@@ -86,10 +101,6 @@ namespace Wanderer.GitRepository.Common
             return taskCompletionSource.Task;
         }
 
-        private void SetTags()
-        {
-
-        }
 
         //设置分支
         private void SetBranchNodes()
@@ -121,6 +132,32 @@ namespace Wanderer.GitRepository.Common
 
             LocalBranchNodes = localbranchNodes;
             RemoteBranchNodes = remotebranchNodes;
+        }
+
+        //设置标签
+        private void SetTags()
+        {
+            Tags.Clear();
+            foreach (var item in m_repository.Tags)
+            {
+                GitTag gitTag = new GitTag();
+                gitTag.FriendlyName = item.FriendlyName;
+                gitTag.Sha = item.Target.Sha;
+                Tags.Add(gitTag);
+            }
+        }
+
+        //设置子模块
+        private void SetSubmodules()
+        {
+            Submodules.Clear();
+            foreach (var item in m_repository.Submodules)
+            {
+                GitSubmodule submodule = new GitSubmodule();
+                submodule.Name = item.Name;
+                submodule.Path = item.Path;
+                Submodules.Add(submodule);
+            }
         }
 
         private void JointBranchNode(List<GitBranchNode> branchNodes, Queue<string> nameTree, Branch branch)

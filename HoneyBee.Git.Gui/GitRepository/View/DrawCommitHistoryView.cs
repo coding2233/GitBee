@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,27 +16,27 @@ namespace Wanderer.GitRepository.View
         private int m_commitViewIndex = 0;
         private int m_commitViewMax = 100;
         private float m_lastCommitScrollY = 0.0f;
-        private int m_commitReadIndex = 0;
+        private Commit m_selectCommit;
+
+        private SplitView m_contentSplitView;
+
 
         private List<GitRepoCommit> m_cacheCommits;
 
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
+            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
             m_gitRepo = gitRepo;
         }
 
         public void Draw()
         {
-            var historyCommits = GetHistoryCommits();
-            if (historyCommits == null)
-                return;
+            if (m_selectCommit != null)
+            {
+                m_contentSplitView.Begin();
+            }
 
-            //if (_selectCommit != null)
-            //{
-            //    _contentSplitView.Begin();
-            //}
-
-            int commitMax = historyCommits.Count();
+            int commitMax = m_gitRepo.GetCommitCount();
             if (m_lastCommitScrollY <= 0.0f)
             {
                 //float moveInterval = GetScrollInterval(_commitViewIndex - _commitAddInterval >= 0 ? _commitAddInterval : _commitViewIndex - _commitAddInterval);
@@ -62,6 +63,10 @@ namespace Wanderer.GitRepository.View
             }
             m_lastCommitScrollY = ImGui.GetScrollY();
 
+            var historyCommits = GetHistoryCommits();
+            if (historyCommits == null)
+                return;
+
             if (ImGui.BeginTable("GitRepo-Commits", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
             {
                 ImGui.TableSetupColumn("Description", ImGuiTableColumnFlags.WidthStretch);
@@ -74,10 +79,10 @@ namespace Wanderer.GitRepository.View
                 foreach (var item in historyCommits)
                 {
                     index++;
-                    if (index < m_commitViewIndex)
-                        continue;
-                    else if (index >= m_commitViewIndex + m_commitViewMax)
-                        break;
+                    //if (index < m_commitViewIndex)
+                    //    continue;
+                    //else if (index >= m_commitViewIndex + m_commitViewMax)
+                    //    break;
 
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
@@ -85,21 +90,31 @@ namespace Wanderer.GitRepository.View
                     var rectMin = ImGui.GetItemRectMin();
                     var rectMax = ImGui.GetItemRectMax();
                     rectMax.X = rectMin.X + ImGui.GetColumnWidth();
-                    if (ImGui.IsMouseHoveringRect(rectMin, rectMax))
+                    //当前选中的提交
+                    if (m_selectCommit != null && m_selectCommit.Sha == item.Commit)
                     {
                         ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiCol.TabActive));
                         ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(ImGuiCol.TabActive));
-                        if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                    }
+                    else
+                    {
+                        if (ImGui.IsWindowFocused() && !ImGui.IsMouseDragging(ImGuiMouseButton.Left) && ImGui.IsMouseHoveringRect(rectMin, rectMax))
                         {
-                            //_selectCommit = item;
-                            //if (index < historyCommits.Count)
-                            //{
-                            //    _selectParentCommit = historyCommits[index];
-                            //}
-                            //else
-                            //{
-                            //    _selectParentCommit = null;
-                            //}
+                            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiCol.TabActive));
+                            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(ImGuiCol.TabActive));
+
+                            if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                            {
+                                m_selectCommit = m_gitRepo.GetCommit(item.Id - 1);
+                                //if (index < historyCommits.Count)
+                                //{
+                                //    _selectParentCommit = historyCommits[index];
+                                //}
+                                //else
+                                //{
+                                //    _selectParentCommit = null;
+                                //}
+                            }
                         }
                     }
                     ImGui.TableSetColumnIndex(1);
@@ -112,12 +127,36 @@ namespace Wanderer.GitRepository.View
                 ImGui.EndTable();
             }
 
-            //if (_selectCommit != null)
-            //{
-            //    _contentSplitView.Separate();
-            //    OnDrawSelectCommit(_selectCommit, _selectParentCommit);
-            //    _contentSplitView.End();
-            //}
+            if (m_selectCommit != null)
+            {
+                m_contentSplitView.Separate();
+                OnDrawSelectCommit(m_selectCommit, null);
+                m_contentSplitView.End();
+            }
+        }
+
+        StringBuilder _tempStringBuilder = new StringBuilder();
+
+        private void OnDrawSelectCommit(Commit commit, Commit parentCommit)
+        {
+            //_showCommitView.DrawSelectCommit(_git.Diff, commit, parentCommit);
+
+            ImGui.Text($"Sha: {commit.Sha}");
+            _tempStringBuilder.Clear();
+            _tempStringBuilder.Append("Parents:");
+            if (commit.Parents != null)
+            {
+                foreach (var item in commit.Parents)
+                {
+                    _tempStringBuilder.Append($" {item.Sha.Substring(0, 10)}");
+                }
+            }
+            ImGui.Text(_tempStringBuilder.ToString());
+            ImGui.Text($"Author: {commit.Author.Name} {commit.Author.Email}");
+            ImGui.Text($"DateTime: {commit.Author.When.ToString()}");
+            ImGui.Text($"Committer: {commit.Committer.Name} {commit.Committer.Email}\n");
+
+            ImGui.Text(commit.Message);
         }
 
         private float GetScrollInterval(float size)
@@ -127,10 +166,7 @@ namespace Wanderer.GitRepository.View
 
         List<GitRepoCommit> GetHistoryCommits()
         {
-            if (m_cacheCommits == null || m_cacheCommits.Count == 0)
-            {
-                m_cacheCommits = m_gitRepo.GetCommits(0);
-            }
+            m_cacheCommits = m_gitRepo.GetCommits(m_commitViewIndex, m_commitViewIndex+m_commitViewMax);
             return m_cacheCommits;
         }
     }

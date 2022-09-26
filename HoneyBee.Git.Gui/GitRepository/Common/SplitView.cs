@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace HoneyBee.Diff.Gui
+namespace Wanderer
 {
     public class SplitView
     {
@@ -16,39 +16,40 @@ namespace HoneyBee.Diff.Gui
             Vertical
         }
 
-        SplitType _splitType;
-        private List<float> _splitWidth = new List<float>();
-        private int _splitIndex = 0;
-        private bool _draging = false;
-        private float _dragPosition = 0;
-        private int _dragIndex = 0;
+        SplitType m_splitType;
+        private float m_defaultSplitWidth;
+        private float m_spliteWidth;
+        private int m_splitIndex = 0;
+        private bool m_draging = false;
+        private float m_dragPosition = 0;
 
-        private float _splitMin = 100;
-        private float _splitMax = 100;
+        private float m_splitMin = 100;
+        private float m_splitMax = 100;
 
-        public SplitView(SplitType splitType=SplitType.Horizontal,int splitCount =2,float min=100,float max = 0.5f)
+        public SplitView(SplitType splitType=SplitType.Horizontal,float defaultSplitWidth = 0.5f)
         {
-            _splitType = splitType;
+            m_splitType = splitType;
+            m_defaultSplitWidth = defaultSplitWidth;
 
-            if (splitCount < 2)
-            {
-                splitCount = 2;
-            }
+            //if (splitCount < 2)
+            //{
+            //    splitCount = 2;
+            //}
 
-            _splitMin = 10;
-            _splitMax = (splitType==SplitType.Horizontal? ImGui.GetContentRegionAvail().X: ImGui.GetContentRegionAvail().Y)* max;
+            //_splitMin = 10;
+            //_splitMax = (splitType==SplitType.Horizontal? ImGui.GetContentRegionAvail().X: ImGui.GetContentRegionAvail().Y)* max;
 
-            for (int i = 0; i < splitCount-1; i++)
-            {
-                _splitWidth.Add(min);
-            }
+            //for (int i = 0; i < splitCount-1; i++)
+            //{
+            //    _splitWidth.Add(min);
+            //}
             //ImGui.GetContentRegionAvail();
         }
 
         public void Begin()
         {
-            _splitIndex = 0;
-            ImGui.BeginChild($"SplitView_Child_{_splitIndex}", GetSplitPosition(), false);
+            m_splitIndex = 0;
+            ImGui.BeginChild($"SplitView_Child_{m_splitIndex}", GetSplitPosition(ImGui.GetContentRegionAvail()), false);
         }
 
         public void End()
@@ -66,7 +67,7 @@ namespace HoneyBee.Diff.Gui
             Vector2 hoverMin = min;
             Vector2 hoverMax = max;
 
-            if (_splitType == SplitType.Horizontal)
+            if (m_splitType == SplitType.Horizontal)
             {
                 min.X = max.X+3.0f;
                 max.X += 5.0f;
@@ -87,33 +88,29 @@ namespace HoneyBee.Diff.Gui
                 hoverMax.Y += 2.0f;
             }
 
-            if (_splitType == SplitType.Horizontal)
+            if (m_splitType == SplitType.Horizontal)
                 ImGui.SameLine();
 
 
             bool separatorHovered = true;
-            if (_draging)
+            if (m_draging)
             {
-                if (_splitIndex == _dragIndex)
-                {
-                    var splitX = _dragPosition + (_splitType == SplitType.Horizontal?ImGui.GetMouseDragDelta().X: ImGui.GetMouseDragDelta().Y);
-                    splitX = Math.Clamp(splitX, _splitMin, _splitMax);
-                    _splitWidth[_splitIndex] = splitX;
-                }
+                var splitX = m_dragPosition + (m_splitType == SplitType.Horizontal ? ImGui.GetMouseDragDelta().X : ImGui.GetMouseDragDelta().Y);
+                splitX = Math.Clamp(splitX, m_splitMin, m_splitMax);
+                m_spliteWidth = splitX;
 
                 if (ImGui.IsMouseReleased(ImGuiMouseButton.Left))
                 {
-                    _draging = false;
+                    m_draging = false;
                 }
 
             }
-            else if (!_draging && ImGui.IsMouseHoveringRect(hoverMin, hoverMax))
+            else if (!m_draging && ImGui.IsMouseHoveringRect(hoverMin, hoverMax))
             {
                 if (ImGui.IsWindowFocused()&&ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {
-                    _draging = true;
-                    _dragPosition = _splitWidth[_splitIndex];
-                    _dragIndex = _splitIndex;
+                    m_draging = true;
+                    m_dragPosition = m_spliteWidth;
                 }
             }
             else
@@ -123,22 +120,37 @@ namespace HoneyBee.Diff.Gui
 
             ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(separatorHovered ? ImGuiCol.SeparatorHovered : ImGuiCol.Border));
 
-            _splitIndex++;
-            ImGui.BeginChild($"SplitView BeginHorizontal_{_splitIndex}", GetSplitPosition(), false);
+            m_splitIndex++;
+            ImGui.BeginChild($"SplitView BeginHorizontal_{m_splitIndex}", Vector2.Zero, false);
         }
 
 
-        private Vector2 GetSplitPosition()
+        private Vector2 GetSplitPosition(Vector2 size)
         {
+            bool isHorizontal = m_splitType == SplitType.Horizontal;
             Vector2 position = Vector2.Zero;
-            if (_splitIndex < _splitWidth.Count)
+            if (m_spliteWidth == 0.0f)
             {
-                if (_splitType == SplitType.Horizontal)
-                    position.X = _splitWidth[_splitIndex];
+                if (m_defaultSplitWidth > 1)
+                {
+                    m_spliteWidth = m_defaultSplitWidth;
+                }
                 else
-                    position.Y = _splitWidth[_splitIndex];
+                {
+                    m_spliteWidth = isHorizontal ? size.X * m_defaultSplitWidth : size.Y * m_defaultSplitWidth;
+                }
             }
-            //_splitIndex++;
+
+            if (isHorizontal)
+            {
+                position.X = m_spliteWidth;
+                m_splitMax = size.X - m_splitMin;
+            }
+            else
+            {
+                position.Y = m_spliteWidth;
+                m_splitMax = size.Y - m_splitMin;
+            }
             return position;
         }
 
