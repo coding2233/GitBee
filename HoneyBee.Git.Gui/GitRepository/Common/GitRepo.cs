@@ -29,24 +29,27 @@ namespace Wanderer.GitRepository.Common
             Name = Path.GetFileName(RootPath);
             m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath,$"{Name}.db"));
             m_repository = new Repository(RootPath);
+
+            new Task(SyncGitRepoToDatabase).Start();
         }
 
         //将git数据同步到数据库
-        public async void SyncGitRepoToDatabase(Action onComplete)
+        private async void SyncGitRepoToDatabase()
         {
-            //分支更新到数据库
-            await Task.Run(SetBranchNodes);
-
-            //Tags更新到数据
-            new Task(SetTags).Start();
-
-            //子模块更新到数据
-            new Task(SetSubmodules).Start();
-
-            //本地提交更新到数据
-            var commits = await SetRepoCommits();
             try
             {
+                //分支更新到数据库
+                SetBranchNodes();
+
+                //Tags更新到数据
+                SetTags();
+
+                //子模块更新到数据
+                SetSubmodules();
+
+                //本地提交更新到数据
+                var commits = await SetRepoCommits();
+          
                 if (m_liteDb != null)
                 {
                     var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
@@ -63,12 +66,7 @@ namespace Wanderer.GitRepository.Common
                 Log.Warn("检查Git仓库与数据库是否匹配,异常: {0}",e);
             }
 
-            if (m_liteDb != null)
-            {
-                Log.Info($"commits count: {commits.Count}");
-                //完成回调
-                onComplete?.Invoke();
-            }
+            Log.Info($"SyncGitRepoToDatabase complete.");
         }
 
 
@@ -112,6 +110,9 @@ namespace Wanderer.GitRepository.Common
         {
             m_liteDb?.Dispose();
             m_liteDb = null;
+
+            m_repository?.Dispose();
+            m_repository = null;
         }
 
 
@@ -120,16 +121,23 @@ namespace Wanderer.GitRepository.Common
             TaskCompletionSource<List<GitRepoCommit>> taskCompletionSource = new TaskCompletionSource<List<GitRepoCommit>>();
             List<GitRepoCommit> commitsResult = new List<GitRepoCommit>();
             Task.Run(() => {
-                foreach (var commit in m_repository.Commits)
+                try
                 {
-                    GitRepoCommit gitRepoCommit = new GitRepoCommit();
-                    gitRepoCommit.Description = commit.MessageShort;
-                    gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
-                    gitRepoCommit.Author = commit.Committer.Name;
-                    gitRepoCommit.Commit = commit.Sha;
-                    commitsResult.Add(gitRepoCommit);
+                    foreach (var commit in m_repository.Commits)
+                    {
+                        GitRepoCommit gitRepoCommit = new GitRepoCommit();
+                        gitRepoCommit.Description = commit.MessageShort;
+                        gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
+                        gitRepoCommit.Author = commit.Committer.Name;
+                        gitRepoCommit.Commit = commit.Sha;
+                        commitsResult.Add(gitRepoCommit);
+                    }
+                    taskCompletionSource.SetResult(commitsResult);
                 }
-                taskCompletionSource.SetResult(commitsResult);
+                catch (Exception e)
+                {
+                    Log.Warn("m_repository 可能被关闭: {0}",e);
+                }
             });
             return taskCompletionSource.Task;
         }

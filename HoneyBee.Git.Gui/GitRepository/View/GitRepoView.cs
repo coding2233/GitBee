@@ -51,10 +51,10 @@ namespace Wanderer.GitRepository.View
                     m_workTreeView = new DrawWorkTreeView(m_gitRepo);
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
                 }
-                m_gitRepo.SyncGitRepoToDatabase(() =>
-                {
-                    Log.Info("SyncGitRepoToDatabase complete");
-                });
+                //m_gitRepo.SyncGitRepoToDatabase(() =>
+                //{
+                //    Log.Info("SyncGitRepoToDatabase complete");
+                //});
             }
         }
 
