@@ -32,8 +32,17 @@ namespace Wanderer.GitRepository.Common
             if (Branch != null && Branch.IsTracking)
             {
                 var trackingDetails = Branch.TrackingDetails;
-                BehindBy += (int)trackingDetails.BehindBy;
-                AheadBy += (int)trackingDetails.AheadBy;
+                if (trackingDetails != null)
+                {
+                    if (trackingDetails.BehindBy != null)
+                    {
+                        BehindBy += (int)trackingDetails.BehindBy;
+                    }
+                    if (trackingDetails.AheadBy != null)
+                    {
+                        AheadBy += (int)trackingDetails.AheadBy;
+                    }
+                }
             }
         }
     }

@@ -47,11 +47,11 @@ namespace Wanderer.GitRepository.Service
                 m_repoPath = "";
             }
 
-            if (Directory.Exists(repoPath)&& repoPath.EndsWith("/.git"))
-            {
-                m_repoPath = repoPath;
-                m_gitRepo = new GitRepo(repoPath, database.GetLiteDb(GetPathDbName(repoPath)));
-            }
+            //if (Directory.Exists(repoPath)&& repoPath.EndsWith("/.git"))
+            //{
+            //    m_repoPath = repoPath;
+            //    m_gitRepo = new GitRepo(repoPath, database.GetLiteDb(GetPathDbName(repoPath)));
+            //}
 
             return m_gitRepo;
         }

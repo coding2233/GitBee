@@ -14,12 +14,8 @@ namespace Wanderer.GitRepository.View
 {
     public class GitRepoView : ImGuiTabView
     {
-        private enum WorkSpaceRadio
-        {
-            WorkTree,
-            CommitHistory,
-        }
-        
+        public override string Name => m_gitRepo==null ? base.Name: m_gitRepo.Name;
+
         private GitRepo m_gitRepo;
         private WorkSpaceRadio m_workSpaceRadio;
 
@@ -40,7 +36,7 @@ namespace Wanderer.GitRepository.View
         public void SetGitRepoPath(string repoPath)
         {
             m_gitRepoMediator = mediator as GitRepoMediator;
-            m_gitRepo = m_gitRepoMediator.GetGitRepo(repoPath);
+            m_gitRepo = new GitRepo(repoPath);
             if (m_gitRepo != null)
             {
                 m_workTreeView = new DrawWorkTreeView(m_gitRepo);
@@ -49,6 +45,13 @@ namespace Wanderer.GitRepository.View
             m_gitRepo.SyncGitRepoToDatabase(() => {
                 Log.Info("SyncGitRepoToDatabase complete");
             });
+        }
+
+        protected override void OnDestroy()
+        {
+            m_gitRepo?.Dispose();
+            m_gitRepo = null;
+            base.OnDestroy();
         }
 
         public override void OnDraw()
@@ -216,5 +219,11 @@ namespace Wanderer.GitRepository.View
             }
         }
 
+
+        private enum WorkSpaceRadio
+        {
+            WorkTree,
+            CommitHistory,
+        }
     }
 }

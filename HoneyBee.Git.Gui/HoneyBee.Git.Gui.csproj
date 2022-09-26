@@ -24,6 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\StandaloneFileBrowser\StandaloneFileBrowser.csproj" />
     <ProjectReference Include="..\StrangeIoc\StrangeIoc.csproj" />
   </ItemGroup>
 

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.Common;
 
 namespace Wanderer.GitRepository.Common
 {
@@ -22,11 +23,11 @@ namespace Wanderer.GitRepository.Common
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
         public StashCollection Stashes => m_repository.Stashes;
 
-        internal GitRepo(string m_repoPath, LiteDatabase db)
+        internal GitRepo(string repoPath)
         {
-            RootPath = m_repoPath.Replace("/.git", "");
+            RootPath = repoPath.Replace("\\","/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
-            m_liteDb = db;
+            m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath,$"{Name}.db"));
             m_repository = new Repository(RootPath);
         }
 
@@ -60,16 +61,33 @@ namespace Wanderer.GitRepository.Common
 
         public int GetCommitCount()
         {
-            var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-            int count = commitsCol.Query().Count();
-            return count;
+            try
+            {
+                var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
+                int count = commitsCol.Query().Count();
+                return count;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("提交的总数获取失败: {0}", e);
+            }
+          
+            return 0;
         }
 
         public List<GitRepoCommit> GetCommits(int startIndex, int endIndex)
         {
-            var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-            var commits= commitsCol.Query().Where(x => x.Id >= startIndex && x.Id < endIndex).ToList();
-            return commits;
+            try
+            {
+                var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
+                var commits = commitsCol.Query().Where(x => x.Id >= startIndex && x.Id < endIndex).ToList();
+                return commits;
+            }
+            catch (Exception e)
+            {
+                Log.Warn("获取提交失败: {0}",e);
+            }
+            return null;
         }
 
         public Commit GetCommit(int index)
@@ -79,6 +97,8 @@ namespace Wanderer.GitRepository.Common
 
         public void Dispose()
         {
+            m_liteDb.Dispose();
+            m_liteDb = null;
         }
 
 

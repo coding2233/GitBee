@@ -1,4 +1,5 @@
 ﻿using ImGuiNET;
+using SFB;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using strange.extensions.mediation.impl;
@@ -7,10 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App.View;
 
 namespace Wanderer.Common
 {
-    public abstract class ImGuiView : View
+    public abstract class ImGuiView : EventView
     {
         private static List<ImGuiView> s_imGuiViews=new List<ImGuiView>();
         private static List<ImGuiTabView> s_imGuiTabViews=new List<ImGuiTabView>();
@@ -35,6 +37,8 @@ namespace Wanderer.Common
             }
         }
 
+        private static AppImGuiView s_appImGuiView;
+
         public virtual string Name { get; } = "None";
 
         public virtual string IconName { get; } = Icon.Get(Icon.Material_tab);
@@ -48,8 +52,13 @@ namespace Wanderer.Common
 
         public static void Render()
         {
-            DrawMainMenuBar();
+            //主窗口
+            if (s_appImGuiView != null)
+            {
+                s_appImGuiView.OnDraw();
+            }
 
+            //tabview
             var viewport = ImGui.GetMainViewport();
             ImGui.SetNextWindowPos(viewport.WorkPos);
             ImGui.SetNextWindowSize(viewport.WorkSize);
@@ -122,7 +131,6 @@ namespace Wanderer.Common
             }
             ImGui.End();
 
-
             //其他界面
             for (int i = 0; i < s_imGuiViews.Count; i++)
             {
@@ -130,95 +138,6 @@ namespace Wanderer.Common
             }
         }
 
-        private static void DrawMainMenuBar()
-        {
-            if (ImGui.BeginMainMenuBar())
-            {
-                if (ImGui.BeginMenu("File"))
-                {
-                    if (ImGui.BeginMenu("New"))
-                    {
-                        if (ImGui.MenuItem("Folder Diff"))
-                        {
-                            //mainModel.CreateTab<DiffFolderWindow>();
-                        }
-                        if (ImGui.MenuItem("File Diff"))
-                        {
-                            //mainModel.CreateTab<DiffFileWindow>();
-                        }
-                        if (ImGui.MenuItem("Git Repository"))
-                        {
-                            //mainModel.CreateTab<GitRepoWindow>();
-                        }
-                        ImGui.EndMenu();
-                    }
-
-                    ImGui.Separator();
-                    if (ImGui.MenuItem("Exit"))
-                    {
-                        Environment.Exit(0);
-                    }
-                    ImGui.EndMenu();
-                }
-
-                if (ImGui.BeginMenu("Edit"))
-                {
-                    if (ImGui.BeginMenu("Style"))
-                    {
-                        //var styleIndex = userSettings.StyleColors;
-                        //if (ImGui.MenuItem("Light", "", styleIndex == 0))
-                        //{
-                        //    styleIndex = 0;
-                        //}
-                        //if (ImGui.MenuItem("Drak", "", styleIndex == 1))
-                        //{
-                        //    styleIndex = 1;
-                        //}
-                        //if (ImGui.MenuItem("Classic", "", styleIndex == 2))
-                        //{
-                        //    styleIndex = 2;
-                        //}
-                        //if (styleIndex != userSettings.StyleColors)
-                        //{
-                        //    userSettings.StyleColors = styleIndex;
-                        //    SetStyleColors();
-                        //}
-                        ImGui.EndMenu();
-                    }
-
-                    if (ImGui.MenuItem("Text Style"))
-                    {
-                        //_textStyleModal.Popup();
-                    }
-                    ImGui.EndMenu();
-                }
-
-                if (ImGui.BeginMenu("Window"))
-                {
-                    if (ImGui.MenuItem("Main Window"))
-                    {
-                        //mainModel.CreateTab<MainTabWindow>();
-                    }
-                    if (ImGui.MenuItem("Terminal Window"))
-                    {
-                        //mainModel.CreateTab<TerminalWindow>();
-                    }
-                    ImGui.EndMenu();
-                }
-
-                if (ImGui.BeginMenu("Help"))
-                {
-                    if (ImGui.MenuItem("About"))
-                    {
-                        //mainModel.CreateTab<AboutTabWindow>();
-                    }
-                    ImGui.EndMenu();
-                }
-
-                ImGui.EndMainMenuBar();
-            }
-
-        }
 
         public static T Create<T>(IContext context,int defaultPriority=0) where T: ImGuiView
         {
@@ -228,8 +147,12 @@ namespace Wanderer.Common
                 args = new object[] { context };
             }
             T view = Activator.CreateInstance(typeof(T), args) as T;
-           
-            if (view is ImGuiTabView tabView)
+
+            if (view is AppImGuiView mainImGuiView)
+            {
+                s_appImGuiView = mainImGuiView;
+            }
+            else if (view is ImGuiTabView tabView)
             {
                 s_imGuiTabViews.Add(tabView);
             }

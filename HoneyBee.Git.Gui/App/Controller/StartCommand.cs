@@ -24,7 +24,8 @@ namespace Wanderer.App.Controller
 
         public override void Execute()
         {
-            //ImGuiView.Create<DemoView>(context);
+            //主窗口
+            ImGuiView.Create<AppImGuiView>(context);
 
             //打开默认仓库
             string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");

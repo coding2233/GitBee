@@ -22,10 +22,10 @@ namespace Wanderer.GitRepository.Mediator
         [Inject]
         public IDatabaseService database { get; set; }
 
-        public GitRepo GetGitRepo(string gitPath)
-        {
-            return gitRepoService.GetGitRepo(gitPath);
-        }
+        //public GitRepo GetGitRepo(string gitPath)
+        //{
+        //    return gitRepoService.GetGitRepo(gitPath);
+        //}
 
         public T GetUserData<T>(string key)
         {
