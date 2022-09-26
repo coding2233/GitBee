@@ -16,6 +16,7 @@ namespace Wanderer.Common
     {
         private static List<ImGuiView> s_imGuiViews=new List<ImGuiView>();
         private static List<ImGuiTabView> s_imGuiTabViews=new List<ImGuiTabView>();
+        private static ImGuiTabView s_lastActiveImGuiTabView;
 
         protected static ImGuiWindowFlags s_defaultWindowFlag = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
                 | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
@@ -119,6 +120,15 @@ namespace Wanderer.Common
                         }
                         if (visible)
                         {
+                            if (s_lastActiveImGuiTabView != tabWindow)
+                            {
+                                if (s_lastActiveImGuiTabView != null)
+                                {
+                                    s_lastActiveImGuiTabView.OnDisable();
+                                }
+                                tabWindow.OnEnable();
+                                s_lastActiveImGuiTabView = tabWindow;
+                            }
                             tabWindow.OnDraw();
                             ImGui.EndTabItem();
                         }

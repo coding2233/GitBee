@@ -44,18 +44,31 @@ namespace Wanderer.GitRepository.Common
             new Task(SetSubmodules).Start();
 
             //本地提交更新到数据
-            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
             var commits = await SetRepoCommits();
-            //判断一下 ， 不需要更新数据库的操作，避免强制刷新
-            if (commitCol.Count() != commits.Count())
+            try
             {
-                commitCol.DeleteAll();
-                commitCol.Insert(commits);
+                if (m_liteDb != null)
+                {
+                    var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+                    //判断一下 ， 不需要更新数据库的操作，避免强制刷新
+                    if (commitCol.Count() != commits.Count())
+                    {
+                        commitCol.DeleteAll();
+                        commitCol.Insert(commits);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("检查Git仓库与数据库是否匹配,异常: {0}",e);
             }
 
-            Log.Info($"commits count: {commits}");
-            //完成回调
-            onComplete?.Invoke();
+            if (m_liteDb != null)
+            {
+                Log.Info($"commits count: {commits.Count}");
+                //完成回调
+                onComplete?.Invoke();
+            }
         }
 
 
@@ -97,7 +110,7 @@ namespace Wanderer.GitRepository.Common
 
         public void Dispose()
         {
-            m_liteDb.Dispose();
+            m_liteDb?.Dispose();
             m_liteDb = null;
         }
 

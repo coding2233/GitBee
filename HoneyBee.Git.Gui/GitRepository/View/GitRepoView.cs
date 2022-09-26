@@ -22,6 +22,7 @@ namespace Wanderer.GitRepository.View
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
 
         private GitRepoMediator m_gitRepoMediator;
+        private string m_repoPath;
 
         #region 子模块
         private DrawWorkTreeView m_workTreeView;
@@ -35,16 +36,26 @@ namespace Wanderer.GitRepository.View
 
         public void SetGitRepoPath(string repoPath)
         {
+            m_repoPath = repoPath;
+
             m_gitRepoMediator = mediator as GitRepoMediator;
-            m_gitRepo = new GitRepo(repoPath);
-            if (m_gitRepo != null)
+        }
+
+        private void CreateGitRepo()
+        {
+            if (m_gitRepo == null)
             {
-                m_workTreeView = new DrawWorkTreeView(m_gitRepo);
-                m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
+                m_gitRepo = new GitRepo(m_repoPath);
+                if (m_gitRepo != null)
+                {
+                    m_workTreeView = new DrawWorkTreeView(m_gitRepo);
+                    m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
+                }
+                m_gitRepo.SyncGitRepoToDatabase(() =>
+                {
+                    Log.Info("SyncGitRepoToDatabase complete");
+                });
             }
-            m_gitRepo.SyncGitRepoToDatabase(() => {
-                Log.Info("SyncGitRepoToDatabase complete");
-            });
         }
 
         protected override void OnDestroy()
@@ -52,6 +63,20 @@ namespace Wanderer.GitRepository.View
             m_gitRepo?.Dispose();
             m_gitRepo = null;
             base.OnDestroy();
+        }
+
+        protected override void OnEnable()
+        {
+            base.OnEnable();
+            CreateGitRepo();
+        }
+
+
+        protected override void OnDisable()
+        {
+            //m_gitRepo?.Dispose();
+            //m_gitRepo = null;
+            base.OnDisable();
         }
 
         public override void OnDraw()
