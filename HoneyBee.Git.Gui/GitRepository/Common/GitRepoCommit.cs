@@ -13,6 +13,12 @@ namespace Wanderer.GitRepository.Common
         public string Date { get; set; }
         public string Author { get; set; }
         public string Commit { get; set; }
+        // 完整的信息
+        public string Message { get; set; }
+        //邮件
+        public string Email { get; set; }
+        //父级提交
+        public List<string> Parents { get; set; }
     }
 
 }

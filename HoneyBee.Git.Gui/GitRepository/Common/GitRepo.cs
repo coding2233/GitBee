@@ -130,6 +130,13 @@ namespace Wanderer.GitRepository.Common
                         gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
                         gitRepoCommit.Author = commit.Committer.Name;
                         gitRepoCommit.Commit = commit.Sha;
+                        gitRepoCommit.Message = commit.Message;
+                        gitRepoCommit.Email = commit.Committer.Email;
+                        gitRepoCommit.Parents = new List<string>();
+                        foreach (var itemParent in commit.Parents)
+                        {
+                            gitRepoCommit.Parents.Add(itemParent.Sha);
+                        }
                         commitsResult.Add(gitRepoCommit);
                     }
                     taskCompletionSource.SetResult(commitsResult);
