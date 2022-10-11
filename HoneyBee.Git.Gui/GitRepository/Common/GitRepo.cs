@@ -1,5 +1,6 @@
 ﻿using LibGit2Sharp;
 using LiteDB;
+using SharpDX.Direct3D11;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +14,8 @@ namespace Wanderer.GitRepository.Common
     public class GitRepo : IDisposable
     {
         private Repository m_repository;
+        
+        //public Repository Repo => m_repository;
 
         private LiteDatabase m_liteDb;
         public string Name { get; private set; }
@@ -23,13 +26,30 @@ namespace Wanderer.GitRepository.Common
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
         public StashCollection Stashes => m_repository.Stashes;
 
+        private Signature m_signatureAuthor;
+        public Signature SignatureAuthor
+        {
+            get
+            {
+                if (m_signatureAuthor == null)
+                {
+                    m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
+                }
+                return m_signatureAuthor;
+            }
+        }
+
+        public LibGit2Sharp.Diff Diff => m_repository.Diff;
+
+        public RepositoryStatus RetrieveStatus => m_repository.RetrieveStatus();
+
         internal GitRepo(string repoPath)
         {
             RootPath = repoPath.Replace("\\","/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
             m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath,$"{Name}.db"));
             m_repository = new Repository(RootPath);
-
+            //同步仓库信息
             new Task(SyncGitRepoToDatabase).Start();
         }
 
@@ -80,8 +100,14 @@ namespace Wanderer.GitRepository.Common
         {
             try
             {
+                //id为倒序， 要转换一遍
                 var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-                var commits = commitsCol.Query().Where(x => x.Id >= startIndex && x.Id < endIndex).ToList();
+                int commitCount = commitsCol.Query().Count();
+                startIndex = commitCount - startIndex;
+                endIndex = commitCount - endIndex;
+                var commits = commitsCol.Query().Where(x => x.Id < startIndex && x.Id >= endIndex).ToList();
+                commits.Reverse();
+                //倒序
                 return commits;
             }
             catch (Exception e)
@@ -91,9 +117,73 @@ namespace Wanderer.GitRepository.Common
             return null;
         }
 
-        public Commit GetCommit(int index)
+        public void Commit(string commitMessage)
         {
-            return m_repository.Commits.ElementAt(index);
+            if (string.IsNullOrEmpty(commitMessage))
+                return;
+
+            //提交到仓库中
+            m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
+            m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
+        }
+
+        public bool CheckIndex(string file)
+        {
+            return m_repository.Index.Where(x => x.Path.Equals(file)).Count() > 0;
+        }
+
+        public void Restore(IEnumerable<string> files)
+        {
+            if (files == null || files.Count() == 0)
+                return;
+
+            var options = new CheckoutOptions { CheckoutModifiers = CheckoutModifiers.Force };
+            m_repository.CheckoutPaths(m_repository.Head.FriendlyName, files, options);
+            //Status();
+        }
+
+        public void AddFile(IEnumerable<string> files)
+        {
+            //IEnumerable<StatusEntry> Added
+            if (files != null && files.Count() > 0)
+            {
+                foreach (var item in files)
+                {
+                    m_repository.Index.Add(item);
+                }
+                m_repository.Index.Write();
+            }
+        }
+
+        public void Stage(IEnumerable<string> files = null)
+        {
+            if (files == null)
+            {
+                Commands.Stage(m_repository, "*");
+            }
+            else
+            {
+                if (files.Count() > 0)
+                    Commands.Stage(m_repository, files);
+            }
+        }
+
+        public void Unstage(IEnumerable<string> files = null)
+        {
+            if (files == null)
+            {
+                Commands.Unstage(m_repository, "*");
+            }
+            else
+            {
+                if (files.Count() > 0)
+                    Commands.Unstage(m_repository, files);
+            }
+        }
+
+        public Commit GetCommit(string commitSha)
+        {
+            return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).First();
         }
 
         public void Dispose()

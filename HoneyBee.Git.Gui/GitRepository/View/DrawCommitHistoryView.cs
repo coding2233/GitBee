@@ -105,7 +105,7 @@ namespace Wanderer.GitRepository.View
 
                             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                             {
-                                m_selectCommit = m_gitRepo.GetCommit(item.Id - 1);
+                                m_selectCommit = m_gitRepo.GetCommit(item.Commit);
                                 //if (index < historyCommits.Count)
                                 //{
                                 //    _selectParentCommit = historyCommits[index];
