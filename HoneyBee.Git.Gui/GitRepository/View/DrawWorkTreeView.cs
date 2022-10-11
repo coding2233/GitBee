@@ -28,7 +28,8 @@ namespace Wanderer
 
         public void Draw()
         {
-            
+            string ttt="";
+            ImGui.InputText("xxx",ref ttt,1024);
         }
 
         //public void OnDraw(RepositoryStatus statuses, LibGit2Sharp.Diff diff)

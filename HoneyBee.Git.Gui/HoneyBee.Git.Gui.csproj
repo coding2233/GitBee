@@ -8,6 +8,7 @@
     <RootNamespace>Wanderer</RootNamespace>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>bee.ico</ApplicationIcon>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,7 +28,7 @@
     <ProjectReference Include="..\StandaloneFileBrowser\StandaloneFileBrowser.csproj" />
     <ProjectReference Include="..\StrangeIoc\StrangeIoc.csproj" />
   </ItemGroup>
-
+    
 	<ItemGroup>
 		<EmbeddedResource Include="Shaders/GLSL/imgui-vertex.glsl" LogicalName="imgui-vertex.glsl" />
 		<EmbeddedResource Include="Shaders/GLSL/imgui-frag.glsl" LogicalName="imgui-frag.glsl" />
@@ -43,5 +44,10 @@
 		<EmbeddedResource Include="Fonts/wqy-microhei.ttc" LogicalName="wqy-microhei.ttc" />
 		<EmbeddedResource Include="Fonts/MaterialIcons-Regular.ttf" LogicalName="MaterialIcons-Regular.ttf" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<Content Include="runtimes\win-x64\native\SDL2.dll" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 
 </Project>
