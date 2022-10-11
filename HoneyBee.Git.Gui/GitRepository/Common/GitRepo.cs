@@ -186,6 +186,12 @@ namespace Wanderer.GitRepository.Common
             return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).First();
         }
 
+        public GitRepoCommit GetGitCommit(string commitSha)
+        {
+            var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
+            return commitsCol.Query().Where(x=>x.Commit.Equals(commitSha)).FirstOrDefault();
+        }
+
         public void Dispose()
         {
             m_liteDb?.Dispose();

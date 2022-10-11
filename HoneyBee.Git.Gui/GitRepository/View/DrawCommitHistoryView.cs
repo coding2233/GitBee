@@ -16,7 +16,7 @@ namespace Wanderer.GitRepository.View
         private int m_commitViewIndex = 0;
         private int m_commitViewMax = 100;
         private float m_lastCommitScrollY = 0.0f;
-        private Commit m_selectCommit;
+        private GitRepoCommit m_selectCommit;
 
         private SplitView m_contentSplitView;
 
@@ -96,7 +96,7 @@ namespace Wanderer.GitRepository.View
                     var rectMax = ImGui.GetItemRectMax();
                     rectMax.X = rectMin.X + ImGui.GetColumnWidth();
                     //当前选中的提交
-                    if (m_selectCommit != null && m_selectCommit.Sha == item.Commit)
+                    if (m_selectCommit != null && m_selectCommit.Commit == item.Commit)
                     {
                         ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiCol.TabActive));
                         ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(ImGuiCol.TabActive));
@@ -110,7 +110,8 @@ namespace Wanderer.GitRepository.View
 
                             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                             {
-                                m_selectCommit = m_gitRepo.GetCommit(item.Commit);
+                                m_selectCommit = item;
+                                //m_selectCommit = m_gitRepo.GetCommit(item.Commit);
                                 //if (index < historyCommits.Count)
                                 //{
                                 //    _selectParentCommit = historyCommits[index];
@@ -141,22 +142,25 @@ namespace Wanderer.GitRepository.View
                 return;
             }
             
-            ImGui.Text($"Sha: {m_selectCommit.Sha}");
+            ImGui.Text($"Sha: {m_selectCommit.Commit}");
             ImGui.Text("Parents:");
             if (m_selectCommit.Parents != null)
             {
                 foreach (var item in m_selectCommit.Parents)
                 {
                     ImGui.SameLine();
-                    if (ImGui.Button(item.Sha.Substring(0, 10)))
+                    if (ImGui.Button(item.Substring(0, 10)))
                     {
-                        m_selectCommit = m_gitRepo.GetCommit(item.Sha);
+                        m_selectCommit = m_gitRepo.GetGitCommit(item);
+                        //m_selectCommit = m_gitRepo.GetCommit(item);
+
+                        //子线程取真正的数据绘制
                     }
                 }
             }
-            ImGui.Text($"Author: {m_selectCommit.Author.Name} {m_selectCommit.Author.Email}");
-            ImGui.Text($"DateTime: {m_selectCommit.Author.When.ToString()}");
-            ImGui.Text($"Committer: {m_selectCommit.Committer.Name} {m_selectCommit.Committer.Email}\n");
+            ImGui.Text($"Author: {m_selectCommit.Author} {m_selectCommit.Email}");
+            ImGui.Text($"DateTime: {m_selectCommit.Date}");
+            ImGui.Text($"Committer: {m_selectCommit.Author} {m_selectCommit.Email}\n");
 
             ImGui.Text(m_selectCommit.Message);
         }
