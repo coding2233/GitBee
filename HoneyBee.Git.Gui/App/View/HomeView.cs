@@ -131,7 +131,9 @@ namespace Wanderer.App.View
                 }
                 else
                 {
+                    ImGui.BeginChild("Home-OnRepositoryContentDraw-README");
                     ImGui.Text(m_readMeText);
+                    ImGui.EndChild();
                 }
             }
         }
