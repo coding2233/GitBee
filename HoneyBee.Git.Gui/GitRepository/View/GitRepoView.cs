@@ -16,6 +16,8 @@ namespace Wanderer.GitRepository.View
     {
         public override string Name => m_gitRepo==null ? base.Name: m_gitRepo.Name;
 
+        public override string UniqueKey => m_repoPath;
+
         private GitRepo m_gitRepo;
         private WorkSpaceRadio m_workSpaceRadio;
 
@@ -29,17 +31,18 @@ namespace Wanderer.GitRepository.View
         private DrawCommitHistoryView m_commitHistoryView;
         #endregion
 
-        public GitRepoView(IContext context) : base(context)
+        public GitRepoView(IContext context, string repoPath) : base(context)
         {
             m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
-        }
 
-        public void SetGitRepoPath(string repoPath)
-        {
             m_repoPath = repoPath;
-
             m_gitRepoMediator = mediator as GitRepoMediator;
         }
+
+        //public void SetGitRepoPath(string repoPath)
+        //{
+           
+        //}
 
         private void CreateGitRepo()
         {
@@ -65,14 +68,14 @@ namespace Wanderer.GitRepository.View
             base.OnDestroy();
         }
 
-        protected override void OnEnable()
+        public override void OnEnable()
         {
             base.OnEnable();
             CreateGitRepo();
         }
 
 
-        protected override void OnDisable()
+        public override void OnDisable()
         {
             //m_gitRepo?.Dispose();
             //m_gitRepo = null;

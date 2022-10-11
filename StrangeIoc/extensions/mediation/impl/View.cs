@@ -100,10 +100,28 @@ namespace strange.extensions.mediation.impl
 			bubbleToContext(this, false, false);
 		}
 
-		/// Recurses through Transform.parent to find the GameObject to which ContextView is attached
-		/// Has a loop limit of 100 levels.
-		/// By default, raises an Exception if no Context is found.
-		virtual protected void bubbleToContext(MonoBehaviour view, bool toAdd, bool finalTry)
+        public override void OnEnable()
+        {
+            if (mediator is Mediator mediator02)
+            {
+                mediator02.OnEnable();
+            }
+            base.OnEnable();
+        }
+
+        public override void OnDisable()
+        {
+            if (mediator is Mediator mediator02)
+            {
+                mediator02.OnDisable();
+            }
+            base.OnDisable();
+        }
+
+        /// Recurses through Transform.parent to find the GameObject to which ContextView is attached
+        /// Has a loop limit of 100 levels.
+        /// By default, raises an Exception if no Context is found.
+        virtual protected void bubbleToContext(MonoBehaviour view, bool toAdd, bool finalTry)
 		{
 			IContext bubbleContext = this.context == null ? Context.firstContext : context;
 			if (bubbleContext != null)

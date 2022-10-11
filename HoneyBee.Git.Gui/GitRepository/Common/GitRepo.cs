@@ -34,7 +34,7 @@ namespace Wanderer.GitRepository.Common
         }
 
         //将git数据同步到数据库
-        private async void SyncGitRepoToDatabase()
+        private void SyncGitRepoToDatabase()
         {
             try
             {
@@ -48,18 +48,8 @@ namespace Wanderer.GitRepository.Common
                 SetSubmodules();
 
                 //本地提交更新到数据
-                var commits = await SetRepoCommits();
-          
-                if (m_liteDb != null)
-                {
-                    var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
-                    //判断一下 ， 不需要更新数据库的操作，避免强制刷新
-                    if (commitCol.Count() != commits.Count())
-                    {
-                        commitCol.DeleteAll();
-                        commitCol.Insert(commits);
-                    }
-                }
+                SetRepoCommits();
+
             }
             catch (Exception e)
             {
@@ -116,37 +106,45 @@ namespace Wanderer.GitRepository.Common
         }
 
 
-        private Task<List<GitRepoCommit>> SetRepoCommits()
+        private void SetRepoCommits()
         {
+            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+
             TaskCompletionSource<List<GitRepoCommit>> taskCompletionSource = new TaskCompletionSource<List<GitRepoCommit>>();
             List<GitRepoCommit> commitsResult = new List<GitRepoCommit>();
-            Task.Run(() => {
-                try
+            foreach (var commit in m_repository.Commits)
+            {
+                bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha)).Count() > 0;
+                if (hasCommit)
                 {
-                    foreach (var commit in m_repository.Commits)
+                    break;
+                }
+                else
+                {
+                    GitRepoCommit gitRepoCommit = new GitRepoCommit();
+                    gitRepoCommit.Description = commit.MessageShort;
+                    gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
+                    gitRepoCommit.Author = commit.Committer.Name;
+                    gitRepoCommit.Commit = commit.Sha;
+                    gitRepoCommit.Message = commit.Message;
+                    gitRepoCommit.Email = commit.Committer.Email;
+                    gitRepoCommit.Parents = new List<string>();
+                    foreach (var itemParent in commit.Parents)
                     {
-                        GitRepoCommit gitRepoCommit = new GitRepoCommit();
-                        gitRepoCommit.Description = commit.MessageShort;
-                        gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
-                        gitRepoCommit.Author = commit.Committer.Name;
-                        gitRepoCommit.Commit = commit.Sha;
-                        gitRepoCommit.Message = commit.Message;
-                        gitRepoCommit.Email = commit.Committer.Email;
-                        gitRepoCommit.Parents = new List<string>();
-                        foreach (var itemParent in commit.Parents)
-                        {
-                            gitRepoCommit.Parents.Add(itemParent.Sha);
-                        }
-                        commitsResult.Add(gitRepoCommit);
+                        gitRepoCommit.Parents.Add(itemParent.Sha);
                     }
-                    taskCompletionSource.SetResult(commitsResult);
+                    commitsResult.Add(gitRepoCommit);
                 }
-                catch (Exception e)
+            }
+
+            if (commitsResult.Count>0)
+            {
+                for (int i = commitsResult.Count-1; i>=0;  i--)
                 {
-                    Log.Warn("m_repository 可能被关闭: {0}",e);
+                    commitCol.Insert(commitsResult[i]);
                 }
-            });
-            return taskCompletionSource.Task;
+            }
+
         }
 
 

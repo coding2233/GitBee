@@ -149,13 +149,23 @@ namespace Wanderer.Common
         }
 
 
-        public static T Create<T>(IContext context,int defaultPriority=0) where T: ImGuiView
+        public static T Create<T>(IContext context,int defaultPriority, params object[] pArgs) where T: ImGuiView
         {
             object[] args = null;
-            if (context != null)
+            if (context != null || pArgs != null)
             {
-                args = new object[] { context };
+                List<object> argsList = new List<object>();
+                if (context != null)
+                {
+                    argsList.Add(context);
+                }
+                if (pArgs != null)
+                {
+                    argsList.AddRange(pArgs);
+                }
+                args = argsList.ToArray();
             }
+
             T view = Activator.CreateInstance(typeof(T), args) as T;
 
             if (view is AppImGuiView mainImGuiView)
@@ -164,16 +174,39 @@ namespace Wanderer.Common
             }
             else if (view is ImGuiTabView tabView)
             {
-                s_imGuiTabViews.Add(tabView);
+                bool hasSameTableView = false;
+                if (!string.IsNullOrEmpty(tabView.UniqueKey))
+                {
+                    for (int i = 0; i < s_imGuiTabViews.Count; i++)
+                    {
+                        if (tabView.UniqueKey.Equals(s_imGuiTabViews[i].UniqueKey))
+                        {
+                            hasSameTableView = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasSameTableView)
+                {
+                    s_imGuiTabViews.Add(tabView);
+                }
+                else
+                {
+                    view?.Dispose();
+                    view = null;
+                }
             }
             else
             {
                 s_imGuiViews.Add(view);
             }
-            if (defaultPriority > 0)
+
+            if (view != null && defaultPriority > 0)
             {
                 view.priority = defaultPriority;
             }
+
             return view;
         }
 

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository;
@@ -22,14 +23,18 @@ namespace Wanderer.App.Controller
         [Inject(ContextKeys.CONTEXT)]
         public IContext context { get; set; }
 
+ 
+
         public override void Execute()
         {
             //主窗口
-            ImGuiView.Create<AppImGuiView>(context);
-
-            //打开默认仓库
-            string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");
-            dispatcher.Dispatch(AppEvent.ShowGitRepo, defaultGitRepo);
+            ImGuiView.Create<AppImGuiView>(context,0);
+            
+            //内容主窗口
+            ImGuiView.Create<HomeView>(context,0);
+            ////打开默认仓库
+            //string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");
+            //dispatcher.Dispatch(AppEvent.ShowGitRepo, defaultGitRepo);
         }
     }
 }

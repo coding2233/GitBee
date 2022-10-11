@@ -78,15 +78,18 @@ namespace Wanderer.App
                 GraphicsBackend.Vulkan,
                 out m_sdl2Window,
                 out m_graphicsDevice);
+          
 
             m_commandList = m_graphicsDevice.ResourceFactory.CreateCommandList();
             m_imGuiController = new ImGuiController(m_graphicsDevice, m_graphicsDevice.MainSwapchain.Framebuffer.OutputDescription, m_sdl2Window.Width, m_sdl2Window.Height);
-
             m_sdl2Window.Resized += () =>
             {
                 m_graphicsDevice.MainSwapchain.Resize((uint)m_sdl2Window.Width, (uint)m_sdl2Window.Height);
                 m_imGuiController.WindowResized(m_sdl2Window.Width, m_sdl2Window.Height);
             };
+
+            //m_sdl2Window.BorderVisible = false;
+            //m_sdl2Window.Visible = true;
         }
 
 

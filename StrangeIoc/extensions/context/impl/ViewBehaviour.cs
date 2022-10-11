@@ -14,9 +14,9 @@ namespace UnityEngine
           
         }
 
-        protected virtual void OnEnable()
+        public virtual void OnEnable()
         {}
-        protected virtual void OnDisable()
+        public virtual void OnDisable()
         { }
 
         /// A MonoBehaviour Awake handler.

@@ -11,6 +11,8 @@ namespace Wanderer.Common
     {
         public bool Unsave { get; protected set; }
 
+        public virtual string UniqueKey { get; }
+
         public ImGuiTabView(IContext context) : base(context)
         {
         }
