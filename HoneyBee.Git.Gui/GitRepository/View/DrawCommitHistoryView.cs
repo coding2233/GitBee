@@ -25,17 +25,22 @@ namespace Wanderer.GitRepository.View
 
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
-            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
+            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical,0.6f);
             m_gitRepo = gitRepo;
         }
 
         public void Draw()
         {
-            if (m_selectCommit != null)
-            {
-                m_contentSplitView.Begin();
-            }
+            m_contentSplitView.Begin();
+            DrawHistoryCommits();
+            m_contentSplitView.Separate();
+            OnDrawSelectCommit();
+            m_contentSplitView.End();
+        }
 
+
+        private void DrawHistoryCommits()
+        {
             int commitMax = m_gitRepo.GetCommitCount();
             if (m_lastCommitScrollY <= 0.0f)
             {
@@ -127,36 +132,33 @@ namespace Wanderer.GitRepository.View
                 ImGui.EndTable();
             }
 
-            if (m_selectCommit != null)
-            {
-                m_contentSplitView.Separate();
-                OnDrawSelectCommit(m_selectCommit, null);
-                m_contentSplitView.End();
-            }
         }
 
-        StringBuilder _tempStringBuilder = new StringBuilder();
-
-        private void OnDrawSelectCommit(Commit commit, Commit parentCommit)
+        private void OnDrawSelectCommit()
         {
-            //_showCommitView.DrawSelectCommit(_git.Diff, commit, parentCommit);
-
-            ImGui.Text($"Sha: {commit.Sha}");
-            _tempStringBuilder.Clear();
-            _tempStringBuilder.Append("Parents:");
-            if (commit.Parents != null)
+            if (m_selectCommit == null)
             {
-                foreach (var item in commit.Parents)
+                return;
+            }
+            
+            ImGui.Text($"Sha: {m_selectCommit.Sha}");
+            ImGui.Text("Parents:");
+            if (m_selectCommit.Parents != null)
+            {
+                foreach (var item in m_selectCommit.Parents)
                 {
-                    _tempStringBuilder.Append($" {item.Sha.Substring(0, 10)}");
+                    ImGui.SameLine();
+                    if (ImGui.Button(item.Sha.Substring(0, 10)))
+                    {
+                        m_selectCommit = m_gitRepo.GetCommit(item.Sha);
+                    }
                 }
             }
-            ImGui.Text(_tempStringBuilder.ToString());
-            ImGui.Text($"Author: {commit.Author.Name} {commit.Author.Email}");
-            ImGui.Text($"DateTime: {commit.Author.When.ToString()}");
-            ImGui.Text($"Committer: {commit.Committer.Name} {commit.Committer.Email}\n");
+            ImGui.Text($"Author: {m_selectCommit.Author.Name} {m_selectCommit.Author.Email}");
+            ImGui.Text($"DateTime: {m_selectCommit.Author.When.ToString()}");
+            ImGui.Text($"Committer: {m_selectCommit.Committer.Name} {m_selectCommit.Committer.Email}\n");
 
-            ImGui.Text(commit.Message);
+            ImGui.Text(m_selectCommit.Message);
         }
 
         private float GetScrollInterval(float size)
