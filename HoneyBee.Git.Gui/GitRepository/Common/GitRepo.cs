@@ -134,8 +134,8 @@ namespace Wanderer.GitRepository.Common
             m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
 
-            //本地提交更新到数据
-            SetRepoCommits();
+            //更新数据
+            SyncGitRepoTask();
         }
 
         public bool CheckIndex(string file)
