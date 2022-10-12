@@ -25,7 +25,7 @@ namespace Wanderer.GitRepository.View
 
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
-            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical,0.6f);
+            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical,0.65f);
             m_gitRepo = gitRepo;
         }
 
