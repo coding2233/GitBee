@@ -96,16 +96,6 @@ namespace Wanderer
                 var min = ImGui.GetWindowPos()+ new Vector2(m_diffNumberWidth * 2, 0);
                 var max = min + new Vector2(2, ImGui.GetWindowHeight());
                 ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32( ImGuiCol.Border));
-
-                //var lines = m_diffContext.Split('\n');
-                //foreach (var item in lines)
-                //{
-                //    RenderTextLine(item);
-                //}
-
-
-                //ImGui.Text(m_diffContext);
-                //I;
             }
         }
 

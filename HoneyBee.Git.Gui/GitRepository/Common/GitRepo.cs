@@ -105,7 +105,7 @@ namespace Wanderer.GitRepository.Common
                 int commitCount = commitsCol.Query().Count();
                 startIndex = commitCount - startIndex;
                 endIndex = commitCount - endIndex;
-                var commits = commitsCol.Query().Where(x => x.Id < startIndex && x.Id >= endIndex).ToList();
+                var commits = commitsCol.Query().Where(x => x.Id <= startIndex && x.Id >= endIndex).ToList();
                 commits.Reverse();
                 //倒序
                 return commits;
@@ -125,6 +125,9 @@ namespace Wanderer.GitRepository.Common
             //提交到仓库中
             m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
+
+            //本地提交更新到数据
+            SetRepoCommits();
         }
 
         public bool CheckIndex(string file)
