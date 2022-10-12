@@ -7,6 +7,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 using static System.Net.WebRequestMethods;
 
@@ -34,10 +35,9 @@ namespace Wanderer
             UpdateStatus();
         }
 
-
-
         public void Draw()
         {
+            //ImGui.ShowStyleEditor();
             ImGui.BeginChild("WorkTreeView_Content", ImGui.GetWindowSize() - new Vector2(0, 100));
             m_horizontalSplitView.Begin();
             DrawStageStatus();
@@ -99,39 +99,41 @@ namespace Wanderer
             }
         }
 
-        private void RenderTextLine(string line)
-        {
-            uint col = 0;
-            if (line.StartsWith("+"))
-            {
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f));
-            }
-            else if (line.StartsWith("-"))
-            {
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f));
-            }
-            if (col != 0)
-            {
-                //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
-                //var min = ImGui.GetItemRectMin();
-                //var max = ImGui.GetItemRectMax();
-                var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
-                var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
-                ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
-            }
-            ImGui.Text(line);
-        }
+        //private void RenderTextLine(string line)
+        //{
+        //    uint col = 0;
+        //    if (line.StartsWith("+"))
+        //    {
+        //        col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f));
+        //    }
+        //    else if (line.StartsWith("-"))
+        //    {
+        //        col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f));
+        //    }
+        //    if (col != 0)
+        //    {
+        //        //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
+        //        //var min = ImGui.GetItemRectMin();
+        //        //var max = ImGui.GetItemRectMax();
+        //        var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+        //        var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
+        //        ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
+        //    }
+        //    ImGui.Text(line);
+        //}
 
         private void RenderDiffTextLine(DiffText line)
         {
             uint col = 0;
             if (line.Status == 1)
             {
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f));
+                var styleColorsValue =ImGuiView.StyleColors == 0 ? 0.5f : 0.0f;
+                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f)+Vector4.One* styleColorsValue);
             }
             else if (line.Status == 2)
             {
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f));
+                var styleColorsValue = ImGuiView.StyleColors == 0 ? 0.5f : 0.0f;
+                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f)+ Vector4.One * styleColorsValue);
             }
             if (col != 0)
             {

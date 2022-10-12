@@ -21,6 +21,8 @@ namespace Wanderer.Common
         protected static ImGuiWindowFlags s_defaultWindowFlag = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
                 | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
 
+        public static int StyleColors { get; set; }
+
         protected int m_priority;
         public int priority
         {
@@ -37,6 +39,8 @@ namespace Wanderer.Common
                 });
             }
         }
+
+
 
         private static AppImGuiView s_appImGuiView;
 

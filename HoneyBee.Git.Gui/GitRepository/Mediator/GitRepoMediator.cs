@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App.Model;
 using Wanderer.App.Service;
 using Wanderer.GitRepository.Common;
 using Wanderer.GitRepository.Service;
@@ -22,6 +23,9 @@ namespace Wanderer.GitRepository.Mediator
         [Inject]
         public IDatabaseService database { get; set; }
 
+        [Inject]
+        public IAppModel appModel { get; set; }
+
         //public GitRepo GetGitRepo(string gitPath)
         //{
         //    return gitRepoService.GetGitRepo(gitPath);
@@ -36,6 +40,7 @@ namespace Wanderer.GitRepository.Mediator
         {
             database.SetCustomerData<T>(key, value);
         }
+
 
     }
 }

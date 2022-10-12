@@ -49,7 +49,13 @@ namespace Wanderer.GitRepository.Common
             Name = Path.GetFileName(RootPath);
             m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath,$"{Name}.db"));
             m_repository = new Repository(RootPath);
-            //同步仓库信息
+            ////同步仓库信息
+            //SyncGitRepoTask();
+        }
+
+        //同步仓库信息
+        public void SyncGitRepoTask()
+        {
             new Task(SyncGitRepoToDatabase).Start();
         }
 
@@ -100,6 +106,8 @@ namespace Wanderer.GitRepository.Common
         {
             try
             {
+                //这里在一直获取 ， 可以优化
+
                 //id为倒序， 要转换一遍
                 var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
                 int commitCount = commitsCol.Query().Count();

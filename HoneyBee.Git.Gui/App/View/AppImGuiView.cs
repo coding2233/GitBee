@@ -13,11 +13,38 @@ namespace Wanderer.App.View
 {
     internal class AppImGuiView : ImGuiView
     {
-        internal Action<string> onOpenRepository;
+        internal Action<string> OnOpenRepository;
+        internal Action<int> OnSetStyleColors;
+        private int m_styleColors;
 
         public AppImGuiView(IContext context) : base(context)
         {
         }
+
+        //设置
+        internal void SetStyleColors(int styleColors)
+        {
+            if (m_styleColors != styleColors)
+            {
+                m_styleColors = styleColors;
+                OnSetStyleColors?.Invoke(m_styleColors);
+            }
+          
+            switch (m_styleColors)
+            {
+                case 0:
+                    ImGui.StyleColorsLight();
+                    break;
+                case 1:
+                    ImGui.StyleColorsDark();
+                    break;
+                case 2:
+                    ImGui.StyleColorsClassic();
+                    break;
+            }
+            //TextEditor.SetStyle(userSettings.TextStyleColors);
+        }
+
 
         public override void OnDraw()
         {
@@ -50,7 +77,7 @@ namespace Wanderer.App.View
                                     Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", gitPath);
                                     if (Directory.Exists(gitPath))
                                     {
-                                        onOpenRepository?.Invoke(gitPath);
+                                        OnOpenRepository?.Invoke(gitPath);
                                     }
                                 }
 
@@ -72,31 +99,31 @@ namespace Wanderer.App.View
                 {
                     if (ImGui.BeginMenu("Style"))
                     {
-                        //var styleIndex = userSettings.StyleColors;
-                        //if (ImGui.MenuItem("Light", "", styleIndex == 0))
-                        //{
-                        //    styleIndex = 0;
-                        //}
-                        //if (ImGui.MenuItem("Drak", "", styleIndex == 1))
-                        //{
-                        //    styleIndex = 1;
-                        //}
-                        //if (ImGui.MenuItem("Classic", "", styleIndex == 2))
-                        //{
-                        //    styleIndex = 2;
-                        //}
-                        //if (styleIndex != userSettings.StyleColors)
-                        //{
-                        //    userSettings.StyleColors = styleIndex;
-                        //    SetStyleColors();
-                        //}
+                        var styleIndex = m_styleColors;
+                        if (ImGui.MenuItem("Light", "", styleIndex == 0))
+                        {
+                            styleIndex = 0;
+                        }
+                        if (ImGui.MenuItem("Drak", "", styleIndex == 1))
+                        {
+                            styleIndex = 1;
+                        }
+                        if (ImGui.MenuItem("Classic", "", styleIndex == 2))
+                        {
+                            styleIndex = 2;
+                        }
+
+                        if (styleIndex != m_styleColors)
+                        {
+                            SetStyleColors(styleIndex);
+                        }
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.MenuItem("Text Style"))
-                    {
-                        //_textStyleModal.Popup();
-                    }
+                    //if (ImGui.MenuItem("Text Style"))
+                    //{
+                    //    //_textStyleModal.Popup();
+                    //}
                     ImGui.EndMenu();
                 }
 
@@ -126,5 +153,8 @@ namespace Wanderer.App.View
             }
 
         }
+
+
+
     }
 }

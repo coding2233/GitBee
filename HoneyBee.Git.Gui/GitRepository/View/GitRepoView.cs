@@ -27,6 +27,7 @@ namespace Wanderer.GitRepository.View
 
         private GitRepoMediator m_gitRepoMediator;
         private string m_repoPath;
+        private Dictionary<string, int> _toolItems = new Dictionary<string, int>();
 
         #region 子模块
         private DrawWorkTreeView m_workTreeView;
@@ -66,6 +67,7 @@ namespace Wanderer.GitRepository.View
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
                 }
             }
+            m_gitRepo.SyncGitRepoTask();
         }
 
         protected override void OnDestroy()
@@ -101,7 +103,6 @@ namespace Wanderer.GitRepository.View
             OnRepoContentDraw();
             m_splitView.End();
         }
-        private Dictionary<string, int> _toolItems=new Dictionary<string, int>();
 
         protected void OnToolbarDraw()
         {
