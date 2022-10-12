@@ -24,6 +24,7 @@ namespace Wanderer
         private GitRepo m_gitRepo;
 
         private RepositoryStatus m_statuses;
+        List<DiffText> m_diffTexts = new List<DiffText>();
         private string m_diffContext;
         private float m_diffNumberWidth;
 
@@ -306,14 +307,15 @@ namespace Wanderer
             {
                 if (active)
                 {
+                    m_diffContext = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath }, true).Content;
                     selectFiles.Add(statusEntry.FilePath);
                 }
                 else
                 {
+                    m_diffContext = null;
                     selectFiles.Remove(statusEntry.FilePath);
                 }
 
-                m_diffContext = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath }, true).Content;
                 BuildDiffTexts(m_diffContext);
                 //string statusContent = "";
                 //if (active)
@@ -331,7 +333,6 @@ namespace Wanderer
             _selectUnstageFiles.Clear();
         }
 
-        List<DiffText> m_diffTexts = new List<DiffText>();
         private void BuildDiffTexts(string content)
         {
             m_diffNumberWidth = 0;
