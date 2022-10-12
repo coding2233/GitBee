@@ -31,9 +31,10 @@ namespace Wanderer
         public DrawWorkTreeView(GitRepo gitRepo)
         {
             m_gitRepo = gitRepo;
-
-            m_statuses = m_gitRepo.RetrieveStatus;
+            UpdateStatus();
         }
+
+
 
         public void Draw()
         {
@@ -170,12 +171,14 @@ namespace Wanderer
             {
                 m_gitRepo.Unstage();
                 ClearSelectFiles();
+                UpdateStatus();
             }
             ImGui.SameLine();
             if (ImGui.Button("Unstage Selected"))
             {
                 m_gitRepo.Unstage(_selectStageFiles);
                 ClearSelectFiles();
+                UpdateStatus();
             }
 
             if (statuses != null)
@@ -206,6 +209,7 @@ namespace Wanderer
                     m_gitRepo.AddFile(addedFiles);
                 }
                 ClearSelectFiles();
+                UpdateStatus();
             }
             ImGui.SameLine();
             if (ImGui.Button("Stage Selected"))
@@ -222,12 +226,14 @@ namespace Wanderer
                     m_gitRepo.AddFile(addedFiles);
                 }
                 ClearSelectFiles();
+                UpdateStatus();
             }
             ImGui.SameLine();
             if (ImGui.Button("Discard Selected"))
             {
                 m_gitRepo.Restore(_selectUnstageFiles);
                 ClearSelectFiles();
+                UpdateStatus();
             }
 
             //files
@@ -259,6 +265,7 @@ namespace Wanderer
                 if (!string.IsNullOrEmpty(m_submitMessage))
                 {
                     m_gitRepo.Commit(m_submitMessage);
+                    UpdateStatus();
                 }
                 m_submitMessage = "";
             }
@@ -325,6 +332,11 @@ namespace Wanderer
                 //}
                 //_statusTextEditor.text = statusContent;
             }
+        }
+
+        private void UpdateStatus()
+        {
+            m_statuses = m_gitRepo.RetrieveStatus;
         }
 
         private void ClearSelectFiles()
