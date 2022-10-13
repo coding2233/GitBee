@@ -152,6 +152,20 @@ namespace Wanderer.Common
             }
         }
 
+        internal static void Focus(bool lost)
+        {
+            if (s_lastActiveImGuiTabView != null)
+            {
+                if (lost)
+                {
+                    s_lastActiveImGuiTabView.OnDisable();
+                }
+                else
+                {
+                    s_lastActiveImGuiTabView.OnEnable();
+                }
+            }
+        }
 
         public static T Create<T>(IContext context,int defaultPriority, params object[] pArgs) where T: ImGuiView
         {

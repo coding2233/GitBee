@@ -31,6 +31,7 @@ namespace Wanderer.App.View
         {
         }
 
+
         public override void OnDraw()
         {
             m_splitView.Begin();

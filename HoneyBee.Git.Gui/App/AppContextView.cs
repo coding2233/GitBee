@@ -88,10 +88,21 @@ namespace Wanderer.App
                 m_imGuiController.WindowResized(m_sdl2Window.Width, m_sdl2Window.Height);
             };
 
+            m_sdl2Window.FocusLost += OnSdl2WindowFocusLost;
+            m_sdl2Window.FocusGained += OnSdl2WindowFocusGained;
             //m_sdl2Window.BorderVisible = false;
             //m_sdl2Window.Visible = true;
         }
 
+        private void OnSdl2WindowFocusGained()
+        {
+            ImGuiView.Focus(false);
+        }
+
+        private void OnSdl2WindowFocusLost()
+        {
+            ImGuiView.Focus(true);
+        }
 
         private void AddChildContext()
         {

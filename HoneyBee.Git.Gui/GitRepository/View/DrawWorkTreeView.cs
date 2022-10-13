@@ -26,7 +26,7 @@ namespace Wanderer
 
         private RepositoryStatus m_statuses;
         List<DiffText> m_diffTexts = new List<DiffText>();
-        private string m_diffContext;
+        //private string m_diffContext;
         private float m_diffNumberWidth;
 
         public DrawWorkTreeView(GitRepo gitRepo)
@@ -306,23 +306,14 @@ namespace Wanderer
             {
                 if (active)
                 {
-                    m_diffContext = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath }, true).Content;
                     selectFiles.Add(statusEntry.FilePath);
                 }
                 else
                 {
-                    m_diffContext = null;
                     selectFiles.Remove(statusEntry.FilePath);
                 }
-
-                BuildDiffTexts(m_diffContext);
-                //string statusContent = "";
-                //if (active)
-                //{
-                //    var diffContent = diff.Compare<Patch>(selectFiles, true);
-                //    statusContent = diffContent.Content;
-                //}
-                //_statusTextEditor.text = statusContent;
+                var diffContext = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath }, true).Content;
+                BuildDiffTexts(diffContext);
             }
         }
 
