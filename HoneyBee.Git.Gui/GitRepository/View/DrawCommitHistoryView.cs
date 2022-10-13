@@ -17,15 +17,25 @@ namespace Wanderer.GitRepository.View
         private int m_commitViewMax = 100;
         private float m_lastCommitScrollY = 0.0f;
         private GitRepoCommit m_selectCommit;
+        private Patch m_selectCommitPatch;
+        private PatchEntryChanges m_selectCommitPatchEntry;
 
+        private ShowDiffText m_showDiffText;
         private SplitView m_contentSplitView;
 
+        private SplitView m_selectCommitDiffSpliteView;
+        private SplitView m_selectCommitTreeSpliteView;
 
         private List<GitRepoCommit> m_cacheCommits;
 
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
-            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical,0.65f);
+            m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
+            m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);
+            m_selectCommitTreeSpliteView = new SplitView(SplitView.SplitType.Vertical);
+
+            m_showDiffText = new ShowDiffText();
+
             m_gitRepo = gitRepo;
         }
 
@@ -34,7 +44,7 @@ namespace Wanderer.GitRepository.View
             m_contentSplitView.Begin();
             DrawHistoryCommits();
             m_contentSplitView.Separate();
-            OnDrawSelectCommit();
+            DrawSelectCommit();
             m_contentSplitView.End();
         }
 
@@ -110,16 +120,7 @@ namespace Wanderer.GitRepository.View
 
                             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                             {
-                                m_selectCommit = item;
-                                //m_selectCommit = m_gitRepo.GetCommit(item.Commit);
-                                //if (index < historyCommits.Count)
-                                //{
-                                //    _selectParentCommit = historyCommits[index];
-                                //}
-                                //else
-                                //{
-                                //    _selectParentCommit = null;
-                                //}
+                                SelectCommit(item);
                             }
                         }
                     }
@@ -135,13 +136,34 @@ namespace Wanderer.GitRepository.View
 
         }
 
-        private void OnDrawSelectCommit()
+        private void DrawSelectCommit()
+        {
+            m_selectCommitDiffSpliteView.Begin();
+
+            m_selectCommitTreeSpliteView.Begin();
+            //提交信息
+            DrawSelectCommitInfo();
+            m_selectCommitTreeSpliteView.Separate();
+            //文件树
+            DrawSelectCommitTree();
+            m_selectCommitTreeSpliteView.End();
+
+            m_selectCommitDiffSpliteView.Separate();
+            //绘制选择文件
+            DrawSelectCommitDiff();
+            m_selectCommitDiffSpliteView.End();
+
+           
+        }
+
+
+        private void DrawSelectCommitInfo()
         {
             if (m_selectCommit == null)
             {
                 return;
             }
-            
+
             ImGui.Text($"Sha: {m_selectCommit.Commit}");
             ImGui.Text("Parents:");
             if (m_selectCommit.Parents != null)
@@ -151,10 +173,8 @@ namespace Wanderer.GitRepository.View
                     ImGui.SameLine();
                     if (ImGui.Button(item.Substring(0, 10)))
                     {
-                        m_selectCommit = m_gitRepo.GetGitCommit(item);
-                        //m_selectCommit = m_gitRepo.GetCommit(item);
+                        SelectCommit(m_gitRepo.GetGitCommit(item));
 
-                        //子线程取真正的数据绘制
                     }
                 }
             }
@@ -163,6 +183,69 @@ namespace Wanderer.GitRepository.View
             ImGui.Text($"Committer: {m_selectCommit.Author} {m_selectCommit.Email}\n");
 
             ImGui.Text(m_selectCommit.Message);
+        }
+
+        private void DrawSelectCommitTree()
+        {
+            if (m_selectCommitPatch != null)
+            {
+                foreach (var item in m_selectCommitPatch)
+                {
+                    if (ImGui.RadioButton(item.Path, m_selectCommitPatchEntry == item))
+                    {
+                        m_selectCommitPatchEntry = item;
+                        m_showDiffText.BuildDiffTexts(item.Patch);
+                    }
+                }
+            }
+        }
+
+        private void DrawSelectCommitDiff()
+        {
+            if (m_selectCommitPatchEntry != null)
+            {
+                m_showDiffText.Draw();
+            }
+        }
+
+
+        private void SelectCommit(GitRepoCommit gitRepoCommit)
+        {
+            m_selectCommit = gitRepoCommit;
+            m_selectCommitPatch = null;
+            m_selectCommitPatchEntry = null;
+
+            //子线程取真正的数据绘制
+            Task.Run(() => {
+                if (m_selectCommit != null)
+                {
+                    var commit = m_gitRepo.GetCommit(m_selectCommit.Commit);
+                    if (m_selectCommit != null && commit != null && m_selectCommit.Commit.Equals(commit.Sha))
+                    {
+                        if (commit.Parents != null && commit.Parents.Count() > 0)
+                        {
+                            foreach (var itemParent in commit.Parents)
+                            {
+                                var diffPatch = m_gitRepo.Diff.Compare<Patch>(itemParent.Tree, commit.Tree);
+                                if (m_selectCommitPatch == null)
+                                {
+                                    m_selectCommitPatch = diffPatch;
+                                }
+                                else
+                                {
+                                    foreach (var item in diffPatch)
+                                    {
+                                        m_selectCommitPatch.Append(item);
+                                    }
+                                }
+                            }
+                        }
+
+                    }
+                }
+
+
+            });
         }
 
         private float GetScrollInterval(float size)
