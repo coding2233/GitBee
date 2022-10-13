@@ -106,25 +106,6 @@ namespace Wanderer.GitRepository.View
                     //else if (index >= m_commitViewIndex + m_commitViewMax)
                     //    break;
 
-                    int itemBranchIndex = 0;
-                    if (!m_commitForBranchIndex.ContainsKey(item.Commit))
-                    {
-                        for (int i = 0; i < m_gitRepo.Branches.Count(); i++)
-                        {
-                            var queryResult = m_gitRepo.Branches.ElementAt(i).Commits.Where(x => x.Sha.Equals(item));
-                            if (queryResult.Count() > 0)
-                            {
-                                itemBranchIndex = i;
-                                break;
-                            }
-                        }
-                        m_commitForBranchIndex.Add(item.Commit, itemBranchIndex);
-                    }
-                    else
-                    {
-                        itemBranchIndex = m_commitForBranchIndex[item.Commit];
-                    }
-
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
                     if (m_gitRepo.BranchNotes.TryGetValue(item.Commit, out List<string> notes))
@@ -142,12 +123,12 @@ namespace Wanderer.GitRepository.View
                     }
                     ImGui.Text(item.Description);
 
-                    CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
-                    commitBranchDrawIndex1.BranchIndex = itemBranchIndex;
-                    commitBranchDrawIndex1.Point = ImGui.GetWindowPos()+ImGui.GetCursorPos() +new Vector2(5* itemBranchIndex,-ImGui.GetScrollY());
-                    commitBranchDrawIndex1.Parents = item.Parents;
-                    commitBranchDrawIndex.Add(item.Commit,commitBranchDrawIndex1);
-                    
+                    //CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
+                    //commitBranchDrawIndex1.BranchIndex = m_gitRepo.GetCommitBranchIndex(item.Commit);
+                    //commitBranchDrawIndex1.Point = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(5 * commitBranchDrawIndex1.BranchIndex, -ImGui.GetScrollY());
+                    //commitBranchDrawIndex1.Parents = item.Parents;
+                    //commitBranchDrawIndex.Add(item.Commit, commitBranchDrawIndex1);
+
                     var rectMin = ImGui.GetItemRectMin();
                     var rectMax = ImGui.GetItemRectMax();
                     rectMax.X = rectMin.X + ImGui.GetColumnWidth();

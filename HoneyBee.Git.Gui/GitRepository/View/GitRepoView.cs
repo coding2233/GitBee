@@ -67,7 +67,7 @@ namespace Wanderer.GitRepository.View
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
                 }
             }
-            m_gitRepo.SyncGitRepoTask();
+            m_gitRepo.SyncGitRepoTask(null);
         }
 
         protected override void OnDestroy()

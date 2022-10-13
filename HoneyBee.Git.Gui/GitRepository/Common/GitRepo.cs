@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
+using static SharpDX.Utilities;
 
 namespace Wanderer.GitRepository.Common
 {
@@ -56,9 +57,10 @@ namespace Wanderer.GitRepository.Common
         }
 
         //同步仓库信息
-        public void SyncGitRepoTask()
+        public async void SyncGitRepoTask(Action complete)
         {
-            new Task(SyncGitRepoToDatabase).Start();
+            await Task.Run(SyncGitRepoToDatabase);
+            complete?.Invoke();
         }
 
         //将git数据同步到数据库
@@ -137,7 +139,7 @@ namespace Wanderer.GitRepository.Common
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
 
             //更新数据
-            SyncGitRepoTask();
+            SyncGitRepoTask(null);
         }
 
         public bool CheckIndex(string file)
@@ -203,6 +205,22 @@ namespace Wanderer.GitRepository.Common
         {
             var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
             return commitsCol.Query().Where(x=>x.Commit.Equals(commitSha)).FirstOrDefault();
+        }
+
+        public int GetCommitBranchIndex(string commitSha)
+        {
+            var commitCol = m_liteDb.GetCollection<GitBranchCommit>();
+            int index = -1;
+            foreach (var itemBranch in Branches)
+            {
+                bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commitSha) && x.BranchName.Equals(itemBranch.CanonicalName)).Count() > 0;
+                index++;
+                if (hasCommit)
+                {
+                    return index;
+                }
+            }
+            return 0;
         }
 
         public void Dispose()
@@ -281,6 +299,33 @@ namespace Wanderer.GitRepository.Common
 
                 branchNotes.Add(branch.Reference.CanonicalName, branch.Reference.TargetIdentifier);
                 //Console.WriteLine($"SetBranchNodes : {branch.Reference.CanonicalName} {branch.Reference.TargetIdentifier}");
+
+                //更新到数据中
+                var commitCol = m_liteDb.GetCollection<GitBranchCommit>();
+                List<GitBranchCommit> commitsResult = new List<GitBranchCommit>();
+                foreach (var commit in branch.Commits)
+                {
+                    bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha) && x.BranchName.Equals(branch.CanonicalName)).Count() > 0;
+                    if (hasCommit)
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        GitBranchCommit gitBranchCommit = new GitBranchCommit();
+                        gitBranchCommit.BranchName = branch.CanonicalName;
+                        gitBranchCommit.Commit = commit.Sha;
+                        commitsResult.Add(gitBranchCommit);
+                    }
+                }
+
+                if (commitsResult.Count > 0)
+                {
+                    for (int i = commitsResult.Count - 1; i >= 0; i--)
+                    {
+                        commitCol.Insert(commitsResult[i]);
+                    }
+                }
             }
 
             //整理标签
