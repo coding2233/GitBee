@@ -3,6 +3,7 @@ using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.GitRepository.Common;
@@ -25,6 +26,7 @@ namespace Wanderer.GitRepository.View
 
         private SplitView m_selectCommitDiffSpliteView;
         private SplitView m_selectCommitTreeSpliteView;
+
 
         private List<GitRepoCommit> m_cacheCommits;
 
@@ -101,6 +103,19 @@ namespace Wanderer.GitRepository.View
 
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
+                    if (m_gitRepo.BranchNotes.TryGetValue(item.Commit, out List<string> notes))
+                    {
+                        if (notes != null && notes.Count > 0)
+                        {
+                            foreach (var itemNote in notes)
+                            {
+                                //var noteRectMin = ImGui.GetItemRectMin();
+
+                                ImGui.TextColored(new Vector4(0,0.5f,0,1),itemNote);
+                                ImGui.SameLine();
+                            }
+                        }
+                    }
                     ImGui.Text(item.Description);
                     var rectMin = ImGui.GetItemRectMin();
                     var rectMax = ImGui.GetItemRectMax();

@@ -22,6 +22,7 @@ namespace Wanderer.GitRepository.Common
         public string RootPath { get; private set; }
         public List<GitBranchNode> LocalBranchNodes { get; private set; } = new List<GitBranchNode>();
         public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
+        public Dictionary<string, List<string>> BranchNotes { get; private set; }=new Dictionary<string,List<string>>();
         public List<GitTag> Tags { get; private set; } = new List<GitTag>();
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
         public StashCollection Stashes => m_repository.Stashes;
@@ -260,7 +261,7 @@ namespace Wanderer.GitRepository.Common
         {
             List<GitBranchNode> localbranchNodes = new List<GitBranchNode>();
             List<GitBranchNode> remotebranchNodes = new List<GitBranchNode>();
-
+            Dictionary<string, string> branchNotes = new Dictionary<string, string>();
             foreach (var branch in m_repository.Branches)
             {
                 string[] nameArgs = branch.FriendlyName.Split('/');
@@ -277,7 +278,31 @@ namespace Wanderer.GitRepository.Common
                 {
                     JointBranchNode(localbranchNodes, nameTree, branch);
                 }
+
+                branchNotes.Add(branch.Reference.CanonicalName, branch.Reference.TargetIdentifier);
+                //Console.WriteLine($"SetBranchNodes : {branch.Reference.CanonicalName} {branch.Reference.TargetIdentifier}");
             }
+
+            //整理标签
+            //还差tags
+            BranchNotes.Clear();
+            foreach (var item in branchNotes)
+            {
+                string key = item.Key;
+                string value = item.Value;
+                if (branchNotes.ContainsKey(value))
+                {
+                    value = branchNotes[value];
+                }
+                List<string> listValue = null;
+                if (!BranchNotes.TryGetValue(value, out listValue))
+                {
+                    listValue = new List<string>();
+                    BranchNotes.Add(value, listValue);
+                }
+                listValue.Add(key.Replace("refs/remotes/","").Replace("refs/heads/",""));
+            }
+
             foreach (var item in localbranchNodes)
             {
                 item.UpdateByIndex();
