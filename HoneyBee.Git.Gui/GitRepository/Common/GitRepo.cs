@@ -20,6 +20,7 @@ namespace Wanderer.GitRepository.Common
         private LiteDatabase m_liteDb;
         public string Name { get; private set; }
         public string RootPath { get; private set; }
+        public BranchCollection Branches => m_repository.Branches;
         public List<GitBranchNode> LocalBranchNodes { get; private set; } = new List<GitBranchNode>();
         public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
         public Dictionary<string, List<string>> BranchNotes { get; private set; }=new Dictionary<string,List<string>>();
@@ -218,7 +219,6 @@ namespace Wanderer.GitRepository.Common
         {
             var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
 
-            TaskCompletionSource<List<GitRepoCommit>> taskCompletionSource = new TaskCompletionSource<List<GitRepoCommit>>();
             List<GitRepoCommit> commitsResult = new List<GitRepoCommit>();
             foreach (var commit in m_repository.Commits)
             {

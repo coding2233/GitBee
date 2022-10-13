@@ -30,6 +30,8 @@ namespace Wanderer.GitRepository.View
 
         private List<GitRepoCommit> m_cacheCommits;
 
+        private Dictionary<string, int> m_commitForBranchIndex;
+
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
@@ -37,6 +39,7 @@ namespace Wanderer.GitRepository.View
             m_selectCommitTreeSpliteView = new SplitView(SplitView.SplitType.Vertical);
 
             m_showDiffText = new ShowDiffText();
+            m_commitForBranchIndex = new Dictionary<string, int>();
 
             m_gitRepo = gitRepo;
         }
@@ -84,6 +87,8 @@ namespace Wanderer.GitRepository.View
             if (historyCommits == null)
                 return;
 
+            Dictionary<string, CommitBranchDrawIndex> commitBranchDrawIndex=new Dictionary<string, CommitBranchDrawIndex>();
+
             if (ImGui.BeginTable("GitRepo-Commits", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
             {
                 ImGui.TableSetupColumn("Description", ImGuiTableColumnFlags.WidthStretch);
@@ -101,6 +106,25 @@ namespace Wanderer.GitRepository.View
                     //else if (index >= m_commitViewIndex + m_commitViewMax)
                     //    break;
 
+                    int itemBranchIndex = 0;
+                    if (!m_commitForBranchIndex.ContainsKey(item.Commit))
+                    {
+                        for (int i = 0; i < m_gitRepo.Branches.Count(); i++)
+                        {
+                            var queryResult = m_gitRepo.Branches.ElementAt(i).Commits.Where(x => x.Sha.Equals(item));
+                            if (queryResult.Count() > 0)
+                            {
+                                itemBranchIndex = i;
+                                break;
+                            }
+                        }
+                        m_commitForBranchIndex.Add(item.Commit, itemBranchIndex);
+                    }
+                    else
+                    {
+                        itemBranchIndex = m_commitForBranchIndex[item.Commit];
+                    }
+
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
                     if (m_gitRepo.BranchNotes.TryGetValue(item.Commit, out List<string> notes))
@@ -117,6 +141,13 @@ namespace Wanderer.GitRepository.View
                         }
                     }
                     ImGui.Text(item.Description);
+
+                    CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
+                    commitBranchDrawIndex1.BranchIndex = itemBranchIndex;
+                    commitBranchDrawIndex1.Point = ImGui.GetWindowPos()+ImGui.GetCursorPos() +new Vector2(5* itemBranchIndex,-ImGui.GetScrollY());
+                    commitBranchDrawIndex1.Parents = item.Parents;
+                    commitBranchDrawIndex.Add(item.Commit,commitBranchDrawIndex1);
+                    
                     var rectMin = ImGui.GetItemRectMin();
                     var rectMax = ImGui.GetItemRectMax();
                     rectMax.X = rectMin.X + ImGui.GetColumnWidth();
@@ -149,6 +180,38 @@ namespace Wanderer.GitRepository.View
                 ImGui.EndTable();
             }
 
+            if (commitBranchDrawIndex.Count > 0)
+            {
+                DrawIndex(historyCommits[0].Commit, commitBranchDrawIndex);
+            }
+
+        }
+
+        private void DrawIndex(string key, Dictionary<string, CommitBranchDrawIndex> commitBranchDrawIndex)
+        {
+            if (commitBranchDrawIndex.TryGetValue(key, out CommitBranchDrawIndex start))
+            {
+                ImGui.GetWindowDrawList().AddCircleFilled(start.Point,3, ImGui.ColorConvertFloat4ToU32(new Vector4(0, 1, 0, 1)));
+
+                if (start.Parents != null && start.Parents.Count > 0)
+                {
+                    foreach (var item in start.Parents)
+                    {
+                        if (commitBranchDrawIndex.TryGetValue(item, out CommitBranchDrawIndex end))
+                        {
+                            ImGui.GetWindowDrawList().AddLine(start.Point,end.Point,ImGui.ColorConvertFloat4ToU32(new Vector4(1,0,0,1)));
+                            DrawIndex(item, commitBranchDrawIndex);
+                        }
+                    }
+                }
+            }
+        }
+
+        struct CommitBranchDrawIndex
+        {
+            public int BranchIndex;
+            public Vector2 Point;
+            public List<string> Parents;
         }
 
         private void DrawSelectCommit()
