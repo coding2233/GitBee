@@ -180,7 +180,8 @@ namespace Wanderer.GitRepository.View
 
                             if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                             {
-                                SelectCommit(item);
+                                m_gitRepo.SelectCommit = item;
+                                //SelectCommit(item);
                             }
                         }
                     }
@@ -251,6 +252,13 @@ namespace Wanderer.GitRepository.View
 
         private void DrawSelectCommitInfo()
         {
+            if (m_selectCommit != m_gitRepo.SelectCommit)
+            {
+                BuildSelectCommitPatch(m_gitRepo.SelectCommit);
+                m_selectCommit = m_gitRepo.SelectCommit;
+                return;
+            }
+
             if (m_selectCommit == null)
             {
                 return;
@@ -265,7 +273,8 @@ namespace Wanderer.GitRepository.View
                     ImGui.SameLine();
                     if (ImGui.Button(itemParent.Sha.Substring(0, 10)))
                     {
-                        SelectCommit(itemParent);
+                        m_gitRepo.SelectCommit = itemParent;
+                        //SelectCommit(itemParent);
                     }
                 }
             }
@@ -300,14 +309,15 @@ namespace Wanderer.GitRepository.View
         }
 
 
-        private void SelectCommit(Commit gitRepoCommit)
+        private void BuildSelectCommitPatch(Commit gitRepoCommit)
         {
             m_selectCommit = gitRepoCommit;
             m_selectCommitPatch = null;
             m_selectCommitPatchEntry = null;
 
             //子线程取真正的数据绘制
-            Task.Run(() => {
+            Task.Run(() =>
+            {
                 if (m_selectCommit != null)
                 {
                     //CommitFilter commitFilter = new CommitFilter();

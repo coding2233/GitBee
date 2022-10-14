@@ -236,7 +236,7 @@ namespace Wanderer.GitRepository.View
                 {
                     if (ImGui.MenuItem(item.FriendlyName))
                     {
-                        
+                        m_gitRepo.SelectCommit = m_gitRepo.GetCommit(item.Target.Sha);
                     }
                 }
             ;
@@ -342,7 +342,7 @@ namespace Wanderer.GitRepository.View
                 {
                     if (ImGui.MenuItem($"\t{branchNode.Name}", "", branchNode.Branch.IsCurrentRepositoryHead))
                     {
-
+                        m_gitRepo.SelectCommit = m_gitRepo.GetCommit(branchNode.Branch.Reference.TargetIdentifier);
                     }
                 }
             }

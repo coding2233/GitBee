@@ -45,6 +45,8 @@ namespace Wanderer.GitRepository.Common
             }
         }
 
+        public Commit SelectCommit;
+
         public LibGit2Sharp.Diff Diff => m_repository.Diff;
 
         public RepositoryStatus RetrieveStatus => m_repository.RetrieveStatus();
@@ -221,7 +223,7 @@ namespace Wanderer.GitRepository.Common
 
         public Commit GetCommit(string commitSha)
         {
-            return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).First();
+            return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).FirstOrDefault();
         }
 
         public GitRepoCommit GetGitCommit(string commitSha)
