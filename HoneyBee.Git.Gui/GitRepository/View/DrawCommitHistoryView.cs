@@ -306,6 +306,7 @@ namespace Wanderer.GitRepository.View
             Task.Run(() => {
                 if (m_selectCommit != null)
                 {
+                    CommitFilter commitFilter = new CommitFilter();
                     var commit = m_gitRepo.GetCommit(m_selectCommit.Commit);
                     if (m_selectCommit != null && commit != null && m_selectCommit.Commit.Equals(commit.Sha))
                     {

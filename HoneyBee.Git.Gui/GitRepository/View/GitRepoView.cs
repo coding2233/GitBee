@@ -106,9 +106,10 @@ namespace Wanderer.GitRepository.View
 
             if (!string.IsNullOrEmpty(m_syncDataTip))
             {
-                ImGui.TextColored(new Vector4(0,1,0,1), m_syncDataTip);
-                ImGui.SameLine();
-                ImGui.ProgressBar(m_syncProgress,Vector2.Zero, m_syncProgress.ToString());
+                //ImGui.TextColored(new Vector4(0,1,0,1), m_syncDataTip);
+                //ImGui.SameLine();
+                
+                ImGui.ProgressBar(m_syncProgress,new Vector2(ImGui.GetWindowWidth(),0), $"{m_syncDataTip} {m_syncProgress}");
                 ImGui.Separator();
             }
 

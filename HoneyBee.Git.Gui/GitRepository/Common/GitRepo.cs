@@ -3,6 +3,7 @@ using LiteDB;
 using SharpDX.Direct3D11;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -241,39 +242,40 @@ namespace Wanderer.GitRepository.Common
 
         private void SetRepoCommits()
         {
-            //整理分支信息
-            var branchs = m_repository.Branches.Where(x => x.IsRemote && !x.CanonicalName.EndsWith("/HEAD"));
-            Dictionary<string, List<string>> commitBranchMap = new Dictionary<string, List<string>>();
-            foreach (var itemBranch in branchs)
+            //更新以前得数据
+            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+            Task.Run(() =>
             {
-                foreach (var itemCommit in itemBranch.Commits)
+                var oldGitCommits = commitCol.Query().Where(x=>x.Branchs == null || x.Branchs.Count == 0).ToEnumerable();
+                foreach (var oldGitCommit in oldGitCommits)
                 {
-                    List<string> branchsName;
-                    if (!commitBranchMap.TryGetValue(itemCommit.Sha,out branchsName))
-                    {
-                        branchsName = new List<string>();
-                        commitBranchMap.Add(itemCommit.Sha,branchsName);
-                    }
-                    branchsName.Add(itemBranch.CanonicalName);
+                    Task.Run(() => {
+                        UpdateRef(commitCol, oldGitCommit, GetCommit(oldGitCommit.Commit));
+                    });
                 }
-                
-            }
+            });
 
             //具体提交
-            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
-            Queue<GitRepoCommit> gitRepoCommitsQueue = new Queue<GitRepoCommit>();
+            int oldCommitCount = commitCol.Query().Count(); 
             var commits = m_repository.Commits.ToList();
-            for (int i = commits.Count-1; i >=0; i--)
+            for (int i = commits.Count -1 - oldCommitCount; i >=0; i--)
             {
+                m_taskProgress?.Invoke((commits.Count - i) / (float)commits.Count);
+
                 var commit = commits[i];
-                bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha)).Count() > 0;
-                if (hasCommit)
+                var oldGitCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha)).FirstOrDefault();
+                if (oldGitCommit!=null)
                 {
+                    if (oldGitCommit.Branchs == null|| oldGitCommit.Branchs.Count==0)
+                    {
+                        Task.Run(() => {
+                            UpdateRef(commitCol, oldGitCommit, commit);
+                        });
+                    }
                     continue;
                 }
                 else
                 {
-                    m_taskProgress?.Invoke((commits.Count- i)/(float)commits.Count);
                     GitRepoCommit gitRepoCommit = new GitRepoCommit();
                     gitRepoCommit.Description = commit.MessageShort;
                     gitRepoCommit.Date = commit.Author.When.ToString("yyyy-MM-dd HH:mm:ss");
@@ -286,15 +288,33 @@ namespace Wanderer.GitRepository.Common
                     {
                         gitRepoCommit.Parents.Add(itemParent.Sha);
                     }
-                    if (commitBranchMap.TryGetValue(commit.Sha, out List<string> branchsName))
-                    {
-                        gitRepoCommit.Branchs = branchsName;
-                    }
+
+                    Task.Run(() => {
+                        UpdateRef(commitCol, gitRepoCommit, commit);
+                    });
 
                     commitCol.Insert(gitRepoCommit);
-                    gitRepoCommit = null;
                 }
             }
+        }
+
+        private void UpdateRef(ILiteCollection<GitRepoCommit> commitCol, GitRepoCommit gitRepoCommit,Commit commit)
+        {
+            IEnumerable<Reference> refs = m_repository.Refs.ReachableFrom(new[] { commit });
+            if (refs != null)
+            {
+                gitRepoCommit.Branchs = new List<string>();
+                foreach (var itemRefs in refs)
+                {
+                    if (itemRefs.CanonicalName.EndsWith("/HEAD"))
+                    {
+                        continue;
+                    }
+                    gitRepoCommit.Branchs.Add(itemRefs.CanonicalName);
+                }
+                commitCol.Update(gitRepoCommit);
+            }
+            gitRepoCommit = null;
         }
 
 
