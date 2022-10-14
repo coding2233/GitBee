@@ -19,6 +19,8 @@ namespace Wanderer.GitRepository.Common
         public string Email { get; set; }
         //父级提交
         public List<string> Parents { get; set; }
+        //分支
+        public List<string> Branchs { get; set; }
     }
 
 }

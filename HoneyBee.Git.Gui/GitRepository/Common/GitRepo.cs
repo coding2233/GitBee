@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Wanderer.Common;
 using static SharpDX.Utilities;
@@ -46,6 +47,8 @@ namespace Wanderer.GitRepository.Common
 
         public RepositoryStatus RetrieveStatus => m_repository.RetrieveStatus();
 
+        private bool m_runTask;
+        private Action<float> m_taskProgress;
         internal GitRepo(string repoPath)
         {
             RootPath = repoPath.Replace("\\","/").Replace("/.git", "");
@@ -57,28 +60,44 @@ namespace Wanderer.GitRepository.Common
         }
 
         //同步仓库信息
-        public async void SyncGitRepoTask(Action complete)
+        public async void SyncGitRepoTask(Action<float> progress, Action complete)
         {
-            await Task.Run(SyncGitRepoToDatabase);
+            if (m_runTask)
+            {
+                Log.Info("正在执行任务中，请勿打扰");
+                return;
+            }
+            m_taskProgress = progress;
+            m_runTask = true;
+            var tasks = SyncGitRepoToDatabase();
+            foreach (var itemTask in tasks)
+            {
+                await itemTask;
+            }
+
+            m_runTask = false;
             complete?.Invoke();
         }
 
         //将git数据同步到数据库
-        private void SyncGitRepoToDatabase()
+        private List<Task> SyncGitRepoToDatabase()
         {
+            List<Task> list = new List<Task>();
+
             try
             {
                 //分支更新到数据库
-                SetBranchNodes();
+                list.Add(Task.Run(SetBranchNodes));
 
                 //Tags更新到数据
-                SetTags();
+                list.Add(Task.Run(SetTags));
 
                 //子模块更新到数据
-                SetSubmodules();
+                list.Add(Task.Run(SetSubmodules));
 
                 //本地提交更新到数据
-                SetRepoCommits();
+                list.Add(Task.Run(SetRepoCommits));
+
 
             }
             catch (Exception e)
@@ -86,7 +105,9 @@ namespace Wanderer.GitRepository.Common
                 Log.Warn("检查Git仓库与数据库是否匹配,异常: {0}",e);
             }
 
-            Log.Info($"SyncGitRepoToDatabase complete.");
+            return list;
+
+            //Log.Info($"SyncGitRepoToDatabase complete.");
         }
 
 
@@ -139,7 +160,7 @@ namespace Wanderer.GitRepository.Common
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
 
             //更新数据
-            SyncGitRepoTask(null);
+            SyncGitRepoTask(null,null);
         }
 
         public bool CheckIndex(string file)
@@ -207,21 +228,6 @@ namespace Wanderer.GitRepository.Common
             return commitsCol.Query().Where(x=>x.Commit.Equals(commitSha)).FirstOrDefault();
         }
 
-        public int GetCommitBranchIndex(string commitSha)
-        {
-            var commitCol = m_liteDb.GetCollection<GitBranchCommit>();
-            int index = -1;
-            foreach (var itemBranch in Branches)
-            {
-                bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commitSha) && x.BranchName.Equals(itemBranch.CanonicalName)).Count() > 0;
-                index++;
-                if (hasCommit)
-                {
-                    return index;
-                }
-            }
-            return 0;
-        }
 
         public void Dispose()
         {
@@ -235,42 +241,60 @@ namespace Wanderer.GitRepository.Common
 
         private void SetRepoCommits()
         {
-            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
-
-            List<GitRepoCommit> commitsResult = new List<GitRepoCommit>();
-            foreach (var commit in m_repository.Commits)
+            //整理分支信息
+            var branchs = m_repository.Branches.Where(x => x.IsRemote && !x.CanonicalName.EndsWith("/HEAD"));
+            Dictionary<string, List<string>> commitBranchMap = new Dictionary<string, List<string>>();
+            foreach (var itemBranch in branchs)
             {
+                foreach (var itemCommit in itemBranch.Commits)
+                {
+                    List<string> branchsName;
+                    if (!commitBranchMap.TryGetValue(itemCommit.Sha,out branchsName))
+                    {
+                        branchsName = new List<string>();
+                        commitBranchMap.Add(itemCommit.Sha,branchsName);
+                    }
+                    branchsName.Add(itemBranch.CanonicalName);
+                }
+                
+            }
+
+            //具体提交
+            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
+            Queue<GitRepoCommit> gitRepoCommitsQueue = new Queue<GitRepoCommit>();
+            var commits = m_repository.Commits.ToList();
+            for (int i = commits.Count-1; i >=0; i--)
+            {
+                var commit = commits[i];
                 bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha)).Count() > 0;
                 if (hasCommit)
                 {
-                    break;
+                    continue;
                 }
                 else
                 {
+                    m_taskProgress?.Invoke((commits.Count- i)/(float)commits.Count);
                     GitRepoCommit gitRepoCommit = new GitRepoCommit();
                     gitRepoCommit.Description = commit.MessageShort;
-                    gitRepoCommit.Date = commit.Committer.When.ToString("yyyy-MM-dd HH:mm:ss");
-                    gitRepoCommit.Author = commit.Committer.Name;
+                    gitRepoCommit.Date = commit.Author.When.ToString("yyyy-MM-dd HH:mm:ss");
+                    gitRepoCommit.Author = commit.Author.Name;
                     gitRepoCommit.Commit = commit.Sha;
                     gitRepoCommit.Message = commit.Message;
-                    gitRepoCommit.Email = commit.Committer.Email;
+                    gitRepoCommit.Email = commit.Author.Email;
                     gitRepoCommit.Parents = new List<string>();
                     foreach (var itemParent in commit.Parents)
                     {
                         gitRepoCommit.Parents.Add(itemParent.Sha);
                     }
-                    commitsResult.Add(gitRepoCommit);
+                    if (commitBranchMap.TryGetValue(commit.Sha, out List<string> branchsName))
+                    {
+                        gitRepoCommit.Branchs = branchsName;
+                    }
+
+                    commitCol.Insert(gitRepoCommit);
+                    gitRepoCommit = null;
                 }
             }
-
-            if (commitsResult.Count>0)
-            {
-                for (int i = commitsResult.Count-1; i>=0;  i--)
-                {
-                    commitCol.Insert(commitsResult[i]);
-                }
-            }
-
         }
 
 
@@ -298,34 +322,6 @@ namespace Wanderer.GitRepository.Common
                 }
 
                 branchNotes.Add(branch.Reference.CanonicalName, branch.Reference.TargetIdentifier);
-                //Console.WriteLine($"SetBranchNodes : {branch.Reference.CanonicalName} {branch.Reference.TargetIdentifier}");
-
-                //更新到数据中
-                var commitCol = m_liteDb.GetCollection<GitBranchCommit>();
-                List<GitBranchCommit> commitsResult = new List<GitBranchCommit>();
-                foreach (var commit in branch.Commits)
-                {
-                    bool hasCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha) && x.BranchName.Equals(branch.CanonicalName)).Count() > 0;
-                    if (hasCommit)
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        GitBranchCommit gitBranchCommit = new GitBranchCommit();
-                        gitBranchCommit.BranchName = branch.CanonicalName;
-                        gitBranchCommit.Commit = commit.Sha;
-                        commitsResult.Add(gitBranchCommit);
-                    }
-                }
-
-                if (commitsResult.Count > 0)
-                {
-                    for (int i = commitsResult.Count - 1; i >= 0; i--)
-                    {
-                        commitCol.Insert(commitsResult[i]);
-                    }
-                }
             }
 
             //整理标签
@@ -356,6 +352,8 @@ namespace Wanderer.GitRepository.Common
             LocalBranchNodes = localbranchNodes;
             RemoteBranchNodes = remotebranchNodes;
         }
+
+ 
 
         //设置标签
         private void SetTags()

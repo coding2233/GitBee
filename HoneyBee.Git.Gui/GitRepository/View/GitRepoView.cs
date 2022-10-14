@@ -28,6 +28,8 @@ namespace Wanderer.GitRepository.View
         private GitRepoMediator m_gitRepoMediator;
         private string m_repoPath;
         private Dictionary<string, int> _toolItems = new Dictionary<string, int>();
+        private string m_syncDataTip;
+        private float m_syncProgress;
 
         #region 子模块
         private DrawWorkTreeView m_workTreeView;
@@ -67,7 +69,12 @@ namespace Wanderer.GitRepository.View
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
                 }
             }
-            m_gitRepo.SyncGitRepoTask(null);
+            m_syncDataTip = "正在同步数据";
+            m_gitRepo.SyncGitRepoTask((progress) => {
+                m_syncProgress = progress;
+            },() => {
+                m_syncDataTip = null;
+            });
         }
 
         protected override void OnDestroy()
@@ -96,6 +103,14 @@ namespace Wanderer.GitRepository.View
             if (m_gitRepo == null)
                 return;
             OnToolbarDraw();
+
+            if (!string.IsNullOrEmpty(m_syncDataTip))
+            {
+                ImGui.TextColored(new Vector4(0,1,0,1), m_syncDataTip);
+                ImGui.SameLine();
+                ImGui.ProgressBar(m_syncProgress,Vector2.Zero, m_syncProgress.ToString());
+                ImGui.Separator();
+            }
 
             m_splitView.Begin();
             OnRepoKeysDraw();

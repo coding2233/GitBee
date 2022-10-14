@@ -6,6 +6,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
 namespace Wanderer.GitRepository.View
@@ -31,7 +32,6 @@ namespace Wanderer.GitRepository.View
         private List<GitRepoCommit> m_cacheCommits;
 
         private Dictionary<string, int> m_commitForBranchIndex;
-
         public DrawCommitHistoryView(GitRepo gitRepo)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
@@ -106,6 +106,30 @@ namespace Wanderer.GitRepository.View
                     //else if (index >= m_commitViewIndex + m_commitViewMax)
                     //    break;
 
+                    int branchIndex = 0;
+                    if (item.Branchs != null)
+                    {
+                        bool find = false;
+                        for (int i = 0; i < m_gitRepo.Branches.Count(); i++)
+                        {
+                            foreach (var itemBranch in item.Branchs)
+                            {
+                                if (itemBranch.Equals(m_gitRepo.Branches.ElementAt(i).CanonicalName))
+                                {
+                                    branchIndex = i;
+                                    find = true;
+                                    break;
+                                }
+                            }
+                            if (find)
+                            {
+                                break;
+                            }
+                        }
+                        
+                    }
+
+                    //表格
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
                     if (m_gitRepo.BranchNotes.TryGetValue(item.Commit, out List<string> notes))
@@ -116,12 +140,16 @@ namespace Wanderer.GitRepository.View
                             {
                                 //var noteRectMin = ImGui.GetItemRectMin();
 
-                                ImGui.TextColored(new Vector4(0,0.5f,0,1),itemNote);
+                                int colorIndex = branchIndex % ImGuiView.Colors.Count;
+                                var textColor = ImGuiView.Colors[colorIndex];
+
+                                ImGui.TextColored(textColor, itemNote);
                                 ImGui.SameLine();
                             }
                         }
                     }
                     ImGui.Text(item.Description);
+
 
                     //CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
                     //commitBranchDrawIndex1.BranchIndex = m_gitRepo.GetCommitBranchIndex(item.Commit);
