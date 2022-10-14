@@ -363,7 +363,8 @@ namespace Wanderer.GitRepository.Common
                     listValue = new List<string>();
                     CommitNotes.Add(value, listValue);
                 }
-                listValue.Add(Icon.Get(Icon.Material_cloud)+key.Replace("refs/remotes/","").Replace("refs/heads/",""));
+                
+                listValue.Add(Icon.Get(key.Contains("remotes")?Icon.Material_cloud: Icon.Material_download_for_offline) +key.Replace("refs/remotes/","").Replace("refs/heads/",""));
             }
             //添加tag标签
             foreach (var item in m_repository.Tags)
