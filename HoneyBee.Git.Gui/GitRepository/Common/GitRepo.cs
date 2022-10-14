@@ -18,7 +18,7 @@ namespace Wanderer.GitRepository.Common
     {
         private Repository m_repository;
         
-        //public Repository Repo => m_repository;
+        public Repository Repo => m_repository;
 
         private LiteDatabase m_liteDb;
         public string Name { get; private set; }
