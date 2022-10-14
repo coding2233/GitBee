@@ -234,28 +234,34 @@ namespace Wanderer.GitRepository.View
             DrawTreeNodeHead("Tag", () => {
                 foreach (var item in m_gitRepo.Repo.Tags)
                 {
-                    ImGui.Text(item.FriendlyName);
-                    //ImGui.Button($"{item.FriendlyName}");
+                    if (ImGui.MenuItem(item.FriendlyName))
+                    {
+                        
+                    }
                 }
+            ;
             });
 
             DrawTreeNodeHead("Submodule", () => {
                 foreach (var item in m_gitRepo.Submodules)
                 {
-                    ImGui.Button($"{item.Name}");
+                    if (ImGui.MenuItem(item.Name))
+                    {
+
+                    }
                 }
             });
 
             DrawTreeNodeHead("Stashes", () => {
                 foreach (var item in m_gitRepo.Stashes)
                 {
-                    ImGui.Button($"{item.Message}");
+                    ImGui.MenuItem($"{item.Message}");
                 }
 
-                if (ImGui.Button("Save Stashe"))
-                {
+                //if (ImGui.Button("Save Stashe"))
+                //{
                     
-                }
+                //}
             });
         }
 
@@ -330,8 +336,15 @@ namespace Wanderer.GitRepository.View
                 if (branchNode.Branch.IsCurrentRepositoryHead)
                 {
                     textColor = ImGui.GetColorU32(ImGuiCol.HeaderActive);
+                    ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(textColor), $"\t{branchNode.Name}");
                 }
-                ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(textColor), $"\t{branchNode.Name}");
+                else
+                {
+                    if (ImGui.MenuItem($"\t{branchNode.Name}", "", branchNode.Branch.IsCurrentRepositoryHead))
+                    {
+
+                    }
+                }
             }
 
             if (!treeNodeEx || branchNode.Branch != null)
