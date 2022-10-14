@@ -232,9 +232,10 @@ namespace Wanderer.GitRepository.View
             });
 
             DrawTreeNodeHead("Tag", () => {
-                foreach (var item in m_gitRepo.Tags)
+                foreach (var item in m_gitRepo.Repo.Tags)
                 {
-                    ImGui.Button($"{item.FriendlyName}");
+                    ImGui.Text(item.FriendlyName);
+                    //ImGui.Button($"{item.FriendlyName}");
                 }
             });
 

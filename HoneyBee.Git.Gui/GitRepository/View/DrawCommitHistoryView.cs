@@ -138,12 +138,16 @@ namespace Wanderer.GitRepository.View
                         {
                             foreach (var itemNote in notes)
                             {
-                                //var noteRectMin = ImGui.GetItemRectMin();
+                                var noteRectMin = ImGui.GetWindowPos()-new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY())+ImGui.GetCursorPos();
+                                var noteRectMax = noteRectMin+ImGui.CalcTextSize(itemNote);
+
+                                ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax,ImGui.ColorConvertFloat4ToU32( ImGuiView.Colors[1]-Vector4.One*0.5f));
 
                                 int colorIndex = branchIndex % ImGuiView.Colors.Count;
                                 var textColor = ImGuiView.Colors[colorIndex];
 
-                                ImGui.TextColored(textColor, itemNote);
+                                ImGui.Text(itemNote);
+                                //ImGui.TextColored(textColor, itemNote);
                                 ImGui.SameLine();
                             }
                         }
@@ -268,7 +272,6 @@ namespace Wanderer.GitRepository.View
             ImGui.Text($"DateTime: {m_selectCommit.Author.When.DateTime.ToString()}");
             //ImGui.Text($"Committer: {m_selectCommit.Author} {m_selectCommit.Email}\n");
             ImGui.Spacing();
-            ImGui.Text(m_selectCommit.MessageShort);
             ImGui.Text(m_selectCommit.Message);
         }
 
