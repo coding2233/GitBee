@@ -1,4 +1,5 @@
-﻿using LibGit2Sharp;
+﻿using CefSharp.DevTools.CSS;
+using LibGit2Sharp;
 using LiteDB;
 using SharpDX.Direct3D11;
 using System;
@@ -26,7 +27,7 @@ namespace Wanderer.GitRepository.Common
         public BranchCollection Branches => m_repository.Branches;
         public List<GitBranchNode> LocalBranchNodes { get; private set; } = new List<GitBranchNode>();
         public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
-        public Dictionary<string, List<string>> BranchNotes { get; private set; }=new Dictionary<string,List<string>>();
+        public Dictionary<string, List<string>> CommitNotes { get; private set; }=new Dictionary<string,List<string>>();
         public List<GitTag> Tags { get; private set; } = new List<GitTag>();
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
         public StashCollection Stashes => m_repository.Stashes;
@@ -345,8 +346,7 @@ namespace Wanderer.GitRepository.Common
             }
 
             //整理标签
-            //还差tags
-            BranchNotes.Clear();
+            CommitNotes.Clear();
             foreach (var item in branchNotes)
             {
                 string key = item.Key;
@@ -356,12 +356,23 @@ namespace Wanderer.GitRepository.Common
                     value = branchNotes[value];
                 }
                 List<string> listValue = null;
-                if (!BranchNotes.TryGetValue(value, out listValue))
+                if (!CommitNotes.TryGetValue(value, out listValue))
                 {
                     listValue = new List<string>();
-                    BranchNotes.Add(value, listValue);
+                    CommitNotes.Add(value, listValue);
                 }
-                listValue.Add(key.Replace("refs/remotes/","").Replace("refs/heads/",""));
+                listValue.Add(Icon.Get(Icon.Material_cloud)+key.Replace("refs/remotes/","").Replace("refs/heads/",""));
+            }
+            //添加tag标签
+            foreach (var item in m_repository.Tags)
+            {
+                List<string> listValue = null;
+                if (!CommitNotes.TryGetValue(item.Target.Sha, out listValue))
+                {
+                    listValue = new List<string>();
+                    CommitNotes.Add(item.Target.Sha, listValue);
+                }
+                listValue.Add(Icon.Get(Icon.Material_label)+item.FriendlyName);
             }
 
             foreach (var item in localbranchNodes)

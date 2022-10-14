@@ -132,7 +132,7 @@ namespace Wanderer.GitRepository.View
                     //表格
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
-                    if (m_gitRepo.BranchNotes.TryGetValue(item.Sha, out List<string> notes))
+                    if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
                     {
                         if (notes != null && notes.Count > 0)
                         {
@@ -141,7 +141,8 @@ namespace Wanderer.GitRepository.View
                                 var noteRectMin = ImGui.GetWindowPos()-new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY())+ImGui.GetCursorPos();
                                 var noteRectMax = noteRectMin+ImGui.CalcTextSize(itemNote);
 
-                                ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax,ImGui.ColorConvertFloat4ToU32( ImGuiView.Colors[1]-Vector4.One*0.5f));
+                                //ImGuiView.Colors[1]-Vector4.One*0.5f)
+                                ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax,ImGui.GetColorU32(ImGuiCol.TextSelectedBg));
 
                                 int colorIndex = branchIndex % ImGuiView.Colors.Count;
                                 var textColor = ImGuiView.Colors[colorIndex];
