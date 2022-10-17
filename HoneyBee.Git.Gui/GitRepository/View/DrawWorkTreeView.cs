@@ -82,31 +82,6 @@ namespace Wanderer
         }
 
      
-
-        //private void RenderTextLine(string line)
-        //{
-        //    uint col = 0;
-        //    if (line.StartsWith("+"))
-        //    {
-        //        col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f));
-        //    }
-        //    else if (line.StartsWith("-"))
-        //    {
-        //        col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f));
-        //    }
-        //    if (col != 0)
-        //    {
-        //        //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
-        //        //var min = ImGui.GetItemRectMin();
-        //        //var max = ImGui.GetItemRectMax();
-        //        var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
-        //        var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
-        //        ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
-        //    }
-        //    ImGui.Text(line);
-        //}
-
-      
         private void DrawStageFilesStatus(IEnumerable<StatusEntry> statuses)
         {
             if (ImGui.Button("Unstage All"))

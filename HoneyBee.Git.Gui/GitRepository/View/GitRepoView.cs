@@ -8,6 +8,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 using Wanderer.GitRepository.Mediator;
@@ -69,12 +70,15 @@ namespace Wanderer.GitRepository.View
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
                 }
             }
-            m_syncDataTip = "正在同步数据";
-            m_gitRepo.SyncGitRepoTask((progress) => {
-                m_syncProgress = progress;
-            },() => {
-                m_syncDataTip = null;
-            });
+
+            m_gitRepo.SyncGitRepoTask(null, null);
+            
+            //m_syncDataTip = "正在同步数据";
+            //m_gitRepo.SyncGitRepoTask((progress) => {
+            //    m_syncProgress = progress;
+            //},() => {
+            //    m_syncDataTip = null;
+            //});
         }
 
         protected override void OnDestroy()
@@ -205,13 +209,13 @@ namespace Wanderer.GitRepository.View
         private void OnRepoKeysDraw()
         {
             DrawTreeNodeHead("Workspace", () => {
-                if (ImGui.RadioButton("Work tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
+                if (ImGui.RadioButton("Work Tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
                 {
                     m_workSpaceRadio = WorkSpaceRadio.WorkTree;
                     //_git.Status();
                 }
 
-                if (ImGui.RadioButton("Commit history", m_workSpaceRadio == WorkSpaceRadio.CommitHistory))
+                if (ImGui.RadioButton("Commit History", m_workSpaceRadio == WorkSpaceRadio.CommitHistory))
                 {
                     m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
                 }
@@ -331,19 +335,62 @@ namespace Wanderer.GitRepository.View
             }
             else
             {
-                Vector2 textSize = ImGui.CalcTextSize(branchNode.Name);
-                uint textColor = ImGui.GetColorU32(ImGuiCol.Text);
-                if (branchNode.Branch.IsCurrentRepositoryHead)
+                bool isCurrentRepositoryHead = branchNode.Branch.IsCurrentRepositoryHead;
+
+                if (isCurrentRepositoryHead)
                 {
-                    textColor = ImGui.GetColorU32(ImGuiCol.HeaderActive);
-                    ImGui.TextColored(ImGui.ColorConvertU32ToFloat4(textColor), $"\t{branchNode.Name}");
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.HeaderActive));
                 }
-                else
+                if (ImGui.MenuItem($"\t{branchNode.Name}", "", isCurrentRepositoryHead))
+                { 
+                    //m_gitRepo.SelectCommit = m_gitRepo.GetCommit(branchNode.Branch.Reference.TargetIdentifier);
+                }
+
+                if (isCurrentRepositoryHead)
                 {
-                    if (ImGui.MenuItem($"\t{branchNode.Name}", "", branchNode.Branch.IsCurrentRepositoryHead))
+                    ImGui.PopStyleColor();
+                }
+
+                if (ImGui.BeginPopupContextItem())
+                {
+                    if (branchNode.Branch.IsRemote)
                     {
-                        m_gitRepo.SelectCommit = m_gitRepo.GetCommit(branchNode.Branch.Reference.TargetIdentifier);
+
                     }
+                    else
+                    {
+                        if (isCurrentRepositoryHead)
+                        {
+                            ImGui.MenuItem($"pull");
+                        }
+                        else
+                        {
+                            ImGui.MenuItem($"checkout {branchNode.FullName}");
+                            ImGui.MenuItem($"rebase {branchNode.FullName}");
+                        }
+
+                        if (ImGui.BeginMenu("push"))
+                        {
+                            foreach (var itemRemote in m_gitRepo.Repo.Network.Remotes)
+                            {
+                                ImGui.MenuItem($"push {itemRemote.Name} {branchNode.FullName}:{branchNode.FullName}");
+                            }
+                            ImGui.EndMenu();
+                        }
+
+                        //ImGui.MenuItem("Pull");
+                    }
+
+                    if (ImGui.BeginMenu("fetch"))
+                    {
+                        foreach (var itemRemote in m_gitRepo.Repo.Network.Remotes)
+                        {
+                            ImGui.MenuItem($"fetch {itemRemote.Name} {branchNode.FullName}:{branchNode.FullName}");
+                        }
+                        ImGui.EndMenu();
+                    }
+
+                    ImGui.EndPopup();
                 }
             }
 

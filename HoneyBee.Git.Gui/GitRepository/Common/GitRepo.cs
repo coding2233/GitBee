@@ -1,5 +1,4 @@
-﻿using CefSharp.DevTools.CSS;
-using LibGit2Sharp;
+﻿using LibGit2Sharp;
 using LiteDB;
 using SharpDX.Direct3D11;
 using System;
@@ -99,8 +98,8 @@ namespace Wanderer.GitRepository.Common
                 //子模块更新到数据
                 list.Add(Task.Run(SetSubmodules));
 
-                //本地提交更新到数据
-                list.Add(Task.Run(SetRepoCommits));
+                ////本地提交更新到数据
+                //list.Add(Task.Run(SetRepoCommits));
 
 
             }
