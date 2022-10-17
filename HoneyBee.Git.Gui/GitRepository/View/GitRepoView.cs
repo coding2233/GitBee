@@ -320,6 +320,7 @@ namespace Wanderer.GitRepository.View
         private void DrawBranchTreeNode(GitBranchNode branchNode)
         {
             bool treeNodeEx = false;
+            Vector2 currentPos = ImGui.GetCursorPos();
 
             if (branchNode.Children != null && branchNode.Children.Count > 0)
             {
@@ -341,6 +342,7 @@ namespace Wanderer.GitRepository.View
                 {
                     ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.HeaderActive));
                 }
+
                 if (ImGui.MenuItem($"\t{branchNode.Name}", "", isCurrentRepositoryHead))
                 { 
                     //m_gitRepo.SelectCommit = m_gitRepo.GetCommit(branchNode.Branch.Reference.TargetIdentifier);
@@ -351,6 +353,7 @@ namespace Wanderer.GitRepository.View
                     ImGui.PopStyleColor();
                 }
 
+                //右键菜单
                 if (ImGui.BeginPopupContextItem())
                 {
                     if (branchNode.Branch.IsRemote)
@@ -378,6 +381,12 @@ namespace Wanderer.GitRepository.View
                             ImGui.EndMenu();
                         }
 
+                        //
+                        if (!branchNode.Branch.IsTracking)
+                        {
+                            ImGui.MenuItem($"track origin ...");
+                        }
+
                         //ImGui.MenuItem("Pull");
                     }
 
@@ -396,22 +405,24 @@ namespace Wanderer.GitRepository.View
 
             if (!treeNodeEx || branchNode.Branch != null)
             {
-                var pos = ImGui.GetItemRectMax();
-                pos.Y -= 15;
+                currentPos  = currentPos + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+                //currentPos.X += ImGui.CalcTextSize(nodeName).X;
+                currentPos.X += ImGui.CalcItemWidth();
+                //pos.Y -= 15;
 
                 if (branchNode.BehindBy > 0)
                 {
                     string showTipText = $"{Icon.Get(Icon.Material_arrow_downward)}{branchNode.BehindBy}";
                     var textSize = ImGui.CalcTextSize(showTipText);
-                    ImGui.GetWindowDrawList().AddText(pos, ImGui.GetColorU32(ImGuiCol.Text), showTipText);
-                    pos.X += textSize.X;
+                    ImGui.GetWindowDrawList().AddText(currentPos, ImGui.GetColorU32(ImGuiCol.Text), showTipText);
+                    currentPos.X += textSize.X;
                 }
 
                 if (branchNode.AheadBy > 0)
                 {
                     string showTipText = $"{Icon.Get(Icon.Material_arrow_upward)}{branchNode.AheadBy}";
                     //Vector2 textSize = ImGui.CalcTextSize(showTipText);
-                    ImGui.GetWindowDrawList().AddText(pos, ImGui.GetColorU32(ImGuiCol.Text), showTipText);
+                    ImGui.GetWindowDrawList().AddText(currentPos, ImGui.GetColorU32(ImGuiCol.Text), showTipText);
                 }
             }
         }

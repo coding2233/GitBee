@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using LibGit2Sharp;
+using strange.extensions.dispatcher.eventdispatcher.api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -96,8 +97,8 @@ namespace Wanderer.GitRepository.View
                 ImGui.TableSetupColumn("Author", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("Commit", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize);
                 ImGui.TableHeadersRow();
-                int index = 0;
 
+                int index = 0;
                 foreach (var item in historyCommits)
                 {
                     index++;
@@ -131,7 +132,9 @@ namespace Wanderer.GitRepository.View
 
                     //表格
                     ImGui.TableNextRow();
+                 
                     ImGui.TableSetColumnIndex(0);
+                  
                     if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
                     {
                         if (notes != null && notes.Count > 0)
@@ -155,6 +158,7 @@ namespace Wanderer.GitRepository.View
                     }
                     ImGui.Text(item.MessageShort);
 
+        
 
                     //CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
                     //commitBranchDrawIndex1.BranchIndex = m_gitRepo.GetCommitBranchIndex(item.Commit);
@@ -185,6 +189,7 @@ namespace Wanderer.GitRepository.View
                             }
                         }
                     }
+                  
                     ImGui.TableSetColumnIndex(1);
                     ImGui.Text(item.Author.When.DateTime.ToString());
                     ImGui.TableSetColumnIndex(2);
@@ -193,6 +198,17 @@ namespace Wanderer.GitRepository.View
                     ImGui.Text($"{item.Sha.Substring(0, 10)}");
                 }
                 ImGui.EndTable();
+
+                //右键菜单 - test
+                if (ImGui.BeginPopupContextItem())
+                {
+                    ImGui.MenuItem("new branch...");
+                    ImGui.MenuItem("new tag...");
+                    ImGui.MenuItem("checkout commit...");
+                    ImGui.MenuItem("revert commit...");
+                    ImGui.MenuItem("cherry-pick commit...");
+                    ImGui.EndPopup();
+                }
             }
 
             //if (commitBranchDrawIndex.Count > 0)
