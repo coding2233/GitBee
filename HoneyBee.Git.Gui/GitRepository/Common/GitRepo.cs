@@ -1,4 +1,5 @@
 ﻿using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 using LiteDB;
 using SharpDX.Direct3D11;
 using System;
@@ -82,6 +83,49 @@ namespace Wanderer.GitRepository.Common
             complete?.Invoke();
         }
 
+        public void Pull(ProgressHandler onProgress, TransferProgressHandler onTransferProgressHandler)
+        {
+            // Credential information to fetch
+            LibGit2Sharp.PullOptions options = new LibGit2Sharp.PullOptions();
+            options.FetchOptions = new FetchOptions();
+            if (onProgress != null)
+            {
+                options.FetchOptions.OnProgress = onProgress;
+            }
+
+            if (onTransferProgressHandler!=null)
+            {
+                options.FetchOptions.OnTransferProgress = onTransferProgressHandler;
+            }
+
+            //这里需要用户验证信息
+            //options.FetchOptions.CredentialsProvider = new CredentialsHandler(
+            //    (url, usernameFromUrl, types) =>
+            //        new UsernamePasswordCredentials()
+            //        {
+            //            Username = USERNAME,
+            //            Password = PASSWORD
+            //        });
+
+            // User information to create a merge commit
+            var signature = BuildSignature();
+
+            // Pull
+            Commands.Pull(m_repository, signature, options);
+        }
+
+        public void Fetch(string remoteName)
+        {
+            string logMessage="";
+            var remote = m_repository.Network.Remotes[remoteName];
+            IEnumerable<string> refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
+            Commands.Fetch(m_repository, remote.Name, refSpecs, null, logMessage);
+
+            //next
+            //git fetch --all
+        }
+
+
         //将git数据同步到数据库
         private List<Task> SyncGitRepoToDatabase()
         {
@@ -158,12 +202,18 @@ namespace Wanderer.GitRepository.Common
             if (string.IsNullOrEmpty(commitMessage))
                 return;
 
+            BuildSignature();
             //提交到仓库中
-            m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
 
             //更新数据
             SyncGitRepoTask(null,null);
+        }
+
+        private Signature BuildSignature()
+        {
+            m_signatureAuthor = m_repository.Config.BuildSignature(DateTimeOffset.Now);
+            return m_signatureAuthor;
         }
 
         public bool CheckIndex(string file)
