@@ -1,4 +1,6 @@
 ﻿using ImGuiNET;
+using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 using strange.extensions.context.api;
 using System;
 using System.Collections.Generic;
@@ -364,13 +366,28 @@ namespace Wanderer.GitRepository.View
                     {
                         if (isCurrentRepositoryHead)
                         {
-                            ImGui.MenuItem($"pull");
+                            if (ImGui.MenuItem($"pull"))
+                            {
+                                m_gitRepo.Pull(serverProgressOutput => 
+                                {
+                                    Console.WriteLine(serverProgressOutput);
+                                    return true;   
+                                },
+                                transferProgress => 
+                                {
+                                    Console.WriteLine($"IndexedObjects:{transferProgress.IndexedObjects} TotalObjects:{transferProgress.TotalObjects}" +
+                                        $"ReceivedObjects:{transferProgress.ReceivedObjects}");
+                                    return true;
+                                });
+                            }
                         }
                         else
                         {
                             ImGui.MenuItem($"checkout {branchNode.FullName}");
                             ImGui.MenuItem($"rebase {branchNode.FullName}");
                         }
+
+                        ImGui.MenuItem($"new branch ...");
 
                         if (ImGui.BeginMenu("push"))
                         {

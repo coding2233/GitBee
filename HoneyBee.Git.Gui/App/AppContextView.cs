@@ -14,19 +14,13 @@ using Wanderer.GitRepository;
 
 namespace Wanderer.App
 {
-    public class AppContextView : ContextView
+    public class AppContextView : ContextView, IGraphicsRender, IMainLoop
     {
-        private Sdl2Window m_sdl2Window;
-        private GraphicsDevice m_graphicsDevice;
-        private CommandList m_commandList;
-        private Vector3 m_clearColor = new Vector3(0.45f, 0.55f, 0.6f);
-        private ImGuiController m_imGuiController;
+        private GraphicsWindow m_graphicsWindow;
 
         public AppContextView()
         {
-            //窗口
-            CreateWindowAndGraphicsDevice();
-            //
+            m_graphicsWindow = new GraphicsWindow(this);
             context = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
             //添加子Context
             AddChildContext();
@@ -34,75 +28,27 @@ namespace Wanderer.App
             context.Launch();
         }
 
-        public void Loop()
+        public void OnMainLoop()
         {
-            while (m_sdl2Window != null )
-            {
-                InputSnapshot snapshot = m_sdl2Window.PumpEvents();
-                if (!m_sdl2Window.Exists)
-                {
-                    break;
-                }
-                m_imGuiController.Update(1/30.0f, snapshot);
+            m_graphicsWindow?.Loop();
+            Dispose();
+        }
 
-                ImGuiView.Render();
-                //ImGuiExample.Show();
-
-                m_commandList.Begin();
-                m_commandList.SetFramebuffer(m_graphicsDevice.MainSwapchain.Framebuffer);
-                m_commandList.ClearColorTarget(0, new RgbaFloat(m_clearColor.X, m_clearColor.Y, m_clearColor.Z, 1f));
-                m_imGuiController.Render(m_graphicsDevice, m_commandList);
-                m_commandList.End();
-                m_graphicsDevice.SubmitCommands(m_commandList);
-                m_graphicsDevice.SwapBuffers(m_graphicsDevice.MainSwapchain);
-            }
+        public void OnRender()
+        {
+            ImGuiView.Render();
+        }
+        public void SetWindowState(WindowState windowState)
+        {
+            m_graphicsWindow?.SetWindowState(windowState);
         }
 
         protected override void OnDestroy()
         {
-            m_graphicsDevice?.WaitForIdle();
-
-            m_imGuiController?.Dispose();
-            m_commandList?.Dispose();
-            m_graphicsDevice?.Dispose();
-
+            m_graphicsWindow?.Dispose();
             base.OnDestroy();
         }
-
-        private void CreateWindowAndGraphicsDevice()
-        {
-            // Create window, GraphicsDevice, and all resources necessary for the demo.
-            VeldridStartup.CreateWindowAndGraphicsDevice(
-                new WindowCreateInfo(50, 50, 1280, 720, WindowState.Normal, "Honey Bee - Git"),
-                new GraphicsDeviceOptions(true, null, true, ResourceBindingModel.Improved, true, true),
-                GraphicsBackend.Vulkan,
-                out m_sdl2Window,
-                out m_graphicsDevice);
-          
-
-            m_commandList = m_graphicsDevice.ResourceFactory.CreateCommandList();
-            m_imGuiController = new ImGuiController(m_graphicsDevice, m_graphicsDevice.MainSwapchain.Framebuffer.OutputDescription, m_sdl2Window.Width, m_sdl2Window.Height);
-            m_sdl2Window.Resized += () =>
-            {
-                m_graphicsDevice.MainSwapchain.Resize((uint)m_sdl2Window.Width, (uint)m_sdl2Window.Height);
-                m_imGuiController.WindowResized(m_sdl2Window.Width, m_sdl2Window.Height);
-            };
-
-            m_sdl2Window.FocusLost += OnSdl2WindowFocusLost;
-            m_sdl2Window.FocusGained += OnSdl2WindowFocusGained;
-            //m_sdl2Window.BorderVisible = false;
-            //m_sdl2Window.Visible = true;
-        }
-
-        private void OnSdl2WindowFocusGained()
-        {
-            ImGuiView.Focus(false);
-        }
-
-        private void OnSdl2WindowFocusLost()
-        {
-            ImGuiView.Focus(true);
-        }
+       
 
         private void AddChildContext()
         {

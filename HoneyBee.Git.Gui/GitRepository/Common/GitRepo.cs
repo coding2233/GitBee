@@ -83,19 +83,19 @@ namespace Wanderer.GitRepository.Common
             complete?.Invoke();
         }
 
-        public void Pull(ProgressHandler onProgress, TransferProgressHandler onTransferProgressHandler)
+        public void Pull(Func<string,bool> onProgress, Func<TransferProgress, bool> onTransferProgressHandler)
         {
             // Credential information to fetch
             LibGit2Sharp.PullOptions options = new LibGit2Sharp.PullOptions();
             options.FetchOptions = new FetchOptions();
             if (onProgress != null)
             {
-                options.FetchOptions.OnProgress = onProgress;
+                options.FetchOptions.OnProgress = new ProgressHandler(onProgress);
             }
 
             if (onTransferProgressHandler!=null)
             {
-                options.FetchOptions.OnTransferProgress = onTransferProgressHandler;
+                options.FetchOptions.OnTransferProgress = new TransferProgressHandler(onTransferProgressHandler);
             }
 
             //这里需要用户验证信息

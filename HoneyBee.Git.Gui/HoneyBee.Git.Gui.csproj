@@ -12,6 +12,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Program.cs~RFe91c4dc.TMP" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="bee.ico" />
   </ItemGroup>
 
