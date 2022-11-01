@@ -83,7 +83,6 @@ namespace Wanderer.App
                 if (!File.Exists(zipFilePath) || !ExtractUpdate(zipFilePath))
                 {
                     var launchProcess = LoadOtherProcess(Path.Combine(s_processDir,s_processFileName), "WindowType=Launch");
-                    launchProcess.Start();
                     //标准的场景
                     if (launchProcess != null)
                     {
@@ -246,7 +245,7 @@ namespace Wanderer.App
         GraphicsWindow m_graphicsWindow;
         internal LaunchGraphicsWindow()
         {
-            m_graphicsWindow = new GraphicsWindow(this);
+            m_graphicsWindow = new GraphicsWindow(new Vector2(500,300),this);
         }
 
         public void Dispose()

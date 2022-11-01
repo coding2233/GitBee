@@ -20,7 +20,7 @@ namespace Wanderer.App
 
         public AppContextView()
         {
-            m_graphicsWindow = new GraphicsWindow(this);
+            m_graphicsWindow = new GraphicsWindow(new Vector2(1280,720),this);
             context = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
             //添加子Context
             AddChildContext();
@@ -36,7 +36,7 @@ namespace Wanderer.App
 
         public void OnRender()
         {
-            ImGuiView.Render();
+            ImGuiView.Render(m_graphicsWindow);
         }
         public void SetWindowState(WindowState windowState)
         {
