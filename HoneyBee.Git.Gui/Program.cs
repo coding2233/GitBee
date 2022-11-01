@@ -87,7 +87,7 @@ namespace Wanderer.App
                     if (launchProcess != null)
                     {
                         var gitGuiContextView = new AppContextView();
-                        //gitGuiContextView.SetWindowState(WindowState.Maximized);
+                        gitGuiContextView.SetWindowState(WindowState.Maximized);
                         launchProcess.Kill();
                         mainLoop = gitGuiContextView;
                     }
@@ -245,7 +245,7 @@ namespace Wanderer.App
         GraphicsWindow m_graphicsWindow;
         internal LaunchGraphicsWindow()
         {
-            m_graphicsWindow = new GraphicsWindow(new Vector2(500,300),this);
+            m_graphicsWindow = new GraphicsWindow(new Vector2(500,300), SDL_WindowFlags.AllowHighDpi | SDL_WindowFlags.Borderless , this);
         }
 
         public void Dispose()

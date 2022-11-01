@@ -27,12 +27,12 @@ namespace Wanderer
         private IGraphicsRender m_graphicsRender;
         private Vector2 m_lastWindowSize;
 
-        public GraphicsWindow(Vector2 size,IGraphicsRender graphicsRender)
+        public GraphicsWindow(Vector2 size,SDL_WindowFlags flags, IGraphicsRender graphicsRender)
         {
             m_graphicsRender = graphicsRender;
             //窗口
             m_lastWindowSize = size;
-            CreateWindowAndGraphicsDevice(size);
+            CreateWindowAndGraphicsDevice(size,flags);
         }
 
         public void Dispose()
@@ -87,11 +87,11 @@ namespace Wanderer
             }
         }
 
-        private void CreateWindowAndGraphicsDevice(Vector2 size)
+        private void CreateWindowAndGraphicsDevice(Vector2 size, SDL_WindowFlags flags )
         {
             
-            m_sdl2Window = new Sdl2Window("Honybee diff launch", Sdl2Native.SDL_WINDOWPOS_CENTERED, Sdl2Native.SDL_WINDOWPOS_CENTERED, (int)size.X, (int)size.Y, SDL_WindowFlags.AllowHighDpi |  SDL_WindowFlags.Borderless| SDL_WindowFlags.Resizable, false);
-            
+            m_sdl2Window = new Sdl2Window("Honybee diff launch", Sdl2Native.SDL_WINDOWPOS_CENTERED, Sdl2Native.SDL_WINDOWPOS_CENTERED, (int)size.X, (int)size.Y, flags, false); //
+
             m_graphicsDevice = VeldridStartup.CreateGraphicsDevice(m_sdl2Window);
             // Create window, GraphicsDevice, and all resources necessary for the demo.
             //VeldridStartup.CreateWindowAndGraphicsDevice(
