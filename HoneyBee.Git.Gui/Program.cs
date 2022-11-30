@@ -26,7 +26,7 @@ namespace Wanderer.App
             Log.Info("Hello, Honey Bee - Git!");
              
             var gitGuiContextView = new AppContextView();
-            gitGuiContextView.SetWindowState(WindowState.Maximized);
+            //gitGuiContextView.SetWindowState(WindowState.Maximized);
             IMainLoop mainLoop = gitGuiContextView;
             if (mainLoop != null)
             {

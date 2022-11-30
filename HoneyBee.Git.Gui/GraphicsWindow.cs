@@ -92,7 +92,7 @@ namespace Wanderer
             
             m_sdl2Window = new Sdl2Window("Honybee diff launch", Sdl2Native.SDL_WINDOWPOS_CENTERED, Sdl2Native.SDL_WINDOWPOS_CENTERED, (int)size.X, (int)size.Y, flags, false); //
 
-            m_graphicsDevice = VeldridStartup.CreateGraphicsDevice(m_sdl2Window);
+            m_graphicsDevice = VeldridStartup.CreateGraphicsDevice(m_sdl2Window,GraphicsBackend.Direct3D11);
             // Create window, GraphicsDevice, and all resources necessary for the demo.
             //VeldridStartup.CreateWindowAndGraphicsDevice(
             //    new WindowCreateInfo(50, 50, 1280, 720, WindowState.Hidden, "Honey Bee - Git"),
