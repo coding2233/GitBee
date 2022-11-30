@@ -48,10 +48,10 @@ namespace Wanderer.App.View
 
         public override void OnDraw()
         {
-            DrawMainMenuBar();
+            //DrawMainMenuBar();
         }
 
-        private void DrawMainMenuBar()
+        public void DrawMainMenuBar()
         {
             if (ImGui.BeginMainMenuBar())
             {
@@ -154,6 +154,11 @@ namespace Wanderer.App.View
 
         }
 
+
+        public void DrawStatusBar()
+        {
+            
+        }
 
 
     }

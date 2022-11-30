@@ -90,7 +90,7 @@ namespace Wanderer
         private void CreateWindowAndGraphicsDevice(Vector2 size, SDL_WindowFlags flags )
         {
             
-            m_sdl2Window = new Sdl2Window("Honybee diff launch", Sdl2Native.SDL_WINDOWPOS_CENTERED, Sdl2Native.SDL_WINDOWPOS_CENTERED, (int)size.X, (int)size.Y, flags, false); //
+            m_sdl2Window = new Sdl2Window($"Honybee Git - {Application.Version}", Sdl2Native.SDL_WINDOWPOS_CENTERED, Sdl2Native.SDL_WINDOWPOS_CENTERED, (int)size.X, (int)size.Y, flags, false); //
 
             m_graphicsDevice = VeldridStartup.CreateGraphicsDevice(m_sdl2Window,GraphicsBackend.Direct3D11);
             // Create window, GraphicsDevice, and all resources necessary for the demo.

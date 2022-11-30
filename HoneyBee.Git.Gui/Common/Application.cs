@@ -9,6 +9,8 @@ namespace Wanderer.Common
 {
     public static class Application
     {
+        public static string Version => "2022.0.1a";
+
         private static string m_dataPath;
         public static string DataPath
         {

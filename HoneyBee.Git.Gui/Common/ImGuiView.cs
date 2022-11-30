@@ -66,6 +66,7 @@ namespace Wanderer.Common
 
 
         private static AppImGuiView s_appImGuiView;
+        private static Vector2 s_statusBarSize;
 
         public virtual string Name { get; } = "None";
 
@@ -81,16 +82,25 @@ namespace Wanderer.Common
 
         public static void Render()
         {
+           
+           
+
             //主窗口
             if (s_appImGuiView != null)
             {
-                s_appImGuiView.OnDraw();
+                s_appImGuiView.DrawMainMenuBar();
             }
+
 
             //tabview
             var viewport = ImGui.GetMainViewport();
+            if (s_statusBarSize == Vector2.Zero)
+            {
+                float lineHight = ImGui.GetTextLineHeight() * 2f;
+                s_statusBarSize = new Vector2(viewport.WorkSize.X, lineHight);
+            }
             ImGui.SetNextWindowPos(viewport.WorkPos);
-            ImGui.SetNextWindowSize(viewport.WorkSize);
+            ImGui.SetNextWindowSize(viewport.WorkSize - new Vector2(0, s_statusBarSize.Y));
             ImGui.SetNextWindowViewport(viewport.ID);
 
             if (ImGui.Begin("Main_Tab_Window",s_defaultWindowFlag))
@@ -165,6 +175,21 @@ namespace Wanderer.Common
                     }
 
                     ImGui.EndTabBar();
+                }
+            }
+
+            ImGui.End();
+
+
+            ImGui.SetNextWindowPos(viewport.WorkPos+new Vector2(0, viewport.WorkSize.Y - s_statusBarSize.Y));
+            ImGui.SetNextWindowSize(s_statusBarSize);
+            ImGui.SetNextWindowViewport(viewport.ID);
+            if (ImGui.Begin("Main_Status_Window", s_defaultWindowFlag))
+            {
+                //主窗口
+                if (s_appImGuiView != null)
+                {
+                    s_appImGuiView.DrawStatusBar();
                 }
             }
             ImGui.End();
