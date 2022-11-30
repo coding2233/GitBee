@@ -12,6 +12,7 @@ using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository;
+using Wanderer.GitRepository.View;
 
 namespace Wanderer.App.Controller
 {
@@ -32,6 +33,7 @@ namespace Wanderer.App.Controller
             
             //内容主窗口
             ImGuiView.Create<HomeView>(context,0);
+
             ////打开默认仓库
             //string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");
             //dispatcher.Dispatch(AppEvent.ShowGitRepo, defaultGitRepo);

@@ -1,10 +1,12 @@
-﻿using strange.extensions.context.impl;
+﻿using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App;
+using Wanderer.App.Controller;
 using Wanderer.GitRepository.Controller;
 using Wanderer.GitRepository.Mediator;
 using Wanderer.GitRepository.Service;
@@ -26,6 +28,7 @@ namespace Wanderer.GitRepository
             injectionBinder.Bind<IGitRepoService>().To<GitRepoService>().ToSingleton();
 
             commandBinder.Bind(AppEvent.ShowGitRepo).To<ShowGitRepoCommand>();
+            commandBinder.Bind(ContextEvent.START).To<GitViewStartCommand>().Once();
 
             mediationBinder.Bind<GitRepoView>().To<GitRepoMediator>();
         }
