@@ -23,84 +23,97 @@ namespace Wanderer.App
 
         static void Main(string[] args)
         {
-            args = System.Environment.GetCommandLineArgs();
-            s_processDir = Path.GetDirectoryName(args[0]);
-            s_processName = Process.GetCurrentProcess().ProcessName;
-            s_processFileName = $"{s_processName}.exe";
-
-            foreach (var item in args)
-            {
-                Console.WriteLine($"Program--Main--CommandLineArgs: {item}");
-            }
-
-            int isLaunchWindowType = 0;
-            string updateURL = null;
-            for (int i = 0; i < args.Length; i++)
-            {
-                if (args[i].StartsWith("WindowType="))
-                {
-                    var splitArgs = args[i].Split('=');
-                    if (splitArgs != null && splitArgs.Length == 2)
-                    {
-                        if (splitArgs[1].Equals("Launch"))
-                        {
-                            isLaunchWindowType = 1;
-                        }
-                        else if (splitArgs[1].Equals("Update"))
-                        {
-                            isLaunchWindowType = 2;
-                        }
-                    }
-                }
-                else if (args[i].StartsWith("UpdateURL="))
-                {
-                    var splitArgs = args[i].Split('=');
-                    if (splitArgs != null && splitArgs.Length == 2)
-                    {
-                        updateURL = splitArgs[1];
-                    }
-                }
-            }
-
-
-            IMainLoop mainLoop = null;
-            if (isLaunchWindowType != 0)
-            {
-                Log.Info("Hello, Honey Bee - Git - Launch!");
-
-                if (isLaunchWindowType == 1)
-                {
-                    var launchGraphicsWindow = new LaunchGraphicsWindow();
-                    launchGraphicsWindow.SetWindowState(WindowState.Normal);
-                    mainLoop = launchGraphicsWindow;
-                }
-            }
-            else
-            {
-                
-                Log.Info("Hello, Honey Bee - Git!");
-                string zipFilePath = Path.Combine(s_processDir, "HoneyBee.Git.Gui.zip");
-                if (!File.Exists(zipFilePath) || !ExtractUpdate(zipFilePath))
-                {
-                    var launchProcess = LoadOtherProcess(Path.Combine(s_processDir,s_processFileName), "WindowType=Launch");
-                    //标准的场景
-                    if (launchProcess != null)
-                    {
-                        var gitGuiContextView = new AppContextView();
-                        gitGuiContextView.SetWindowState(WindowState.Maximized);
-                        launchProcess.Kill();
-                        mainLoop = gitGuiContextView;
-                    }
-                }
-                
-            }
-
-        
+            Log.Info("Hello, Honey Bee - Git!");
+             
+            var gitGuiContextView = new AppContextView();
+            gitGuiContextView.SetWindowState(WindowState.Maximized);
+            IMainLoop mainLoop = gitGuiContextView;
             if (mainLoop != null)
             {
                 mainLoop.OnMainLoop();
             }
         }
+
+        //static void Main(string[] args)
+        //{
+        //    args = System.Environment.GetCommandLineArgs();
+        //    s_processDir = Path.GetDirectoryName(args[0]);
+        //    s_processName = Process.GetCurrentProcess().ProcessName;
+        //    s_processFileName = $"{s_processName}.exe";
+
+        //    foreach (var item in args)
+        //    {
+        //        Console.WriteLine($"Program--Main--CommandLineArgs: {item}");
+        //    }
+
+        //    int isLaunchWindowType = 0;
+        //    string updateURL = null;
+        //    for (int i = 0; i < args.Length; i++)
+        //    {
+        //        if (args[i].StartsWith("WindowType="))
+        //        {
+        //            var splitArgs = args[i].Split('=');
+        //            if (splitArgs != null && splitArgs.Length == 2)
+        //            {
+        //                if (splitArgs[1].Equals("Launch"))
+        //                {
+        //                    isLaunchWindowType = 1;
+        //                }
+        //                else if (splitArgs[1].Equals("Update"))
+        //                {
+        //                    isLaunchWindowType = 2;
+        //                }
+        //            }
+        //        }
+        //        else if (args[i].StartsWith("UpdateURL="))
+        //        {
+        //            var splitArgs = args[i].Split('=');
+        //            if (splitArgs != null && splitArgs.Length == 2)
+        //            {
+        //                updateURL = splitArgs[1];
+        //            }
+        //        }
+        //    }
+
+
+        //    IMainLoop mainLoop = null;
+        //    if (isLaunchWindowType != 0)
+        //    {
+        //        Log.Info("Hello, Honey Bee - Git - Launch!");
+
+        //        if (isLaunchWindowType == 1)
+        //        {
+        //            var launchGraphicsWindow = new LaunchGraphicsWindow();
+        //            launchGraphicsWindow.SetWindowState(WindowState.Normal);
+        //            mainLoop = launchGraphicsWindow;
+        //        }
+        //    }
+        //    else
+        //    {
+
+        //        Log.Info("Hello, Honey Bee - Git!");
+        //        string zipFilePath = Path.Combine(s_processDir, "HoneyBee.Git.Gui.zip");
+        //        if (!File.Exists(zipFilePath) || !ExtractUpdate(zipFilePath))
+        //        {
+        //            var launchProcess = LoadOtherProcess(Path.Combine(s_processDir,s_processFileName), "WindowType=Launch");
+        //            //标准的场景
+        //            if (launchProcess != null)
+        //            {
+        //                var gitGuiContextView = new AppContextView();
+        //                gitGuiContextView.SetWindowState(WindowState.Maximized);
+        //                launchProcess.Kill();
+        //                mainLoop = gitGuiContextView;
+        //            }
+        //        }
+
+        //    }
+
+
+        //    if (mainLoop != null)
+        //    {
+        //        mainLoop.OnMainLoop();
+        //    }
+        //}
 
         static Process LoadOtherProcess(string filePath, string arguments)
         {

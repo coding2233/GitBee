@@ -20,7 +20,7 @@ namespace Wanderer.App
 
         public AppContextView()
         {
-            m_graphicsWindow = new GraphicsWindow(new Vector2(1280,720), SDL_WindowFlags.AllowHighDpi | SDL_WindowFlags.Resizable | SDL_WindowFlags.Hidden ,this);
+            m_graphicsWindow = new GraphicsWindow(new Vector2(1280,720), SDL_WindowFlags.AllowHighDpi | SDL_WindowFlags.Resizable ,this);
             context = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
             //添加子Context
             AddChildContext();
