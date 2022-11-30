@@ -16,9 +16,15 @@ namespace Wanderer.App.View
         internal Action<string> OnOpenRepository;
         internal Action<int> OnSetStyleColors;
         private int m_styleColors;
+        //private string m_statusLog = Icon.Get(Icon.Material_open_with);
+        private string m_fullLog = Icon.Get(Icon.Material_open_with);
 
         public AppImGuiView(IContext context) : base(context)
         {
+            Log.LogMessageReceiver += (logger) =>
+            {
+                m_fullLog = logger.fullLog;
+            };
         }
 
         //设置
@@ -157,7 +163,7 @@ namespace Wanderer.App.View
 
         public void DrawStatusBar()
         {
-            
+            ImGui.Text(m_fullLog);
         }
 
 

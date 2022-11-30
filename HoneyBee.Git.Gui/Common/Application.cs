@@ -12,11 +12,13 @@ namespace Wanderer.Common
         public static string Version => "2022.0.1a";
 
         private static string m_dataPath;
+        private static string m_userPath;
+
         public static string DataPath
         {
             get
             {
-                if (!string.IsNullOrEmpty(m_dataPath))
+                if (string.IsNullOrEmpty(m_dataPath))
                 {
                     m_dataPath = Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]);
                     Log.Info("DataPath: {0}", m_dataPath);
@@ -28,8 +30,6 @@ namespace Wanderer.Common
                 return m_dataPath;
             }
         }
-
-        private static string m_userPath;
 
         public static string UserPath
         {
@@ -52,7 +52,6 @@ namespace Wanderer.Common
                 return m_userPath;
             }
         }
-
 
         public static string GetStringMd5(string str)
         {

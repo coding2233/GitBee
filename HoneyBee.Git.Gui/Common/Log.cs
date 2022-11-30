@@ -4,8 +4,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.Common;
+using static System.Net.WebRequestMethods;
 
 namespace Wanderer
 {
@@ -13,6 +16,8 @@ namespace Wanderer
 
     public interface ILogger
     {
+        string log { get; }
+        string fullLog { get; }
         void Log(int level, string file, int line, string log);
     }
 
@@ -21,7 +26,7 @@ namespace Wanderer
     {
         public static ILogger Logger { get; internal set; } = new DefaultLogger();
         private static StringBuilder _logStringBuilder = new StringBuilder();
-
+        public static Action<ILogger> LogMessageReceiver;
         private static void Full(string log, LogLevel logLevel)
         {
             StackFrame stackFrame = null;
@@ -47,7 +52,14 @@ namespace Wanderer
 
             if (Logger != null)
             {
-                Logger.Log((int)logLevel, stackFrame == null ? "NULL" : stackFrame.GetFileName(), stackFrame == null ? -1 : stackFrame.GetFileLineNumber(), log);
+                int level = (int)logLevel;
+                string file = stackFrame == null ? "NULL": stackFrame.GetFileName();
+                int line = stackFrame == null ? -1 : stackFrame.GetFileLineNumber();
+                Logger.Log(level, file, line, log);
+                if (LogMessageReceiver != null)
+                {
+                    LogMessageReceiver.Invoke(Logger);
+                }
             }
         }
 
@@ -168,9 +180,27 @@ namespace Wanderer
         }
     }
 
-    internal class DefaultLogger : ILogger
+    public class DefaultLogger : ILogger
     {
+        public string log { get; private set; }
+        public string fullLog { get; private set; }
+
         StringBuilder m_strBuilder = new StringBuilder();
+
+        //private FileStream m_logFieStream;
+        private string m_logPath;
+        public DefaultLogger()
+        {
+            string logPath = Path.Combine(Application.UserPath, "log");
+            if (!Directory.Exists(logPath))
+            {
+                Directory.CreateDirectory(logPath);
+            }
+            logPath = Path.Combine(logPath, DateTime.Now.ToString("yyyy_MM_dd") + ".txt");
+            m_logPath = logPath;
+            //m_logFieStream = System.IO.File.OpenWrite(logPath);
+        }
+
         public void Log(int level, string file, int line, string log)
         {
             m_strBuilder.Clear();
@@ -190,7 +220,21 @@ namespace Wanderer
             m_strBuilder.Append(line);
             m_strBuilder.Append(": ");
             m_strBuilder.Append(log);
-            Console.WriteLine(m_strBuilder.ToString());
+            this.log = log;
+            fullLog = m_strBuilder.ToString();
+            Console.WriteLine(fullLog);
+
+            //if (!string.IsNullOrEmpty(m_logPath))
+            //{
+            //    m_strBuilder.Clear();
+            //    m_strBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd "));
+            //    m_strBuilder.Append(fullLog);
+            //    m_strBuilder.Append("\n");
+            //    var writeLog = m_strBuilder.ToString();
+            //    var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
+            //    System.IO.File.WriteAllText(m_logPath, writeLog);
+            //    //m_logFieStream.Write();
+            //}
         }
     }
 }

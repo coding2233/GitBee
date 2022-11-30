@@ -83,8 +83,6 @@ namespace Wanderer.Common
         public static void Render()
         {
            
-           
-
             //主窗口
             if (s_appImGuiView != null)
             {
