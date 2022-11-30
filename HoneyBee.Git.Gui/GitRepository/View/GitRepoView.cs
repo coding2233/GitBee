@@ -173,20 +173,22 @@ namespace Wanderer.GitRepository.View
                 case "Terminal":
                     ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.FileName = "where";
-                    startInfo.Arguments = "git-bash.exe";
+                    startInfo.Arguments = "git-bash";
                     startInfo.UseShellExecute = false;
                     startInfo.CreateNoWindow = true;
                     startInfo.RedirectStandardOutput = true;
                     var findGit = Process.Start(startInfo);
                     findGit.WaitForExit();
                     string readLine = findGit.StandardOutput.ReadLine();
-                    if (!string.IsNullOrEmpty(readLine) && readLine.EndsWith("git-bash.exe"))
+                    if (!string.IsNullOrEmpty(readLine) && readLine.Contains("git-bash"))
                     {
+                        Log.Info("where git-bash : {0}", readLine);
+
                         Process.Start(readLine, $"--cd={Path.Combine(m_repoPath,"../")}");
                     }
                     else
                     {
-                        Console.WriteLine("下载Git https://github.com/git-for-windows/git/releases/download/v2.38.0.windows.1/MinGit-2.38.0-64-bit.zip");
+                        Log.Info("下载Git https://github.com/git-for-windows/git/releases/download/v2.38.0.windows.1/MinGit-2.38.0-64-bit.zip");
                     }
                     break;
                 case "Pull":
@@ -201,6 +203,7 @@ namespace Wanderer.GitRepository.View
                     //ImGui.OpenPopup("Push");
                     //_remoteBranchTrack.GetData(_git);
                     //_showFetch = true;
+                    GitImGuiView.Push(m_gitRepo.Repo);
                     break;
                 default:
                     break;
