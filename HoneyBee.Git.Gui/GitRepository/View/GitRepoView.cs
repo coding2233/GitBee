@@ -174,12 +174,10 @@ namespace Wanderer.GitRepository.View
                     GitCommandView.ShowTerminal(m_repoPath);
                     break;
                 case "Pull":
-                    //Terminal.Pull(_git.RepoRootPath);
+                    GitCommandView.RunGitCommandView<PullGitCommand>(m_gitRepo);
                     break;
                 case "Fetch":
-                    //ImGui.OpenPopup("Fetch");
-                    //_remoteBranchTrack.GetData(_git);
-                    //_showFetch = true;
+                    GitCommandView.RunGitCommandView<FetchGitCommand>(m_gitRepo);
                     break;
                 case "Push":
                     GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo);
