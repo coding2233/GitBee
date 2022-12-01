@@ -35,7 +35,9 @@ namespace Wanderer.App.View
                 m_styleColors = styleColors;
                 OnSetStyleColors?.Invoke(m_styleColors);
             }
-          
+            ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 3);
+            ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 3);
+            ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 3);
             switch (m_styleColors)
             {
                 case 0:

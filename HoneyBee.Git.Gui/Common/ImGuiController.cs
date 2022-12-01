@@ -141,8 +141,8 @@ namespace Wanderer.Common
             
             CreateDeviceResources(gd, outputDescription);
             SetKeyMappings();
-
-            SetPerFrameImGuiData(1f / 60f);
+            
+            SetPerFrameImGuiData(1f / 30f);
 
             ImGui.NewFrame();
             _frameBegun = true;

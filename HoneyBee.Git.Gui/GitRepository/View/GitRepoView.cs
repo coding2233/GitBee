@@ -182,7 +182,7 @@ namespace Wanderer.GitRepository.View
                     //_showFetch = true;
                     break;
                 case "Push":
-                    GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo.RootPath);
+                    GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo);
                     break;
                 default:
                     break;
