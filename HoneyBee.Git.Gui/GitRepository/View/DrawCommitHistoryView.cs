@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
@@ -127,14 +128,14 @@ namespace Wanderer.GitRepository.View
                     //            break;
                     //        }
                     //    }
-                        
+
                     //}
 
                     //表格
                     ImGui.TableNextRow();
-                 
-                    ImGui.TableSetColumnIndex(0);
                   
+                    ImGui.TableSetColumnIndex(0);
+
                     if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
                     {
                         if (notes != null && notes.Count > 0)
@@ -156,9 +157,34 @@ namespace Wanderer.GitRepository.View
                             }
                         }
                     }
-                    ImGui.Text(item.MessageShort);
 
-        
+
+                    //ImGui.Text(item.MessageShort);
+                    if (ImGui.Selectable(item.MessageShort, m_selectCommit != null && m_selectCommit.Sha == item.Sha, ImGuiSelectableFlags.SpanAllColumns))
+                    {
+                        m_gitRepo.SelectCommit = item;
+                    }
+
+                    //右键菜单 - test
+                    if (ImGui.BeginPopupContextItem(item.Sha))
+                    {
+                        m_gitRepo.SelectCommit = item;
+                        if (m_gitRepo.SelectCommit != null)
+                        {
+                            ImGui.Text(Icon.Get(Icon.Material_commit));
+                            ImGui.SameLine();
+                            ImGui.Text(item.Sha.Substring(0, 10));
+                            ImGui.SameLine();
+                            ImGui.Text(item.MessageShort);
+                            ImGui.Separator();
+                            ImGui.MenuItem("new branch...");
+                            ImGui.MenuItem("new tag...");
+                            ImGui.MenuItem("checkout commit...");
+                            ImGui.MenuItem("revert commit...");
+                            ImGui.MenuItem("cherry-pick commit...");
+                        }
+                        ImGui.EndPopup();
+                    }
 
                     //CommitBranchDrawIndex commitBranchDrawIndex1 = new CommitBranchDrawIndex();
                     //commitBranchDrawIndex1.BranchIndex = m_gitRepo.GetCommitBranchIndex(item.Commit);
@@ -166,49 +192,18 @@ namespace Wanderer.GitRepository.View
                     //commitBranchDrawIndex1.Parents = item.Parents;
                     //commitBranchDrawIndex.Add(item.Commit, commitBranchDrawIndex1);
 
-                    var rectMin = ImGui.GetItemRectMin();
-                    var rectMax = ImGui.GetItemRectMax();
-                    rectMax.X = rectMin.X + ImGui.GetColumnWidth();
-                    //当前选中的提交
-                    if (m_selectCommit != null && m_selectCommit.Sha == item.Sha)
-                    {
-                        ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiCol.TabActive));
-                        ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(ImGuiCol.TabActive));
-                    }
-                    else
-                    {
-                        if (ImGui.IsWindowFocused() && !ImGui.IsMouseDragging(ImGuiMouseButton.Left) && ImGui.IsMouseHoveringRect(rectMin, rectMax))
-                        {
-                            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg0, ImGui.GetColorU32(ImGuiCol.TabActive));
-                            ImGui.TableSetBgColor(ImGuiTableBgTarget.RowBg1, ImGui.GetColorU32(ImGuiCol.TabActive));
-
-                            if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                            {
-                                m_gitRepo.SelectCommit = item;
-                                //SelectCommit(item);
-                            }
-                        }
-                    }
-                  
                     ImGui.TableSetColumnIndex(1);
                     ImGui.Text(item.Author.When.DateTime.ToString());
                     ImGui.TableSetColumnIndex(2);
                     ImGui.Text(item.Author.Name);// [{item.Committer.Email}]
                     ImGui.TableSetColumnIndex(3);
                     ImGui.Text($"{item.Sha.Substring(0, 10)}");
+
+                 
                 }
                 ImGui.EndTable();
 
-                //右键菜单 - test
-                if (ImGui.BeginPopupContextItem())
-                {
-                    ImGui.MenuItem("new branch...");
-                    ImGui.MenuItem("new tag...");
-                    ImGui.MenuItem("checkout commit...");
-                    ImGui.MenuItem("revert commit...");
-                    ImGui.MenuItem("cherry-pick commit...");
-                    ImGui.EndPopup();
-                }
+              
             }
 
             //if (commitBranchDrawIndex.Count > 0)
