@@ -1,0 +1,13 @@
+diff --git a/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj b/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
+index 99efce8..4dd703d 100644
+--- a/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
++++ b/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
+@@ -1,7 +1,7 @@
+ ﻿<Project Sdk="Microsoft.NET.Sdk">
+ 
+   <PropertyGroup>
+-    <OutputType>Exe</OutputType>
++    <OutputType>WinExe</OutputType>
+     <TargetFramework>net6.0</TargetFramework>
+     <!--<ImplicitUsings>enable</ImplicitUsings>-->
+     <!--<Nullable>enable</Nullable>-->

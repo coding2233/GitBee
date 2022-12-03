@@ -37,6 +37,7 @@ jobs:
     - name: Build
       run: |
         cd HoneyBee.Git.Gui/
+        git apply patch_windows_release.patch
         dotnet restore
         dotnet build --no-restore -c Release
         cd ../
