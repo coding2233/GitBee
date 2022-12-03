@@ -14,7 +14,7 @@ namespace Wanderer
 {
     public enum LogLevel { LOG_TRACE, LOG_DEBUG, LOG_INFO, LOG_WARN, LOG_ERROR, LOG_FATAL };
 
-    public interface ILogger
+    public interface ILogger:IDisposable
     {
         string log { get; }
         string fullLog { get; }
@@ -122,6 +122,15 @@ namespace Wanderer
             Fatal(string.Format(format, args));
         }
 
+        public static void ShutDown()
+        {
+            if (Logger != null)
+            {
+                Logger.Dispose();
+                Logger = null;
+            }
+        }
+
         private static StackFrame GetTraceLog(ref string log)
         {
             StackTrace stackTrace = new StackTrace(true);
@@ -187,7 +196,7 @@ namespace Wanderer
 
         StringBuilder m_strBuilder = new StringBuilder();
 
-        //private FileStream m_logFieStream;
+        private FileStream m_logFieStream;
         private string m_logPath;
         public DefaultLogger()
         {
@@ -198,7 +207,8 @@ namespace Wanderer
             }
             logPath = Path.Combine(logPath, DateTime.Now.ToString("yyyy_MM_dd") + ".txt");
             m_logPath = logPath;
-            //m_logFieStream = System.IO.File.OpenWrite(logPath);
+            m_logFieStream = new FileStream(logPath,FileMode.OpenOrCreate, FileAccess.ReadWrite,FileShare.None);
+            m_logFieStream.Position = m_logFieStream.Length;
         }
 
         public void Log(int level, string file, int line, string log)
@@ -224,17 +234,27 @@ namespace Wanderer
             fullLog = m_strBuilder.ToString();
             Console.WriteLine(fullLog);
 
-            //if (!string.IsNullOrEmpty(m_logPath))
-            //{
-            //    m_strBuilder.Clear();
-            //    m_strBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd "));
-            //    m_strBuilder.Append(fullLog);
-            //    m_strBuilder.Append("\n");
-            //    var writeLog = m_strBuilder.ToString();
-            //    var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
-            //    System.IO.File.WriteAllText(m_logPath, writeLog);
-            //    //m_logFieStream.Write();
-            //}
+            if (m_logFieStream!=null)
+            {
+                m_strBuilder.Clear();
+                m_strBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd "));
+                m_strBuilder.Append(fullLog);
+                m_strBuilder.Append("\n");
+                var writeLog = m_strBuilder.ToString();
+                var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
+                //System.IO.File.WriteAllText(m_logPath, writeLog);
+                m_logFieStream.Write(buffer,0, buffer.Length);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (m_logFieStream != null)
+            {
+                m_logFieStream.Close();
+                m_logFieStream.Dispose();
+                m_logFieStream = null;
+            }
         }
     }
 }

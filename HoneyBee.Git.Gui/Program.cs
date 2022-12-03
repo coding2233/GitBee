@@ -23,14 +23,24 @@ namespace Wanderer.App
 
         static void Main(string[] args)
         {
-            Log.Info("Hello, Honey Bee - Git!");
-             
-            var gitGuiContextView = new AppContextView();
-            //gitGuiContextView.SetWindowState(WindowState.Maximized);
-            IMainLoop mainLoop = gitGuiContextView;
-            if (mainLoop != null)
+            try
             {
-                mainLoop.OnMainLoop();
+                Log.Info("Hello, Honey Bee - Git!");
+                var gitGuiContextView = new AppContextView();
+                //gitGuiContextView.SetWindowState(WindowState.Maximized);
+                IMainLoop mainLoop = gitGuiContextView;
+                if (mainLoop != null)
+                {
+                    mainLoop.OnMainLoop();
+                }
+            }
+            catch (System.Exception e)
+            {
+                Log.Error("Program throw system exception: {0}", e);
+            }
+            finally
+            {
+                Log.ShutDown();
             }
         }
 

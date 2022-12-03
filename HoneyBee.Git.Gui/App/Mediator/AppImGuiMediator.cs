@@ -35,7 +35,7 @@ namespace Wanderer.App.Mediator
 
         public override void OnRemove()
         {
-            appImGuiView.OnOpenRepository += OnOpenRepository;
+            appImGuiView.OnOpenRepository -= OnOpenRepository;
             appImGuiView.OnSetStyleColors -= OnSetStyleColors;
 
             base.OnRemove();

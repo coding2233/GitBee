@@ -26,11 +26,14 @@ namespace Wanderer.App.Mediator
         {
             base.OnRegister();
             homeView.OnOpenRepository += OnOpenRepositoryCallback;
+            homeView.OnRemoveRepository += OnRemoveRepositoryCallback;
         }
 
         public override void OnRemove()
         {
             homeView.OnOpenRepository -= OnOpenRepositoryCallback;
+            homeView.OnRemoveRepository -= OnRemoveRepositoryCallback;
+
             base.OnRemove();
         }
 
@@ -44,6 +47,12 @@ namespace Wanderer.App.Mediator
         private void OnOpenRepositoryCallback(string gitPath)
         {
             dispatcher.Dispatch(AppEvent.ShowGitRepo, gitPath);
+        }
+
+        private void OnRemoveRepositoryCallback(string gitPath)
+        {
+            database.RemoveRepository(gitPath);
+            homeView.SetRepositories(database.GetRepositories());
         }
 
     }

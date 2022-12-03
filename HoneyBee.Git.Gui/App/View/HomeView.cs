@@ -26,6 +26,7 @@ namespace Wanderer.App.View
         private string m_readMeText;
 
         internal Action<string> OnOpenRepository;
+        internal Action<string> OnRemoveRepository;
 
         public HomeView(IContext context) : base(context)
         {
@@ -90,6 +91,11 @@ namespace Wanderer.App.View
                 for (int i = 0; i < m_repositories.Count; i++)
                 {
                     bool repoExists = Directory.Exists(m_repositories[i]);
+                    if (!repoExists)
+                    {
+                        ImGui.BeginDisabled();
+                    }
+
                     if (ImGui.RadioButton(m_repositoriesName[i], m_repositories[i].Equals(m_selectGitPath)))
                     {
                         if (repoExists)
@@ -105,7 +111,13 @@ namespace Wanderer.App.View
                     if (!repoExists)
                     {
                         ImGui.SameLine();
-                        ImGui.TextDisabled("Rrepository is missing");
+                        ImGui.TextDisabled("is missing!");
+                        ImGui.EndDisabled();
+                        ImGui.SameLine();
+                        if (ImGui.Button("Delete"))
+                        {
+                            OnRemoveRepository?.Invoke(m_repositories[i]);
+                        }
                     }
                 }
                 
