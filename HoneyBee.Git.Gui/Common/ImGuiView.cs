@@ -87,16 +87,16 @@ namespace Wanderer.Common
             if (s_appImGuiView != null)
             {
                 s_appImGuiView.DrawMainMenuBar();
+                s_appImGuiView.OnDraw();
             }
 
 
             //tabview
             var viewport = ImGui.GetMainViewport();
-            if (s_statusBarSize == Vector2.Zero)
-            {
-                float lineHight = ImGui.GetTextLineHeight() * 2f;
-                s_statusBarSize = new Vector2(viewport.WorkSize.X, lineHight);
-            }
+            float lineHight = ImGui.GetTextLineHeight() * 2f;
+            s_statusBarSize = new Vector2(viewport.WorkSize.X, lineHight);
+
+            //mainview
             ImGui.SetNextWindowPos(viewport.WorkPos);
             ImGui.SetNextWindowSize(viewport.WorkSize - new Vector2(0, s_statusBarSize.Y));
             ImGui.SetNextWindowViewport(viewport.ID);
