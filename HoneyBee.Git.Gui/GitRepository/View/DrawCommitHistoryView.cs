@@ -177,11 +177,15 @@ namespace Wanderer.GitRepository.View
                             ImGui.SameLine();
                             ImGui.Text(item.MessageShort);
                             ImGui.Separator();
-                            ImGui.MenuItem("new branch...");
-                            ImGui.MenuItem("new tag...");
-                            ImGui.MenuItem("checkout commit...");
-                            ImGui.MenuItem("revert commit...");
-                            ImGui.MenuItem("cherry-pick commit...");
+
+                            var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Commit);
+                            foreach (var itemViewCommand in viewCommands)
+                            {
+                                if (ImGui.MenuItem(itemViewCommand.Name))
+                                {
+                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, itemViewCommand);
+                                }
+                            }
                         }
                         ImGui.EndPopup();
                     }

@@ -340,62 +340,54 @@ namespace Wanderer.GitRepository.View
                 {
                     if (branchNode.Branch.IsRemote)
                     {
-
+                        ImGui.Text(Icon.Get(Icon.Material_cloud));
+                        ImGui.SameLine();
+                        ImGui.Text(branchNode.FullName);
+                        ImGui.Separator();
+                        var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Remote);
+                        if (viewCommands != null && viewCommands.Count > 0)
+                        {
+                            foreach (var item in viewCommands)
+                            {
+                                if (ImGui.MenuItem(item.Name))
+                                {
+                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
+                                }
+                            }
+                        }
                     }
                     else
                     {
+                        ImGui.Text(Icon.Get(Icon.Material_download_for_offline));
+                        ImGui.SameLine();
+                        ImGui.Text(branchNode.FullName);
+                        ImGui.Separator();
                         if (isCurrentRepositoryHead)
                         {
-                            if (ImGui.MenuItem($"pull"))
+                            var viewCmds = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Head);
+                            if (viewCmds != null && viewCmds.Count > 0)
                             {
-                                m_gitRepo.Pull(serverProgressOutput => 
+                                foreach (var item in viewCmds)
                                 {
-                                    Console.WriteLine(serverProgressOutput);
-                                    return true;   
-                                },
-                                transferProgress => 
-                                {
-                                    Console.WriteLine($"IndexedObjects:{transferProgress.IndexedObjects} TotalObjects:{transferProgress.TotalObjects}" +
-                                        $"ReceivedObjects:{transferProgress.ReceivedObjects}");
-                                    return true;
-                                });
+                                    if (ImGui.MenuItem(item.Name))
+                                    {
+                                        GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
+                                    }
+                                }
                             }
                         }
-                        else
+                        var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Branch);
+                        if (viewCommands != null && viewCommands.Count > 0)
                         {
-                            ImGui.MenuItem($"checkout {branchNode.FullName}");
-                            ImGui.MenuItem($"rebase {branchNode.FullName}");
-                        }
-
-                        ImGui.MenuItem($"new branch ...");
-
-                        if (ImGui.BeginMenu("push"))
-                        {
-                            foreach (var itemRemote in m_gitRepo.Repo.Network.Remotes)
+                            foreach (var item in viewCommands)
                             {
-                                ImGui.MenuItem($"push {itemRemote.Name} {branchNode.FullName}:{branchNode.FullName}");
+                                if (ImGui.MenuItem(item.Name))
+                                {
+                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
+                                }
                             }
-                            ImGui.EndMenu();
                         }
-
-                        //
-                        if (!branchNode.Branch.IsTracking)
-                        {
-                            ImGui.MenuItem($"track origin ...");
-                        }
-
-                        //ImGui.MenuItem("Pull");
                     }
-
-                    if (ImGui.BeginMenu("fetch"))
-                    {
-                        foreach (var itemRemote in m_gitRepo.Repo.Network.Remotes)
-                        {
-                            ImGui.MenuItem($"fetch {itemRemote.Name} {branchNode.FullName}:{branchNode.FullName}");
-                        }
-                        ImGui.EndMenu();
-                    }
-
                     ImGui.EndPopup();
                 }
             }

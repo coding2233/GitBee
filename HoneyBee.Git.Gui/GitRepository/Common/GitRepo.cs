@@ -11,6 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Wanderer.Common;
+using Wanderer.GitRepository.View;
 using static SharpDX.Utilities;
 
 namespace Wanderer.GitRepository.Common
@@ -18,7 +19,7 @@ namespace Wanderer.GitRepository.Common
     public class GitRepo : IDisposable
     {
         private Repository m_repository;
-        
+
         public Repository Repo => m_repository;
 
         private LiteDatabase m_liteDb;
@@ -27,7 +28,7 @@ namespace Wanderer.GitRepository.Common
         public BranchCollection Branches => m_repository.Branches;
         public List<GitBranchNode> LocalBranchNodes { get; private set; } = new List<GitBranchNode>();
         public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
-        public Dictionary<string, List<string>> CommitNotes { get; private set; }=new Dictionary<string,List<string>>();
+        public Dictionary<string, List<string>> CommitNotes { get; private set; } = new Dictionary<string, List<string>>();
         public List<GitTag> Tags { get; private set; } = new List<GitTag>();
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
         public StashCollection Stashes => m_repository.Stashes;
@@ -55,12 +56,40 @@ namespace Wanderer.GitRepository.Common
         private Action<float> m_taskProgress;
         internal GitRepo(string repoPath)
         {
-            RootPath = repoPath.Replace("\\","/").Replace("/.git", "");
+            RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
-            m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath,$"{Name}.db"));
+            m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath, $"{Name}.db"));
             m_repository = new Repository(RootPath);
             ////同步仓库信息
             //SyncGitRepoTask();
+        }
+
+        public string FormatCommandAction(ViewCommand command)
+        {
+            string action = command.Action;
+            if (string.IsNullOrEmpty(action))
+            {
+                action = "git --help";
+            }
+            else
+            {
+                switch (command.Target)
+                {
+                    case ViewCommandTarget.Head:
+                    case ViewCommandTarget.Branch:
+                        break;
+                    case ViewCommandTarget.Remote:
+                        break;
+                    case ViewCommandTarget.Commit:
+                        break;
+                    case ViewCommandTarget.Tag:
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            return action;
         }
 
         //同步仓库信息
