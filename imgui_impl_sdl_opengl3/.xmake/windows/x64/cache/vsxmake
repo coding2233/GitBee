@@ -1,0 +1,5 @@
+{
+    outputdir = ".",
+    kind = "vsxmake",
+    modes = "debug,release"
+}
