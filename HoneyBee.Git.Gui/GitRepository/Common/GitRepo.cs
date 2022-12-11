@@ -189,9 +189,7 @@ namespace Wanderer.GitRepository.Common
         {
             try
             {
-                var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-                int count = commitsCol.Query().Count();
-                return count;
+                return m_repository.Commits.Count();
             }
             catch (Exception e)
             {
