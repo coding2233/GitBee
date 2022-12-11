@@ -5,34 +5,22 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Numerics;
-using Veldrid;
-using Veldrid.Sdl2;
-using Veldrid.StartupUtilities;
+using System.Reflection;
+using System.Runtime.InteropServices;
+using Wanderer.Common;
 
 namespace Wanderer.App
 {
-    internal class Program
+    internal unsafe class Program
     {
-        //static string updateUrl = "https://github.com/coding2233/HoneyBee_Git/releases/latest/download/";
-        static string updateUrl = "https://github.com/woodpecker-ci/woodpecker/releases/latest/download/";
-        static string checksumText = "checksums.txt";
-
-        static string s_processDir;
-        static string s_processName;
-        static string s_processFileName;
-
+        
         static void Main(string[] args)
         {
             try
             {
                 Log.Info("Hello, Honey Bee - Git!");
-                var gitGuiContextView = new AppContextView();
-                //gitGuiContextView.SetWindowState(WindowState.Maximized);
-                IMainLoop mainLoop = gitGuiContextView;
-                if (mainLoop != null)
-                {
-                    mainLoop.OnMainLoop();
-                }
+                int result = Create($"Honybee Git - {Application.Version}", OnImGuiInit, OnImGuiDraw);
+
             }
             catch (System.Exception e)
             {
@@ -44,280 +32,101 @@ namespace Wanderer.App
             }
         }
 
-        //static void Main(string[] args)
-        //{
-        //    args = System.Environment.GetCommandLineArgs();
-        //    s_processDir = Path.GetDirectoryName(args[0]);
-        //    s_processName = Process.GetCurrentProcess().ProcessName;
-        //    s_processFileName = $"{s_processName}.exe";
 
-        //    foreach (var item in args)
-        //    {
-        //        Console.WriteLine($"Program--Main--CommandLineArgs: {item}");
-        //    }
-
-        //    int isLaunchWindowType = 0;
-        //    string updateURL = null;
-        //    for (int i = 0; i < args.Length; i++)
-        //    {
-        //        if (args[i].StartsWith("WindowType="))
-        //        {
-        //            var splitArgs = args[i].Split('=');
-        //            if (splitArgs != null && splitArgs.Length == 2)
-        //            {
-        //                if (splitArgs[1].Equals("Launch"))
-        //                {
-        //                    isLaunchWindowType = 1;
-        //                }
-        //                else if (splitArgs[1].Equals("Update"))
-        //                {
-        //                    isLaunchWindowType = 2;
-        //                }
-        //            }
-        //        }
-        //        else if (args[i].StartsWith("UpdateURL="))
-        //        {
-        //            var splitArgs = args[i].Split('=');
-        //            if (splitArgs != null && splitArgs.Length == 2)
-        //            {
-        //                updateURL = splitArgs[1];
-        //            }
-        //        }
-        //    }
-
-
-        //    IMainLoop mainLoop = null;
-        //    if (isLaunchWindowType != 0)
-        //    {
-        //        Log.Info("Hello, Honey Bee - Git - Launch!");
-
-        //        if (isLaunchWindowType == 1)
-        //        {
-        //            var launchGraphicsWindow = new LaunchGraphicsWindow();
-        //            launchGraphicsWindow.SetWindowState(WindowState.Normal);
-        //            mainLoop = launchGraphicsWindow;
-        //        }
-        //    }
-        //    else
-        //    {
-
-        //        Log.Info("Hello, Honey Bee - Git!");
-        //        string zipFilePath = Path.Combine(s_processDir, "HoneyBee.Git.Gui.zip");
-        //        if (!File.Exists(zipFilePath) || !ExtractUpdate(zipFilePath))
-        //        {
-        //            var launchProcess = LoadOtherProcess(Path.Combine(s_processDir,s_processFileName), "WindowType=Launch");
-        //            //标准的场景
-        //            if (launchProcess != null)
-        //            {
-        //                var gitGuiContextView = new AppContextView();
-        //                gitGuiContextView.SetWindowState(WindowState.Maximized);
-        //                launchProcess.Kill();
-        //                mainLoop = gitGuiContextView;
-        //            }
-        //        }
-
-        //    }
-
-
-        //    if (mainLoop != null)
-        //    {
-        //        mainLoop.OnMainLoop();
-        //    }
-        //}
-
-        static Process LoadOtherProcess(string filePath, string arguments)
+        static IntPtr OnImGuiInit()
         {
-            var launchProcess = new Process();
-            launchProcess.StartInfo.FileName = filePath;
-            launchProcess.StartInfo.Arguments = arguments;
-            launchProcess.StartInfo.UseShellExecute = false;
-            launchProcess.StartInfo.CreateNoWindow = false;
-            launchProcess.StartInfo.RedirectStandardInput = true;
-            launchProcess.StartInfo.RedirectStandardOutput = true;
-            launchProcess.Start();
-            return launchProcess;
-        }
+            var context = ImGui.CreateContext();
 
-        static async void CheckUpdate(Action<string> onCheckCallback)
-        {
-            string updateURL = null;
-            try
+            string iniFilePath = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "imgui.ini");
+            fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
             {
-                string url = Path.Combine(updateUrl, checksumText);
-                HttpClientHandler clientHandler = new HttpClientHandler();
-                clientHandler.ClientCertificateOptions = ClientCertificateOption.Manual;
-                clientHandler.ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => { return true; };
-                HttpClient client = new HttpClient(clientHandler);
-                //string readText = await client.GetStringAsync(Path.Combine(updateUrl, "checksumText"));
-                //Console.WriteLine(readText);
-                using HttpResponseMessage response = await client.GetAsync(url);
-                Console.WriteLine(response);
-                if (response.IsSuccessStatusCode)
+                ImGui.GetIO().NativePtr->IniFilename = iniFileName;
+            }
+
+            //io->ImeWindowHandle = ofGetWin32Window();
+            ////Load default font.
+            //var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();
+
+            //字体大小
+            int fontSize = 14;
+            //Load chinese font.
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("wqy-microhei.ttc"))
+            {
+                if (stream.Length > 0)
                 {
-                    string content = await response.Content.ReadAsStringAsync();
-                    var lines = content.Split('\n');
-                    foreach (var line in lines)
+                    byte[] buffer = new byte[stream.Length];
+                    stream.Read(buffer, 0, buffer.Length);
+                    var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
+                    ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesChineseFull());
+                }
+            }
+
+            ImFontConfigPtr imFontConfigPtr = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
+            {
+                OversampleH = 1,
+                OversampleV = 1,
+                RasterizerMultiply = 1f,
+                MergeMode = true,
+                PixelSnapH = true,
+            };
+
+            ////Load Source code pro font.
+            //using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("SourceCodePro-Black.ttf"))
+            //{
+            //    if (stream.Length > 0)
+            //    {
+            //        byte[] buffer = new byte[stream.Length];
+            //        stream.Read(buffer, 0, buffer.Length);
+            //        var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
+            //        ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+            //    }
+            //}
+
+            //Load icon.
+            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MaterialIcons-Regular.ttf"))
+            {
+                if (stream.Length > 0)
+                {
+                    byte[] buffer = new byte[stream.Length];
+                    stream.Read(buffer, 0, buffer.Length);
+                    var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
+                    GCHandle rangeHandle = GCHandle.Alloc(new ushort[]
+                     {
+                            0xe000,
+                            0xffff,
+                            0
+                     }, GCHandleType.Pinned); //0xeb4c
+                    var glyphOffset = imFontConfigPtr.GlyphOffset;
+                    imFontConfigPtr.GlyphOffset = glyphOffset + new Vector2(0.0f, 3.0f);
+                    ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, imFontConfigPtr, rangeHandle.AddrOfPinnedObject());
+                    if (rangeHandle.IsAllocated)
                     {
-                        if (string.IsNullOrEmpty(line))
-                        {
-                            continue;
-                        }
-
-                        if (line.StartsWith("windows_amd64"))
-                        {
-                            //updateURL = Path.Combine(updateUrl, lineArgs[2]);
-                        }
-
-                        //var lineArgs = line.Split(' ');
-                        //if (lineArgs[2].StartsWith("woodpecker-agent_windows_amd64"))
-                        //{
-                        //    url = Path.Combine(updateUrl, lineArgs[2]);
-                        //    var downloadResponse = await client.GetAsync(url);
-                        //    using (var fs = File.Create(lineArgs[2]))
-                        //    {
-                        //        await downloadResponse.Content.CopyToAsync(fs);
-                        //    }
-                        //}
+                        rangeHandle.Free();
                     }
-
-                    //string platform = Environment.OSVersion.Platform.ToString();
-                    //bool is64Os = Environment.Is64BitOperatingSystem;
-                    Console.WriteLine(content);
+                    imFontConfigPtr.GlyphOffset = glyphOffset;
                 }
+            }
 
+            ImGui.GetIO().Fonts.Build();
 
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"网络错误: {e}");
-            }
-            finally
-            {
-                onCheckCallback?.Invoke(updateURL);
-            }
+            //逻辑
+            var gitGuiContextView = new AppContextView();
+            //字体之类
+            return context;
         }
 
-        static bool ExtractUpdate(string zipPath)
+
+        static void OnImGuiDraw()
         {
-            //最新的解压程序
-            string eufSrcDir = Path.Combine(s_processDir, "ExtractUpdateFiles");
-            string eufTargetDir = Path.Combine(s_processDir, "temp/ExtractUpdateFiles");
-            if (!CopyDirToTarget(eufSrcDir, eufTargetDir))
-            {
-                return false;
-            }
-            //执行解压程序
-            string extractUpdateFiles = Path.Combine(eufTargetDir, "ExtractUpdateFiles.exe");
-            if (!File.Exists(extractUpdateFiles))
-            {
-                return false;
-            }
-            string mainExecPath = Path.Combine(s_processDir, $"{s_processName}.exe");
-            LoadOtherProcess(extractUpdateFiles, $"ZipFilePath={zipPath} ExtractDir={s_processDir} ExecPath={mainExecPath}");
-            return true;
+            ImGuiView.Render();
         }
 
-        static bool CopyDirToTarget(string srcDir, string targetDir)
-        {
-            bool result = true;
-
-            srcDir= srcDir.Replace("\\","/");
-            targetDir = targetDir.Replace("\\", "/");
-
-            if (Directory.Exists(srcDir))
-            {
-                if (!Directory.Exists(targetDir))
-                {
-                    Directory.CreateDirectory(targetDir);
-                }
-
-                var files = Directory.GetFiles(srcDir);
-                foreach (var item in files)
-                {
-                    string itemName = Path.GetFileName(item);
-                    string itemTarget = Path.Combine(targetDir, itemName);
-                    File.Copy(item, itemTarget, true);
-                }
-
-                var dirs = Directory.GetDirectories(srcDir);
-                foreach (var item in dirs)
-                {
-                    string dirName = Path.GetFileName(item);
-                    bool childResult = CopyDirToTarget(item, Path.Combine(targetDir, dirName));
-                    result = result && childResult;
-                }
-            }
-            else
-            {
-                result = false;
-            }
-
-            return result;
-        }
-
+        #region native
+        delegate IntPtr IMGUI_INIT_CALLBACK();
+        delegate void IMGUI_DRAW_CALLBACK();
+        [DllImport("imgui-impl-sdl-opengl3.dll")]
+        extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb);
+        #endregion
     }
 
-
-    internal interface IMainLoop
-    {
-        void OnMainLoop();
-    }
-
-    internal class LaunchGraphicsWindow : IGraphicsRender,IDisposable, IMainLoop
-    {
-        GraphicsWindow m_graphicsWindow;
-        internal LaunchGraphicsWindow()
-        {
-            m_graphicsWindow = new GraphicsWindow(new Vector2(500,300), SDL_WindowFlags.AllowHighDpi | SDL_WindowFlags.Borderless , this);
-        }
-
-        public void Dispose()
-        {
-            m_graphicsWindow?.Dispose();
-        }
-
-        public void OnMainLoop()
-        {
-            m_graphicsWindow?.Loop();
-            Dispose();
-        }
-
-        public void OnRender()
-        {
-            var viewport = ImGui.GetMainViewport();
-            ImGui.SetNextWindowPos(viewport.WorkPos);
-            ImGui.SetNextWindowSize(viewport.WorkSize);
-            ImGui.SetNextWindowViewport(viewport.ID);
-
-            var workSize = viewport.WorkSize;
-            if (ImGui.Begin("Diff", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
-            | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.NoBringToFrontOnFocus))
-            {
-                //int iconSize = 128;
-                //float offset = ImGui.GetStyle().ItemSpacing.Y * 10;
-                //ImGui.SetCursorPos(new Vector2((workSize.X - iconSize) * 0.5f, offset));
-                //var tptr = DiffProgram.GetOrCreateTexture("bee.png");
-                //ImGui.Image(tptr, Vector2.One * 128);
-
-                //ImGui.SetCursorPosY(ImGui.GetCursorPosY() + offset);
-
-                string text = "Honeybee - Git";
-                var textSize = ImGui.CalcTextSize(text);
-                ImGui.SetCursorPosX((workSize.X - textSize.X) * 0.5f);
-                ImGui.Text(text);
-
-                text = "Lightweight git gui tool.";
-                textSize = ImGui.CalcTextSize(text);
-                ImGui.SetCursorPosX((workSize.X - textSize.X) * 0.5f);
-                ImGui.TextDisabled(text);
-
-                ImGui.End();
-            }
-        }
-
-        public void SetWindowState(WindowState windowState)
-        {
-            m_graphicsWindow?.SetWindowState(windowState);
-        }
-    }
 }

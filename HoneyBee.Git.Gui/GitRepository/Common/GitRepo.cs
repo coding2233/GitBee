@@ -1,7 +1,6 @@
 ﻿using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 using LiteDB;
-using SharpDX.Direct3D11;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,7 +11,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Wanderer.Common;
 using Wanderer.GitRepository.View;
-using static SharpDX.Utilities;
 
 namespace Wanderer.GitRepository.Common
 {
