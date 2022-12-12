@@ -48,12 +48,15 @@ namespace Wanderer.App.View
             {
                 case 0:
                     ImGui.StyleColorsLight();
+                    ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 1);
                     break;
                 case 1:
                     ImGui.StyleColorsDark();
+                    ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0.0f);
                     break;
                 case 2:
                     ImGui.StyleColorsClassic();
+                    ImGui.PushStyleVar(ImGuiStyleVar.FrameBorderSize, 0.0f);
                     break;
             }
             //TextEditor.SetStyle(userSettings.TextStyleColors);

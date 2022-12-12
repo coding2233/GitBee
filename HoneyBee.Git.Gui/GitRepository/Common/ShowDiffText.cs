@@ -35,6 +35,9 @@ namespace Wanderer.GitRepository.Common
             if (string.IsNullOrEmpty(content))
                 return;
 
+            ////windows换行符 替换为linux换行符
+            //content = content.Replace("\r\n", "\n");
+
             int removeIndex = -1;
             int addIndex = -1;
 
@@ -156,11 +159,8 @@ namespace Wanderer.GitRepository.Common
             ImGui.Text(line.AddText);
             ImGui.SameLine();
             ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
-            ImGui.Text(line.Text);
+            ImGui.TextUnformatted(line.Text);
         }
-
-
-       
 
 
         private void GetNumberItemWidth(string text)
