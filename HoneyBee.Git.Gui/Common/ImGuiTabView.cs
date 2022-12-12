@@ -17,6 +17,10 @@ namespace Wanderer.Common
         {
         }
 
+        public override void OnDraw()
+        {
+            base.OnDraw();
+        }
 
     }
 }

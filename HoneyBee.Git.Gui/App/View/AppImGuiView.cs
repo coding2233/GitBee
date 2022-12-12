@@ -2,6 +2,7 @@
 using LibGit2Sharp;
 using SFB;
 using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -201,18 +202,18 @@ namespace Wanderer.App.View
                     ImGui.EndMenu();
                 }
 
-                //if (ImGui.BeginMenu("Window"))
-                //{
-                //    if (ImGui.MenuItem("Main Window"))
-                //    {
-                //        //mainModel.CreateTab<MainTabWindow>();
-                //    }
-                //    if (ImGui.MenuItem("Terminal Window"))
-                //    {
-                //        //mainModel.CreateTab<TerminalWindow>();
-                //    }
-                //    ImGui.EndMenu();
-                //}
+                if (ImGui.BeginMenu("Window"))
+                {
+                    if (ImGui.MenuItem("Home"))
+                    {
+                        ImGuiView.Create<HomeView>(context, 0);
+                    }
+                    //if (ImGui.MenuItem("Terminal Window"))
+                    //{
+                    //    //mainModel.CreateTab<TerminalWindow>();
+                    //}
+                    ImGui.EndMenu();
+                }
 
                 if (ImGui.BeginMenu("Help"))
                 {

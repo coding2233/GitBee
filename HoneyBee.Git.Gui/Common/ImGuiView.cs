@@ -5,6 +5,7 @@ using strange.extensions.context.impl;
 using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -17,6 +18,7 @@ namespace Wanderer.Common
     {
         private static List<ImGuiView> s_imGuiViews=new List<ImGuiView>();
         private static List<ImGuiTabView> s_imGuiTabViews=new List<ImGuiTabView>();
+        private static HashSet<ImGuiTabView> s_imGuiTabViewsWaitClose=new HashSet<ImGuiTabView>();
         private static ImGuiTabView s_lastActiveImGuiTabView;
 
         protected static ImGuiWindowFlags s_defaultWindowFlag = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
@@ -105,7 +107,6 @@ namespace Wanderer.Common
             {
                 if (ImGui.BeginTabBar("Git window tabs", ImGuiTabBarFlags.FittingPolicyDefault | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.AutoSelectNewTabs))
                 {
-
                     for (int i = 0; i < s_imGuiTabViews.Count; i++)
                     {
                         var tabWindow = s_imGuiTabViews[i];
@@ -116,44 +117,6 @@ namespace Wanderer.Common
                             tabItemFlag |= ImGuiTabItemFlags.UnsavedDocument;
                         }
                         bool visible = ImGui.BeginTabItem(tabWindow.IconName + tabWindow.Name+$"##tab_{tabWindow.Name}_{i}", ref showTab, tabItemFlag);
-                        if (ImGui.BeginPopupContextItem("TabItem MenuPopup"))
-                        {
-                            if (ImGui.MenuItem("Close"))
-                            {
-                                showTab = false;
-                            }
-
-                            if (ImGui.MenuItem("Close the other"))
-                            {
-                                //for (int m = 0; m < tabWindows.Count; m++)
-                                //{
-                                //    if (m != i)
-                                //        _waitCloseTabIndexs.Add(m);
-                                //}
-                            }
-                            if (ImGui.MenuItem("Close to the right"))
-                            {
-                                //for (int m = i + 1; m < tabWindows.Count; m++)
-                                //{
-                                //    _waitCloseTabIndexs.Add(m);
-                                //}
-                            }
-                            if (ImGui.MenuItem("Close all"))
-                            {
-                                //for (int m = 0; m < tabWindows.Count; m++)
-                                //{
-                                //    _waitCloseTabIndexs.Add(m);
-                                //}
-                            }
-                            ImGui.EndPopup();
-                        }
-                        if (ImGui.IsItemHovered())
-                        {
-                            if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
-                            {
-                                ImGui.OpenPopup("TabItem MenuPopup");
-                            }
-                        }
                         if (visible)
                         {
                             if (s_lastActiveImGuiTabView != tabWindow)
@@ -168,11 +131,47 @@ namespace Wanderer.Common
                             tabWindow.OnDraw();
                             ImGui.EndTabItem();
                         }
-
-                        //s_imGuiViews[i].OnDraw();
+                        
+                        if(!showTab)
+                        {
+                            Log.Info("Close table window:{0}", tabWindow.Name);
+                            s_imGuiTabViewsWaitClose.Add(tabWindow);
+                        }
                     }
-
                     ImGui.EndTabBar();
+                }
+
+                //关闭tabview
+                if (s_imGuiTabViewsWaitClose.Count > 0)
+                {
+                    ImGui.OpenPopup("TabView close popup modal");
+                    ImGui.SetNextWindowSize(new Vector2(384,200));
+                    if (ImGui.BeginPopupModal("TabView close popup modal"))
+                    {
+                        ImGui.Text("Make sure to close the tabview:");
+                        foreach (var item in s_imGuiTabViewsWaitClose)
+                        {
+                            ImGui.Text($"<{item.Name}>");
+                        }
+
+                        if (ImGui.Button("OK"))
+                        {
+                            foreach (var item in s_imGuiTabViewsWaitClose)
+                            {
+                                s_imGuiTabViews.Remove(item);
+                                item.Dispose();
+                            }
+                            s_imGuiTabViewsWaitClose.Clear();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            s_imGuiTabViewsWaitClose.Clear();
+                            ImGui.CloseCurrentPopup();
+                        }
+                        ImGui.EndPopup();
+                    }
                 }
             }
 
