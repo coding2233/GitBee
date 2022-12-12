@@ -1,6 +1,7 @@
 ﻿using ImGuiNET;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
+using SFB;
 using strange.extensions.context.api;
 using System;
 using System.Collections.Generic;
@@ -47,18 +48,19 @@ namespace Wanderer.GitRepository.View
             m_gitRepoMediator = mediator as GitRepoMediator;
 
             _toolItems = new Dictionary<string, int>();
-            _toolItems.Add("Commit", Icon.Material_add);
+            //_toolItems.Add("Commit", Icon.Material_add);
             _toolItems.Add("Sync", Icon.Material_sync);
             _toolItems.Add("Pull", Icon.Material_download);
             _toolItems.Add("Push", Icon.Material_publish);
             _toolItems.Add("Fetch", Icon.Material_downloading);
-            _toolItems.Add("Settings", Icon.Material_settings);
+            //_toolItems.Add("Settings", Icon.Material_settings);
             _toolItems.Add("Terminal", Icon.Material_terminal);
+            _toolItems.Add("Explorer", Icon.Material_folder_open);
         }
 
         //public void SetGitRepoPath(string repoPath)
         //{
-           
+
         //}
 
         private void CreateGitRepo()
@@ -169,6 +171,8 @@ namespace Wanderer.GitRepository.View
             {
                 case "Sync":
                     //_git.UpdateStatus();
+                    //start ... 
+                    //explorer ... 打开文件夹
                     break;
                 case "Terminal":
                     GitCommandView.ShowTerminal(m_repoPath);
@@ -181,6 +185,9 @@ namespace Wanderer.GitRepository.View
                     break;
                 case "Push":
                     GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo);
+                    break;
+                case "Explorer":
+                    Process.Start("Explorer", m_gitRepo.RootPath.Replace("/","\\"));
                     break;
                 default:
                     break;
