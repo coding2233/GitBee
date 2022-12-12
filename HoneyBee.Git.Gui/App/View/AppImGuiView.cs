@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
@@ -44,6 +45,7 @@ namespace Wanderer.App.View
             ImGui.PushStyleVar(ImGuiStyleVar.WindowRounding, 3);
             ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 3);
             ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 3);
+            ImGui.PushStyleColor(ImGuiCol.ModalWindowDimBg, Vector4.Zero);
             switch (m_styleColors)
             {
                 case 0:
@@ -103,6 +105,9 @@ namespace Wanderer.App.View
                                 int targetSelect = 0;
                                 ImGui.Combo("Target", ref targetSelect, new string[] { "branch", "remote", "tag", "commit" }, 4);
                             }
+                            ImGui.SameLine();
+                            bool showUI = false;
+                            ImGui.Checkbox("With UI", ref showUI);
                             m_commandsSplit02.Separate();
 
                             ImGui.Text("$branch selected branch name");
