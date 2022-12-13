@@ -19,7 +19,7 @@ namespace Wanderer.App
             try
             {
                 Log.Info("Hello, Honey Bee - Git!");
-                int result = Create($"Honybee Git - {Application.Version}", OnImGuiInit, OnImGuiDraw);
+                int result = Create($"Honybee Git - {Application.version}", OnImGuiInit, OnImGuiDraw);
 
             }
             catch (System.Exception e)

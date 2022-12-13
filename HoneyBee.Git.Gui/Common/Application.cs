@@ -9,7 +9,12 @@ namespace Wanderer.Common
 {
     public static class Application
     {
-        public static string Version => "2022.0.1a";
+        public static string version => "1.0.0-alpha.1";
+
+        public static Version GetVersion()
+        {
+            return new Version() { Major = 1, Minor = 0, Patch = 0, PreVersion = "alpha.1" };
+        }
 
         private static string m_dataPath;
         private static string m_userPath;
@@ -61,5 +66,14 @@ namespace Wanderer.Common
             return fileMD5;
         }
 
+    }
+
+
+    public struct Version
+    {
+        public int Major;
+        public int Minor;
+        public int Patch;
+        public string PreVersion;
     }
 }
