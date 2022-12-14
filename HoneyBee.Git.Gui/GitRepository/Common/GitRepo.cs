@@ -22,8 +22,8 @@ namespace Wanderer.GitRepository.Common
         public string Name { get; private set; }
         public string RootPath { get; private set; }
         public BranchCollection Branches => m_repository.Branches;
-        public List<GitBranchNode> LocalBranchNodes { get; private set; } = new List<GitBranchNode>();
-        public List<GitBranchNode> RemoteBranchNodes { get; private set; } = new List<GitBranchNode>();
+        public List<BranchTreeViewNode> LocalBranchNodes { get; private set; } = new List<BranchTreeViewNode>();
+        public List<BranchTreeViewNode> RemoteBranchNodes { get; private set; } = new List<BranchTreeViewNode>();
         public Dictionary<string, List<string>> CommitNotes { get; private set; } = new Dictionary<string, List<string>>();
         public List<GitTag> Tags { get; private set; } = new List<GitTag>();
         public List<GitSubmodule> Submodules { get; private set; } = new List<GitSubmodule>();
@@ -289,24 +289,28 @@ namespace Wanderer.GitRepository.Common
         //设置分支
         private void SetBranchNodes()
         {
-            List<GitBranchNode> localbranchNodes = new List<GitBranchNode>();
-            List<GitBranchNode> remotebranchNodes = new List<GitBranchNode>();
+            List<BranchTreeViewNode> localbranchNodes = new List<BranchTreeViewNode>();
+            List<BranchTreeViewNode> remotebranchNodes = new List<BranchTreeViewNode>();
             Dictionary<string, string> branchNotes = new Dictionary<string, string>();
             foreach (var branch in m_repository.Branches)
             {
-                string[] nameArgs = branch.FriendlyName.Split('/');
-                Queue<string> nameTree = new Queue<string>();
-                foreach (var item in nameArgs)
-                {
-                    nameTree.Enqueue(item);
-                }
+                //string[] nameArgs = branch.FriendlyName.Split('/');
+                //Queue<string> nameTree = new Queue<string>();
+                //foreach (var item in nameArgs)
+                //{
+                //    nameTree.Enqueue(item);
+                //}
                 if (branch.IsRemote)
                 {
-                    JointBranchNode(remotebranchNodes, nameTree, branch);
+                    //JointBranchNode(remotebranchNodes, nameTree, branch);
+
+                    BranchTreeViewNode.JoinTreeViewNode(remotebranchNodes, branch.FriendlyName, branch);
                 }
                 else
                 {
-                    JointBranchNode(localbranchNodes, nameTree, branch);
+                    //JointBranchNode(localbranchNodes, nameTree, branch);
+                    BranchTreeViewNode.JoinTreeViewNode(localbranchNodes, branch.FriendlyName, branch);
+
                 }
 
                 branchNotes.Add(branch.Reference.CanonicalName, branch.Reference.TargetIdentifier);
@@ -380,30 +384,7 @@ namespace Wanderer.GitRepository.Common
             }
         }
 
-        private void JointBranchNode(List<GitBranchNode> branchNodes, Queue<string> nameTree, Branch branch)
-        {
-            if (nameTree.Count == 1)
-            {
-                GitBranchNode branchNode = new GitBranchNode();
-                branchNode.Name = nameTree.Dequeue();
-                branchNode.FullName = branch.FriendlyName;
-                branchNode.Branch = branch;
-                branchNodes.Add(branchNode);
-            }
-            else
-            {
-                string name = nameTree.Dequeue();
-                var findNode = branchNodes.Find(x => x.Name.Equals(name));
-                if (findNode == null)
-                {
-                    findNode = new GitBranchNode();
-                    findNode.Name = name;
-                    findNode.Children = new List<GitBranchNode>();
-                    branchNodes.Add(findNode);
-                }
-                JointBranchNode(findNode.Children, nameTree, branch);
-            }
-        }
+       
 
     }
 

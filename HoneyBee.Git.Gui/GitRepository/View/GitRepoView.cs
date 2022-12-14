@@ -306,7 +306,7 @@ namespace Wanderer.GitRepository.View
             }
         }
 
-        private void DrawBranchTreeNode(GitBranchNode branchNode)
+        private void DrawBranchTreeNode(BranchTreeViewNode branchNode)
         {
             bool treeNodeEx = false;
             Vector2 currentPos = ImGui.GetCursorPos();
@@ -325,7 +325,7 @@ namespace Wanderer.GitRepository.View
             }
             else
             {
-                bool isCurrentRepositoryHead = branchNode.Branch.IsCurrentRepositoryHead;
+                bool isCurrentRepositoryHead = branchNode.Data.IsCurrentRepositoryHead;
 
                 if (isCurrentRepositoryHead)
                 {
@@ -345,7 +345,7 @@ namespace Wanderer.GitRepository.View
                 //右键菜单
                 if (ImGui.BeginPopupContextItem())
                 {
-                    if (branchNode.Branch.IsRemote)
+                    if (branchNode.Data.IsRemote)
                     {
                         ImGui.Text(Icon.Get(Icon.Material_cloud));
                         ImGui.SameLine();
@@ -399,7 +399,7 @@ namespace Wanderer.GitRepository.View
                 }
             }
 
-            if (!treeNodeEx || branchNode.Branch != null)
+            if (!treeNodeEx || branchNode.Data != null)
             {
                 currentPos  = currentPos + ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
                 //currentPos.X += ImGui.CalcTextSize(nodeName).X;
