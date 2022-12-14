@@ -18,6 +18,7 @@ namespace Wanderer.App
         {
             try
             {
+                var commandArgs = System.Environment.GetCommandLineArgs();
                 Log.Info("Hello, Honey Bee - Git!");
                 int result = Create($"Honybee Git - {Application.version}", OnImGuiInit, OnImGuiDraw);
 

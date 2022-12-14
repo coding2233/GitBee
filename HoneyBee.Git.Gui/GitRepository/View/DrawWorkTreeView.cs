@@ -32,6 +32,9 @@ namespace Wanderer
         private HashSet<StatusEntryTreeViewNode> m_stageSelectedNodes = new HashSet<StatusEntryTreeViewNode>();
         private HashSet<StatusEntryTreeViewNode> m_unstageSelectedNodes = new HashSet<StatusEntryTreeViewNode>();
 
+        private List<StatusEntryTreeViewNode> m_stageMultipleSelectionNodes =new List<StatusEntryTreeViewNode>();
+        private List<StatusEntryTreeViewNode> m_unstageMultipleSelectionNodes =new List<StatusEntryTreeViewNode>();
+
         public DrawWorkTreeView(GitRepo gitRepo)
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen;
@@ -158,6 +161,7 @@ namespace Wanderer
         private void DrawStatusEntryTreeNode(StatusEntryTreeViewNode node,bool isStage)
         {
             var selectNodes = isStage ? m_stageSelectedNodes : m_unstageSelectedNodes;
+            var multipSelectNodes = isStage ? m_stageMultipleSelectionNodes : m_unstageMultipleSelectionNodes;
             bool selected = selectNodes.Contains(node);
 
             if (node.Children != null && node.Children.Count > 0)
@@ -166,21 +170,48 @@ namespace Wanderer
                 node.NodeOpened = ImGui.TreeNodeEx(node.Name, nodeFlag);
                 if (ImGui.IsItemClicked())
                 {
-                    if (!ImGui.IsItemToggledOpen() && ImGui.GetIO().KeyCtrl)
+                    if (!ImGui.IsItemToggledOpen() )
                     {
-                        if (selected)
+                        if (ImGui.GetIO().KeyCtrl)
                         {
-                            selectNodes.Remove(node);
+                            if (selected)
+                            {
+                                selectNodes.Remove(node);
+                            }
+                            else
+                            {
+                                selectNodes.Add(node);
+                            }
+                        }
+                        else if (ImGui.GetIO().KeyShift)
+                        {
+                            selectNodes.Add(node);
+                            List<int> indexs = new List<int>();
+                            if (selectNodes.Count > 1)
+                            {
+                                //这里还需要更富在的多选计算
+                                foreach (var itemNode in selectNodes)
+                                {
+                                    indexs.Add(multipSelectNodes.IndexOf(itemNode));
+                                }
+                                indexs.Sort();
+                                int minIndex = indexs[0];
+                                int maxIndex = indexs[indexs.Count-1];
+                                selectNodes.Clear();
+                                for (int i = 0; i < multipSelectNodes.Count; i++)
+                                {
+                                    if (i >= minIndex && i <= maxIndex)
+                                    {
+                                        selectNodes.Add(multipSelectNodes[i]);
+                                    }
+                                }
+                            }
                         }
                         else
                         {
+                            selectNodes.Clear();
                             selectNodes.Add(node);
                         }
-                    }
-                    else
-                    {
-                        selectNodes.Clear();
-                        selectNodes.Add(node);
                     }
                 }
 
@@ -244,6 +275,30 @@ namespace Wanderer
                             selectNodes.Add(node);
                         }
                     }
+                    else if (ImGui.GetIO().KeyShift)
+                    {
+                        selectNodes.Add(node);
+                        List<int> indexs = new List<int>();
+                        if (selectNodes.Count > 1)
+                        {
+                            //这里还需要更富在的多选计算
+                            foreach (var itemNode in selectNodes)
+                            {
+                                indexs.Add(multipSelectNodes.IndexOf(itemNode));
+                            }
+                            indexs.Sort();
+                            int minIndex = indexs[0];
+                            int maxIndex = indexs[indexs.Count - 1];
+                            selectNodes.Clear();
+                            for (int i = 0; i < multipSelectNodes.Count; i++)
+                            {
+                                if (i >= minIndex && i <= maxIndex)
+                                {
+                                    selectNodes.Add(multipSelectNodes[i]);
+                                }
+                            }
+                        }
+                    }
                     else
                     {
                         selectNodes.Clear();
@@ -255,7 +310,6 @@ namespace Wanderer
         }
         private void UpdateStatus()
         {
-            //StatusOptions
             try
             {
                 var statuses = m_gitRepo.Repo.RetrieveStatus();
@@ -264,10 +318,17 @@ namespace Wanderer
                 m_unstageTreeView.Clear();
                 m_stageSelectedNodes.Clear();
                 m_unstageSelectedNodes.Clear();
+                m_stageMultipleSelectionNodes.Clear();
+                m_unstageMultipleSelectionNodes.Clear();
 
                 foreach (var item in statuses.Staged)
                 {
                     StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
+                }
+
+                foreach (var item in m_stageTreeView)
+                {
+                    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes,item);
                 }
 
                 foreach (var item in statuses)
@@ -277,10 +338,27 @@ namespace Wanderer
 
                     StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
                 }
+
+                foreach (var item in m_unstageTreeView)
+                {
+                    BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
+                }
             }
             catch (Exception e)
             {
                 Log.Warn("DrawWorkTreeView exception: {0}",e);
+            }
+        }
+
+        private void BuildMultipleSelectionNodes(List<StatusEntryTreeViewNode> nodes, StatusEntryTreeViewNode node)
+        {
+            nodes.Add(node);
+            if (node.Children != null && node.Children.Count > 0)
+            {
+                foreach (var item in node.Children)
+                {
+                    BuildMultipleSelectionNodes(nodes, item);
+                }
             }
         }
 

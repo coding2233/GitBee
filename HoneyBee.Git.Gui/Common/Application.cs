@@ -9,11 +9,11 @@ namespace Wanderer.Common
 {
     public static class Application
     {
-        public static string version => "1.0.0-alpha.1";
+        public static string version => "1.0.0a2";
 
         public static Version GetVersion()
         {
-            return new Version() { Major = 1, Minor = 0, Patch = 0, PreVersion = "alpha.1" };
+            return new Version() { Major = 1, Minor = 0, Patch = 0, PreVersion = "a2" };
         }
 
         private static string m_dataPath;
@@ -25,7 +25,8 @@ namespace Wanderer.Common
             {
                 if (string.IsNullOrEmpty(m_dataPath))
                 {
-                    m_dataPath = Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]);
+                    var args = System.Environment.GetCommandLineArgs();
+                    m_dataPath = Path.GetDirectoryName(args[0]);
                     Log.Info("DataPath: {0}", m_dataPath);
                 }
                 if (!Directory.Exists(m_dataPath))
