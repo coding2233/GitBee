@@ -1,0 +1,16 @@
+[
+{
+  "directory": "d:\\source\\HoneyBee_Git\\imgui_impl_sdl_opengl3",
+  "arguments": ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/DGLEW_STATIC", "/EHsc", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include\\SDL2", "/IC:\\Users\\wanderer\\.conan\\data\\glew\\2.2.0\\_\\_\\package\\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\\include", "/IC:\\Users\\wanderer\\.conan\\data\\imgui\\cci.20220621+1.88.docking\\_\\_\\package\\871c6303207aa1b539e682559d0b5180e15f0c30\\include", "/Fobuild\\.objs\\iiso3\\windows\\x64\\debug\\src\\imgui_impl_opengl3.cpp.obj", "src\\imgui_impl_opengl3.cpp"],
+  "file": "src\\imgui_impl_opengl3.cpp"
+},
+{
+  "directory": "d:\\source\\HoneyBee_Git\\imgui_impl_sdl_opengl3",
+  "arguments": ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/DGLEW_STATIC", "/EHsc", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include\\SDL2", "/IC:\\Users\\wanderer\\.conan\\data\\glew\\2.2.0\\_\\_\\package\\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\\include", "/IC:\\Users\\wanderer\\.conan\\data\\imgui\\cci.20220621+1.88.docking\\_\\_\\package\\871c6303207aa1b539e682559d0b5180e15f0c30\\include", "/Fobuild\\.objs\\iiso3\\windows\\x64\\debug\\src\\imgui_impl_sdl.cpp.obj", "src\\imgui_impl_sdl.cpp"],
+  "file": "src\\imgui_impl_sdl.cpp"
+},
+{
+  "directory": "d:\\source\\HoneyBee_Git\\imgui_impl_sdl_opengl3",
+  "arguments": ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe", "/c", "/nologo", "/DGLEW_STATIC", "/EHsc", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include", "/IC:\\Users\\wanderer\\.conan\\data\\sdl\\2.26.0\\_\\_\\package\\cfd2d1da7fc86f15de47dab91119c8c3542a6771\\include\\SDL2", "/IC:\\Users\\wanderer\\.conan\\data\\glew\\2.2.0\\_\\_\\package\\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\\include", "/IC:\\Users\\wanderer\\.conan\\data\\imgui\\cci.20220621+1.88.docking\\_\\_\\package\\871c6303207aa1b539e682559d0b5180e15f0c30\\include", "/Fobuild\\.objs\\iiso3\\windows\\x64\\debug\\src\\imgui_impl_sdl_opengl3.cpp.obj", "src\\imgui_impl_sdl_opengl3.cpp"],
+  "file": "src\\imgui_impl_sdl_opengl3.cpp"
+}]

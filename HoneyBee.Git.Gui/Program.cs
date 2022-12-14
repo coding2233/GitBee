@@ -124,7 +124,7 @@ namespace Wanderer.App
         #region native
         delegate IntPtr IMGUI_INIT_CALLBACK();
         delegate void IMGUI_DRAW_CALLBACK();
-        [DllImport("imgui-impl-sdl-opengl3.dll")]
+        [DllImport("iiso3.dll")]
         extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb);
         #endregion
     }

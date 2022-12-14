@@ -19,8 +19,6 @@ namespace Wanderer.GitRepository.Common
         private Repository m_repository;
 
         public Repository Repo => m_repository;
-
-        private LiteDatabase m_liteDb;
         public string Name { get; private set; }
         public string RootPath { get; private set; }
         public BranchCollection Branches => m_repository.Branches;
@@ -55,10 +53,15 @@ namespace Wanderer.GitRepository.Common
         {
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
-            m_liteDb = new LiteDatabase(Path.Combine(Application.UserPath, $"{Name}.db"));
             m_repository = new Repository(RootPath);
             ////同步仓库信息
             //SyncGitRepoTask();
+        }
+
+        //更新UI状态
+        public void UpdateUIState()
+        {
+            
         }
 
         public string FormatCommandAction(ViewCommand command)
@@ -198,28 +201,6 @@ namespace Wanderer.GitRepository.Common
             return 0;
         }
 
-        public List<GitRepoCommit> GetCommits(int startIndex, int endIndex)
-        {
-            try
-            {
-                //这里在一直获取 ， 可以优化
-
-                //id为倒序， 要转换一遍
-                var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-                int commitCount = commitsCol.Query().Count();
-                startIndex = commitCount - startIndex;
-                endIndex = commitCount - endIndex;
-                var commits = commitsCol.Query().Where(x => x.Id <= startIndex && x.Id >= endIndex).ToList();
-                commits.Reverse();
-                //倒序
-                return commits;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("获取提交失败: {0}",e);
-            }
-            return null;
-        }
 
         public void Commit(string commitMessage)
         {
@@ -296,100 +277,14 @@ namespace Wanderer.GitRepository.Common
             return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).FirstOrDefault();
         }
 
-        public GitRepoCommit GetGitCommit(string commitSha)
-        {
-            var commitsCol = m_liteDb.GetCollection<GitRepoCommit>();
-            return commitsCol.Query().Where(x=>x.Commit.Equals(commitSha)).FirstOrDefault();
-        }
-
+  
 
         public void Dispose()
         {
-            m_liteDb?.Dispose();
-            m_liteDb = null;
 
             m_repository?.Dispose();
             m_repository = null;
         }
-
-
-        private void SetRepoCommits()
-        {
-            //更新以前得数据
-            var commitCol = m_liteDb.GetCollection<GitRepoCommit>();
-            Task.Run(() =>
-            {
-                var oldGitCommits = commitCol.Query().Where(x=>x.Branchs == null || x.Branchs.Count == 0).ToEnumerable();
-                foreach (var oldGitCommit in oldGitCommits)
-                {
-                    Task.Run(() => {
-                        UpdateRef(commitCol, oldGitCommit, GetCommit(oldGitCommit.Commit));
-                    });
-                }
-            });
-
-            //具体提交
-            int oldCommitCount = commitCol.Query().Count(); 
-            var commits = m_repository.Commits.ToList();
-            for (int i = commits.Count -1 - oldCommitCount; i >=0; i--)
-            {
-                m_taskProgress?.Invoke((commits.Count - i) / (float)commits.Count);
-
-                var commit = commits[i];
-                var oldGitCommit = commitCol.Query().Where(x => x.Commit.Equals(commit.Sha)).FirstOrDefault();
-                if (oldGitCommit!=null)
-                {
-                    if (oldGitCommit.Branchs == null|| oldGitCommit.Branchs.Count==0)
-                    {
-                        Task.Run(() => {
-                            UpdateRef(commitCol, oldGitCommit, commit);
-                        });
-                    }
-                    continue;
-                }
-                else
-                {
-                    GitRepoCommit gitRepoCommit = new GitRepoCommit();
-                    gitRepoCommit.Description = commit.MessageShort;
-                    gitRepoCommit.Date = commit.Author.When.ToString("yyyy-MM-dd HH:mm:ss");
-                    gitRepoCommit.Author = commit.Author.Name;
-                    gitRepoCommit.Commit = commit.Sha;
-                    gitRepoCommit.Message = commit.Message;
-                    gitRepoCommit.Email = commit.Author.Email;
-                    gitRepoCommit.Parents = new List<string>();
-                    foreach (var itemParent in commit.Parents)
-                    {
-                        gitRepoCommit.Parents.Add(itemParent.Sha);
-                    }
-
-                    Task.Run(() => {
-                        UpdateRef(commitCol, gitRepoCommit, commit);
-                    });
-
-                    commitCol.Insert(gitRepoCommit);
-                }
-            }
-        }
-
-        private void UpdateRef(ILiteCollection<GitRepoCommit> commitCol, GitRepoCommit gitRepoCommit,Commit commit)
-        {
-            IEnumerable<Reference> refs = m_repository.Refs.ReachableFrom(new[] { commit });
-            if (refs != null)
-            {
-                gitRepoCommit.Branchs = new List<string>();
-                foreach (var itemRefs in refs)
-                {
-                    if (itemRefs.CanonicalName.EndsWith("/HEAD"))
-                    {
-                        continue;
-                    }
-                    gitRepoCommit.Branchs.Add(itemRefs.CanonicalName);
-                }
-                commitCol.Update(gitRepoCommit);
-            }
-            gitRepoCommit = null;
-        }
-
 
         //设置分支
         private void SetBranchNodes()

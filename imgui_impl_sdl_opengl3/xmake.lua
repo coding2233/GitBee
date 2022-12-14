@@ -3,7 +3,7 @@ add_requires("conan::imgui/cci.20220621+1.88.docking",{alias="imgui"})
 add_requires("conan::glew/2.2.0",{alias="glew"})
 add_requires("conan::opengl/system",{alias="opengl"})
 
-target("imgui-impl-sdl-opengl3")
+target("iiso3")
     set_kind("shared")
     add_files("src/*.cpp")
     -- add_includedirs("imgui/include")

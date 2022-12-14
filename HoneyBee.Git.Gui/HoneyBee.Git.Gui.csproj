@@ -46,7 +46,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="imgui-impl-sdl-opengl3.dll" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="iiso3.dll" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

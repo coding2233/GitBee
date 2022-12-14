@@ -1,10 +1,51 @@
 {
-    sdl = {
+    glew = {
+        envs = {
+            PATH = {
+                [[D:\source\HoneyBee_Git\imgui_impl_sdl_opengl3\build\.packages\c\conan_glew\2.2.0\latest\652a5ab06c7d47768ecb88df146b911a\bin]]
+            }
+        },
+        sysincludedirs = "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/include",
+        defines = "GLEW_STATIC",
+        links = "libglew32",
+        libfiles = [[C:\Users\wanderer\.conan\data\glew\2.2.0\_\_\package\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\lib\libglew32.lib]],
+        __enabled = true,
         static = true,
+        __requireconfs = {
+            alias = "glew"
+        },
+        linkdirs = "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/lib",
+        __requirestr = "conan::glew/2.2.0",
+        syslinks = {
+            "Glu32",
+            "opengl32"
+        }
+    },
+    sdl = {
         envs = {
             PATH = {
                 [[D:\source\HoneyBee_Git\imgui_impl_sdl_opengl3\build\.packages\c\conan_sdl\2.26.0\latest\652a5ab06c7d47768ecb88df146b911a\bin]]
             }
+        },
+        sysincludedirs = {
+            "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include",
+            "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include/SDL2"
+        },
+        links = {
+            "SDL2main",
+            "SDL2-static"
+        },
+        __requirestr = "conan::sdl/2.26.0",
+        __enabled = true,
+        static = true,
+        libfiles = {
+            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2-static.lib]],
+            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2main.lib]],
+            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2_test.lib]]
+        },
+        linkdirs = "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/lib",
+        __requireconfs = {
+            alias = "sdl"
         },
         syslinks = {
             "user32",
@@ -18,48 +59,30 @@
             "advapi32",
             "setupapi",
             "shell32"
-        },
-        __enabled = true,
-        links = {
-            "SDL2main",
-            "SDL2-static"
-        },
-        __requireconfs = {
-            alias = "sdl"
-        },
-        linkdirs = "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/lib",
-        __requirestr = "conan::sdl/2.26.0",
-        sysincludedirs = {
-            "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include",
-            "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include/SDL2"
-        },
-        libfiles = {
-            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2-static.lib]],
-            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2main.lib]],
-            [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2_test.lib]]
         }
     },
     imgui = {
-        static = true,
         envs = {
             PATH = {
                 [[D:\source\HoneyBee_Git\imgui_impl_sdl_opengl3\build\.packages\c\conan_imgui\cci.20220621+1.88.docking\latest\652a5ab06c7d47768ecb88df146b911a\bin]]
             }
         },
-        syslinks = "imm32",
-        __enabled = true,
+        sysincludedirs = "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/include",
         links = "imgui",
+        __requirestr = "conan::imgui/cci.20220621+1.88.docking",
+        __enabled = true,
+        static = true,
+        libfiles = [[C:\Users\wanderer\.conan\data\imgui\cci.20220621+1.88.docking\_\_\package\871c6303207aa1b539e682559d0b5180e15f0c30\lib\imgui.lib]],
+        linkdirs = "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/lib",
         __requireconfs = {
             alias = "imgui"
         },
-        linkdirs = "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/lib",
-        __requirestr = "conan::imgui/cci.20220621+1.88.docking",
-        sysincludedirs = "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/include",
-        libfiles = [[C:\Users\wanderer\.conan\data\imgui\cci.20220621+1.88.docking\_\_\package\871c6303207aa1b539e682559d0b5180e15f0c30\lib\imgui.lib]]
+        syslinks = "imm32"
     },
     opengl = {
         __enabled = true,
-        __requirestr = "conan::opengl/system",
+        syslinks = "opengl32",
+        libfiles = { },
         __requireconfs = {
             alias = "opengl"
         },
@@ -68,29 +91,6 @@
                 [[D:\source\HoneyBee_Git\imgui_impl_sdl_opengl3\build\.packages\c\conan_opengl\system\latest\652a5ab06c7d47768ecb88df146b911a\bin]]
             }
         },
-        syslinks = "opengl32",
-        libfiles = { }
-    },
-    glew = {
-        static = true,
-        envs = {
-            PATH = {
-                [[D:\source\HoneyBee_Git\imgui_impl_sdl_opengl3\build\.packages\c\conan_glew\2.2.0\latest\652a5ab06c7d47768ecb88df146b911a\bin]]
-            }
-        },
-        syslinks = {
-            "Glu32",
-            "opengl32"
-        },
-        __enabled = true,
-        links = "libglew32",
-        defines = "GLEW_STATIC",
-        __requireconfs = {
-            alias = "glew"
-        },
-        linkdirs = "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/lib",
-        __requirestr = "conan::glew/2.2.0",
-        sysincludedirs = "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/include",
-        libfiles = [[C:\Users\wanderer\.conan\data\glew\2.2.0\_\_\package\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\lib\libglew32.lib]]
+        __requirestr = "conan::opengl/system"
     }
 }
