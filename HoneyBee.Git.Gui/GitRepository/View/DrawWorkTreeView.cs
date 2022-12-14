@@ -19,7 +19,7 @@ namespace Wanderer
         private SplitView m_verticalSplitView = new SplitView(SplitView.SplitType.Vertical);
         private HashSet<string> _selectStageFiles = new HashSet<string>();
         private HashSet<string> _selectUnstageFiles = new HashSet<string>();
-        private HashSet<StatusEntry> m_newIndexAdded = new HashSet<StatusEntry>();
+        //private HashSet<StatusEntry> m_newIndexAdded = new HashSet<StatusEntry>();
         private string m_submitMessage= "";
 
         private GitRepo m_gitRepo;
@@ -58,20 +58,20 @@ namespace Wanderer
         private void DrawStageStatus()
         {
             IEnumerable<StatusEntry> stageStatusEntries = null;
-            m_newIndexAdded.Clear();
+            //m_newIndexAdded.Clear();
             if (m_statuses != null)
             {
                 stageStatusEntries = m_statuses.Staged;
-                if (m_statuses.Added != null)
-                {
-                    foreach (var item in m_statuses.Added)
-                    {
-                        if (m_gitRepo.CheckIndex(item.FilePath))
-                        {
-                            m_newIndexAdded.Add(item);
-                        }
-                    }
-                }
+                //if (m_statuses.Added != null)
+                //{
+                //    foreach (var item in m_statuses.Added)
+                //    {
+                //        if (m_gitRepo.CheckIndex(item.FilePath))
+                //        {
+                //            m_newIndexAdded.Add(item);
+                //        }
+                //    }
+                //}
             }
 
             m_verticalSplitView.Begin();
@@ -100,10 +100,10 @@ namespace Wanderer
 
             if (statuses != null)
             {
-                foreach (var item in m_newIndexAdded)
-                {
-                    DrawStatusFile(item, _selectStageFiles);
-                }
+                //foreach (var item in m_newIndexAdded)
+                //{
+                //    DrawStatusFile(item, _selectStageFiles);
+                //}
                 foreach (var item in statuses)
                 {
                     DrawStatusFile(item, _selectStageFiles);
@@ -116,15 +116,15 @@ namespace Wanderer
             if (ImGui.Button("Stage All"))
             {
                 m_gitRepo.Stage();
-                if (m_statuses.Added != null && m_statuses.Count() > 0)
-                {
-                    HashSet<string> addedFiles = new HashSet<string>();
-                    foreach (var item in m_statuses.Added)
-                    {
-                        addedFiles.Add(item.FilePath);
-                    }
-                    m_gitRepo.AddFile(addedFiles);
-                }
+                //if (m_statuses.Added != null && m_statuses.Count() > 0)
+                //{
+                //    HashSet<string> addedFiles = new HashSet<string>();
+                //    foreach (var item in m_statuses.Added)
+                //    {
+                //        addedFiles.Add(item.FilePath);
+                //    }
+                //    m_gitRepo.AddFile(addedFiles);
+                //}
                 ClearSelectFiles();
                 UpdateStatus();
             }
@@ -132,16 +132,16 @@ namespace Wanderer
             if (ImGui.Button("Stage Selected"))
             {
                 m_gitRepo.Stage(_selectUnstageFiles);
-                if (m_statuses.Added != null && m_statuses.Count() > 0)
-                {
-                    HashSet<string> addedFiles = new HashSet<string>();
-                    foreach (var item in m_statuses.Added)
-                    {
-                        if (_selectUnstageFiles.Contains(item.FilePath))
-                            addedFiles.Add(item.FilePath);
-                    }
-                    m_gitRepo.AddFile(addedFiles);
-                }
+                //if (m_statuses.Added != null && m_statuses.Count() > 0)
+                //{
+                //    HashSet<string> addedFiles = new HashSet<string>();
+                //    foreach (var item in m_statuses.Added)
+                //    {
+                //        if (_selectUnstageFiles.Contains(item.FilePath))
+                //            addedFiles.Add(item.FilePath);
+                //    }
+                //    m_gitRepo.AddFile(addedFiles);
+                //}
                 ClearSelectFiles();
                 UpdateStatus();
             }
@@ -160,9 +160,9 @@ namespace Wanderer
                 {
                     if (m_statuses.Staged.Contains(item))
                         continue;
-                    //需要忽略NewIndex的
-                    if (m_newIndexAdded.Contains(item))
-                        continue;
+                    ////需要忽略NewIndex的
+                    //if (m_newIndexAdded.Contains(item))
+                    //    continue;
 
                     DrawStatusFile(item, _selectUnstageFiles);
                 }
@@ -237,7 +237,10 @@ namespace Wanderer
                 {
                     selectFiles.Remove(statusEntry.FilePath);
                 }
-                var diffContext = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath }, true).Content;
+
+                //var patch = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath });
+                var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
+                var diffContext = patch.Content;
                 m_showDiffText.BuildDiffTexts(diffContext);
             }
         }

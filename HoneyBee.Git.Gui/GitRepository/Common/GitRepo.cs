@@ -230,9 +230,6 @@ namespace Wanderer.GitRepository.Common
             BuildSignature();
             //提交到仓库中
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
-
-            //更新数据
-            SyncGitRepoTask(null,null);
         }
 
         private Signature BuildSignature()
@@ -256,18 +253,18 @@ namespace Wanderer.GitRepository.Common
             //Status();
         }
 
-        public void AddFile(IEnumerable<string> files)
-        {
-            //IEnumerable<StatusEntry> Added
-            if (files != null && files.Count() > 0)
-            {
-                foreach (var item in files)
-                {
-                    m_repository.Index.Add(item);
-                }
-                m_repository.Index.Write();
-            }
-        }
+        //public void AddFile(IEnumerable<string> files)
+        //{
+        //    //IEnumerable<StatusEntry> Added
+        //    if (files != null && files.Count() > 0)
+        //    {
+        //        foreach (var item in files)
+        //        {
+        //            m_repository.Index.Add(item);
+        //        }
+        //        m_repository.Index.Write();
+        //    }
+        //}
 
         public void Stage(IEnumerable<string> files = null)
         {
