@@ -110,11 +110,11 @@ namespace Wanderer.App.View
 
                     if (!repoExists)
                     {
-                        ImGui.SameLine();
-                        ImGui.TextDisabled("is missing!");
+                        //ImGui.SameLine();
+                        //ImGui.TextDisabled("is missing!");
                         ImGui.EndDisabled();
                         ImGui.SameLine();
-                        if (ImGui.Button("Delete"))
+                        if (ImGui.Button("Remove"))
                         {
                             OnRemoveRepository?.Invoke(m_repositories[i]);
                         }
@@ -129,6 +129,11 @@ namespace Wanderer.App.View
             if (!string.IsNullOrEmpty(m_selectGitPath))
             {
                 ImGui.Text(m_selectGitName);
+                ImGui.SameLine();
+                if (ImGui.Button("Remove"))
+                {
+                    OnRemoveRepository?.Invoke(m_selectGitPath);
+                }
                 ImGui.SameLine();
                 if (ImGui.Button("Open"))
                 {

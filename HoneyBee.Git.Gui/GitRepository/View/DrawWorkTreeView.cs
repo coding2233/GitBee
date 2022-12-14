@@ -247,7 +247,15 @@ namespace Wanderer
 
         private void UpdateStatus()
         {
-            m_statuses = m_gitRepo.RetrieveStatus;
+            //StatusOptions
+            try
+            {
+                m_statuses = m_gitRepo.Repo.RetrieveStatus();
+            }
+            catch (Exception e)
+            {
+                Log.Warn("DrawWorkTreeView exception: {0}",e);
+            }
         }
 
         private void ClearSelectFiles()

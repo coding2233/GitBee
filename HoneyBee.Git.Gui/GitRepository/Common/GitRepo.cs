@@ -48,7 +48,6 @@ namespace Wanderer.GitRepository.Common
 
         public LibGit2Sharp.Diff Diff => m_repository.Diff;
 
-        public RepositoryStatus RetrieveStatus => m_repository.RetrieveStatus();
 
         private bool m_runTask;
         private Action<float> m_taskProgress;
