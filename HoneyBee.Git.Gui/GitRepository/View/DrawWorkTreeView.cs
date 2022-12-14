@@ -17,19 +17,24 @@ namespace Wanderer
     {
         private SplitView m_horizontalSplitView = new SplitView(SplitView.SplitType.Horizontal);
         private SplitView m_verticalSplitView = new SplitView(SplitView.SplitType.Vertical);
-        private HashSet<string> _selectStageFiles = new HashSet<string>();
-        private HashSet<string> _selectUnstageFiles = new HashSet<string>();
-        //private HashSet<StatusEntry> m_newIndexAdded = new HashSet<StatusEntry>();
+
         private string m_submitMessage= "";
 
         private GitRepo m_gitRepo;
 
-        private RepositoryStatus m_statuses;
-
         private ShowDiffText m_showDiffText;
+
+        private ImGuiTreeNodeFlags m_nodeDefaultFlags;
+
+        private List<StatusEntryTreeViewNode> m_stageTreeView=new List<StatusEntryTreeViewNode>();
+        private List<StatusEntryTreeViewNode> m_unstageTreeView=new List<StatusEntryTreeViewNode>();
+
+        private HashSet<StatusEntryTreeViewNode> m_stageSelectedNodes = new HashSet<StatusEntryTreeViewNode>();
+        private HashSet<StatusEntryTreeViewNode> m_unstageSelectedNodes = new HashSet<StatusEntryTreeViewNode>();
 
         public DrawWorkTreeView(GitRepo gitRepo)
         {
+            m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen;
             m_gitRepo = gitRepo;
             m_showDiffText = new ShowDiffText();
             UpdateStatus();
@@ -57,57 +62,35 @@ namespace Wanderer
         /// </summary>
         private void DrawStageStatus()
         {
-            IEnumerable<StatusEntry> stageStatusEntries = null;
-            //m_newIndexAdded.Clear();
-            if (m_statuses != null)
-            {
-                stageStatusEntries = m_statuses.Staged;
-                //if (m_statuses.Added != null)
-                //{
-                //    foreach (var item in m_statuses.Added)
-                //    {
-                //        if (m_gitRepo.CheckIndex(item.FilePath))
-                //        {
-                //            m_newIndexAdded.Add(item);
-                //        }
-                //    }
-                //}
-            }
-
             m_verticalSplitView.Begin();
-            DrawStageFilesStatus(stageStatusEntries);
+            DrawStageFilesStatus();
             m_verticalSplitView.Separate();
             DrawUnstageFileStatus();
             m_verticalSplitView.End();
         }
 
      
-        private void DrawStageFilesStatus(IEnumerable<StatusEntry> statuses)
+        private void DrawStageFilesStatus()
         {
             if (ImGui.Button("Unstage All"))
             {
                 m_gitRepo.Unstage();
-                ClearSelectFiles();
                 UpdateStatus();
             }
             ImGui.SameLine();
             if (ImGui.Button("Unstage Selected"))
             {
-                m_gitRepo.Unstage(_selectStageFiles);
-                ClearSelectFiles();
-                UpdateStatus();
+                if (m_stageSelectedNodes.Count > 0)
+                {
+                    var selectPath = TreeNodesToPaths(m_stageSelectedNodes);
+                    m_gitRepo.Unstage(selectPath);
+                    UpdateStatus();
+                }
             }
 
-            if (statuses != null)
+            foreach (var item in m_stageTreeView)
             {
-                //foreach (var item in m_newIndexAdded)
-                //{
-                //    DrawStatusFile(item, _selectStageFiles);
-                //}
-                foreach (var item in statuses)
-                {
-                    DrawStatusFile(item, _selectStageFiles);
-                }
+                DrawStatusEntryTreeNode(item,true);
             }
         }
 
@@ -116,56 +99,32 @@ namespace Wanderer
             if (ImGui.Button("Stage All"))
             {
                 m_gitRepo.Stage();
-                //if (m_statuses.Added != null && m_statuses.Count() > 0)
-                //{
-                //    HashSet<string> addedFiles = new HashSet<string>();
-                //    foreach (var item in m_statuses.Added)
-                //    {
-                //        addedFiles.Add(item.FilePath);
-                //    }
-                //    m_gitRepo.AddFile(addedFiles);
-                //}
-                ClearSelectFiles();
                 UpdateStatus();
             }
             ImGui.SameLine();
             if (ImGui.Button("Stage Selected"))
             {
-                m_gitRepo.Stage(_selectUnstageFiles);
-                //if (m_statuses.Added != null && m_statuses.Count() > 0)
-                //{
-                //    HashSet<string> addedFiles = new HashSet<string>();
-                //    foreach (var item in m_statuses.Added)
-                //    {
-                //        if (_selectUnstageFiles.Contains(item.FilePath))
-                //            addedFiles.Add(item.FilePath);
-                //    }
-                //    m_gitRepo.AddFile(addedFiles);
-                //}
-                ClearSelectFiles();
-                UpdateStatus();
+                if (m_unstageSelectedNodes.Count > 0)
+                {
+                    var selectPath = TreeNodesToPaths(m_unstageSelectedNodes);
+                    m_gitRepo.Stage(selectPath);
+                    UpdateStatus();
+                }
             }
             ImGui.SameLine();
             if (ImGui.Button("Discard Selected"))
             {
-                m_gitRepo.Restore(_selectUnstageFiles);
-                ClearSelectFiles();
-                UpdateStatus();
+                if (m_unstageSelectedNodes.Count > 0)
+                {
+                    var selectPath = TreeNodesToPaths(m_unstageSelectedNodes);
+                    m_gitRepo.Restore(selectPath);
+                    UpdateStatus();
+                }
             }
 
-            //files
-            if (m_statuses != null)
+            foreach (var item in m_unstageTreeView)
             {
-                foreach (var item in m_statuses)
-                {
-                    if (m_statuses.Staged.Contains(item))
-                        continue;
-                    ////需要忽略NewIndex的
-                    //if (m_newIndexAdded.Contains(item))
-                    //    continue;
-
-                    DrawStatusFile(item, _selectUnstageFiles);
-                }
+                DrawStatusEntryTreeNode(item,false);
             }
         }
 
@@ -181,76 +140,143 @@ namespace Wanderer
             {
                 if (!string.IsNullOrEmpty(m_submitMessage))
                 {
-                    m_gitRepo.Commit(m_submitMessage);
+                    try
+                    {
+                        m_gitRepo.Commit(m_submitMessage);
+                    }
+                    catch (Exception e)
+                    {
+                        Log.Warn("DrawSubmit exception: {0}",e);
+                    }
                     UpdateStatus();
                 }
                 m_submitMessage = "";
             }
         }
 
-        //绘制单独的文件
-        private void DrawStatusFile(StatusEntry statusEntry, HashSet<string> selectFiles)
+
+        private void DrawStatusEntryTreeNode(StatusEntryTreeViewNode node,bool isStage)
         {
-            if (statusEntry == null || statusEntry.State == FileStatus.Ignored)
-                return;
+            var selectNodes = isStage ? m_stageSelectedNodes : m_unstageSelectedNodes;
+            bool selected = selectNodes.Contains(node);
 
-            //?
-            string statusIcon = Icon.Get(Icon.Material_question_mark);
-            switch (statusEntry.State)
+            if (node.Children != null && node.Children.Count > 0)
             {
-                case FileStatus.NewInIndex:
-                case FileStatus.NewInWorkdir:
-                    statusIcon = Icon.Get(Icon.Material_fiber_new);
-                    break;
-                case FileStatus.DeletedFromIndex:
-                case FileStatus.DeletedFromWorkdir:
-                    statusIcon = Icon.Get(Icon.Material_delete);
-                    break;
-                case FileStatus.RenamedInIndex:
-                case FileStatus.RenamedInWorkdir:
-                    statusIcon = Icon.Get(Icon.Material_edit_note);
-                    break;
-                case FileStatus.ModifiedInIndex:
-                case FileStatus.ModifiedInWorkdir:
-                    statusIcon = Icon.Get(Icon.Material_update);
-                    break;
-                case FileStatus.TypeChangeInIndex:
-                case FileStatus.TypeChangeInWorkdir:
-                    statusIcon = Icon.Get(Icon.Material_change_circle);
-                    break;
-                case FileStatus.Conflicted:
-                    statusIcon = Icon.Get(Icon.Material_warning);
-                    break;
-                default:
-                    break;
-            }
-
-            //checkbox 
-            bool active = selectFiles.Contains(statusEntry.FilePath);
-            if (ImGui.Checkbox($"{statusIcon} {statusEntry.FilePath}", ref active))
-            {
-                if (active)
+                var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected : m_nodeDefaultFlags;
+                node.NodeOpened = ImGui.TreeNodeEx(node.Name, nodeFlag);
+                if (ImGui.IsItemClicked())
                 {
-                    selectFiles.Add(statusEntry.FilePath);
-                }
-                else
-                {
-                    selectFiles.Remove(statusEntry.FilePath);
+                    if (!ImGui.IsItemToggledOpen() && ImGui.GetIO().KeyCtrl)
+                    {
+                        if (selected)
+                        {
+                            selectNodes.Remove(node);
+                        }
+                        else
+                        {
+                            selectNodes.Add(node);
+                        }
+                    }
+                    else
+                    {
+                        selectNodes.Clear();
+                        selectNodes.Add(node);
+                    }
                 }
 
-                //var patch = m_gitRepo.Diff.Compare<Patch>(new List<string>() { statusEntry.FilePath });
-                var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
-                var diffContext = patch.Content;
-                m_showDiffText.BuildDiffTexts(diffContext);
+                if (node.NodeOpened)
+                {
+                    foreach (var item in node.Children)
+                    {
+                        DrawStatusEntryTreeNode(item, isStage);
+                    }
+                    ImGui.TreePop();
+                }
             }
+            else 
+            {
+                var statusEntry = node.Data;
+                string statusIcon = Icon.Get(Icon.Material_question_mark);
+                switch (statusEntry.State)
+                {
+                    case FileStatus.NewInIndex:
+                    case FileStatus.NewInWorkdir:
+                        statusIcon = Icon.Get(Icon.Material_fiber_new);
+                        break;
+                    case FileStatus.DeletedFromIndex:
+                    case FileStatus.DeletedFromWorkdir:
+                        statusIcon = Icon.Get(Icon.Material_delete);
+                        break;
+                    case FileStatus.RenamedInIndex:
+                    case FileStatus.RenamedInWorkdir:
+                        statusIcon = Icon.Get(Icon.Material_edit_note);
+                        break;
+                    case FileStatus.ModifiedInIndex:
+                    case FileStatus.ModifiedInWorkdir:
+                        statusIcon = Icon.Get(Icon.Material_update);
+                        break;
+                    case FileStatus.TypeChangeInIndex:
+                    case FileStatus.TypeChangeInWorkdir:
+                        statusIcon = Icon.Get(Icon.Material_change_circle);
+                        break;
+                    case FileStatus.Conflicted:
+                        statusIcon = Icon.Get(Icon.Material_warning);
+                        break;
+                    default:
+                        break;
+                }
+
+                bool selectableSelected = selected;
+                if (ImGui.Selectable(statusIcon+node.Name, ref selectableSelected))
+                {
+                    var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
+                    var diffContext = patch.Content;
+                    m_showDiffText.BuildDiffTexts(diffContext);
+
+                    if (ImGui.GetIO().KeyCtrl)
+                    {
+                        if (selected)
+                        {
+                            selectNodes.Remove(node);
+                        }
+                        else
+                        {
+                            selectNodes.Add(node);
+                        }
+                    }
+                    else
+                    {
+                        selectNodes.Clear();
+                        selectNodes.Add(node);
+                    }
+                }
+            }
+            
         }
-
         private void UpdateStatus()
         {
             //StatusOptions
             try
             {
-                m_statuses = m_gitRepo.Repo.RetrieveStatus();
+                var statuses = m_gitRepo.Repo.RetrieveStatus();
+
+                m_stageTreeView.Clear();
+                m_unstageTreeView.Clear();
+                m_stageSelectedNodes.Clear();
+                m_unstageSelectedNodes.Clear();
+
+                foreach (var item in statuses.Staged)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
+                }
+
+                foreach (var item in statuses)
+                {
+                    if (statuses.Staged.Contains(item) || statuses.Ignored.Contains(item))
+                        continue;
+
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                }
             }
             catch (Exception e)
             {
@@ -258,15 +284,31 @@ namespace Wanderer
             }
         }
 
-        private void ClearSelectFiles()
+
+        //节点转路径
+        private HashSet<string> TreeNodesToPaths(IEnumerable<StatusEntryTreeViewNode> nodes)
         {
-            _selectStageFiles.Clear();
-            _selectUnstageFiles.Clear();
+            HashSet<string> filePaths = new HashSet<string>();
+            foreach (var item in nodes)
+            {
+                if (item.Data != null)
+                {
+                    filePaths.Add(item.Data.FilePath);
+                }
+                else
+                {
+                    if (item.Children != null && item.Children.Count > 0)
+                    {
+                        var childFilePaths = TreeNodesToPaths(item.Children);
+                        foreach (var childFilePath in childFilePaths)
+                        {
+                            filePaths.Add(childFilePath);
+                        }
+                    }
+                }
+            }
+            return filePaths;
         }
-
-     
-
-       
     }
 
    

@@ -15,6 +15,8 @@ namespace Wanderer.GitRepository.Common
         public TData Data { get; set; }
         public List<T> Children { get; set; }
 
+        public virtual bool NodeOpened { get; set; }
+
 
         public static void JoinTreeViewNode(List<T> nodes, List<string> paths, List<TData> datas)
         {
@@ -122,6 +124,19 @@ namespace Wanderer.GitRepository.Common
                 }
             }
         }
+    }
+
+    public class StatusEntryTreeViewNode : TreeViewNode<StatusEntryTreeViewNode, StatusEntry>
+    {
+        public override string FullName
+        {
+            get
+            {
+                return Data != null ? Data.FilePath : null;
+            }
+        }
+
+        public override bool NodeOpened { get; set; } = true;
     }
 
     //public class GitBranchNode
