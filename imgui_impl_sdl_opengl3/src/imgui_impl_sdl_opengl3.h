@@ -10,6 +10,8 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
+#include "lua.hpp"
+
 #if defined _WIN32 || defined __CYGWIN__
 #define API __declspec(dllexport)
 #elif __GNUC__
@@ -33,4 +35,7 @@ typedef void (*IMGUI_DRAW_CALLBACK)();
 EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb);
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);
 
+EXPORT_API struct lua_State* CreateLuaState();
+EXPORT_API void CallLuaScript(struct lua_State* lua_state,const char* lua_script);
+EXPORT_API void CloseLuaState(struct lua_State* lua_state);
 #endif

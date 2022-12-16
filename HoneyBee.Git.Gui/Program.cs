@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Wanderer.Common;
+using Wanderer;
 
 namespace Wanderer.App
 {
@@ -21,7 +22,7 @@ namespace Wanderer.App
                 var commandArgs = System.Environment.GetCommandLineArgs();
                 Log.Info("Hello, Honey Bee - Git!");
                 int result = Create($"Honybee Git - {Application.version}", OnImGuiInit, OnImGuiDraw);
-
+                Plugin.Close();
             }
             catch (System.Exception e)
             {
@@ -127,6 +128,7 @@ namespace Wanderer.App
         delegate void IMGUI_DRAW_CALLBACK();
         [DllImport("iiso3.dll")]
         extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb);
+    
         #endregion
     }
 

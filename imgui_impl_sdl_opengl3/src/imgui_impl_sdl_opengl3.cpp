@@ -163,3 +163,25 @@ char *glsl_version_;
 // }
 
 
+struct lua_State* CreateLuaState()
+{
+    lua_State * lua_state = luaL_newstate(); 
+    luaL_openlibs(lua_state);
+    std::cout << "CreateLuaState:" << lua_state << std::endl;
+    return lua_state;
+}
+
+void CallLuaScript(struct lua_State* lua_state,const char* lua_script)
+{
+
+    int ret = luaL_loadfile(lua_state,lua_script); 
+    std::cout << "CallLuaScript luaL_loadfile:" << lua_script << ret << std::endl;
+    ret = lua_pcall(lua_state,0,0,0);
+}
+
+void CloseLuaState(struct lua_State* lua_state)
+{
+    std::cout << "CloseLuaState" << std::endl;
+    lua_close(lua_state); 
+}
+

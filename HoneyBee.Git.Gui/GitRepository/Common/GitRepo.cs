@@ -59,9 +59,9 @@ namespace Wanderer.GitRepository.Common
         }
 
         //更新UI状态
-        public void UpdateUIState()
+        public void ReBuildUIData()
         {
-            
+            SetBranchNodes();
         }
 
         public string FormatCommandAction(ViewCommand command)
