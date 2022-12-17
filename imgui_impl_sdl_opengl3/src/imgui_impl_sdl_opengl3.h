@@ -38,4 +38,5 @@ EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_
 EXPORT_API struct lua_State* CreateLuaState();
 EXPORT_API void CallLuaScript(struct lua_State* lua_state,const char* lua_script);
 EXPORT_API void CloseLuaState(struct lua_State* lua_state);
+EXPORT_API void CallLuaFunction(struct lua_State* lua_state,const char* function_name);
 #endif

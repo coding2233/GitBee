@@ -49,4 +49,8 @@
 		<Content Include="iiso3.dll" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
 </Project>

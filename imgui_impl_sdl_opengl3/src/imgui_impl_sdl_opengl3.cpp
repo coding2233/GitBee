@@ -167,13 +167,13 @@ struct lua_State* CreateLuaState()
 {
     lua_State * lua_state = luaL_newstate(); 
     luaL_openlibs(lua_state);
+    //luaJIT_setmode(lua_state,-1,LUAJIT_MODE_ON);
     std::cout << "CreateLuaState:" << lua_state << std::endl;
     return lua_state;
 }
 
 void CallLuaScript(struct lua_State* lua_state,const char* lua_script)
 {
-
     int ret = luaL_loadfile(lua_state,lua_script); 
     std::cout << "CallLuaScript luaL_loadfile:" << lua_script << ret << std::endl;
     ret = lua_pcall(lua_state,0,0,0);
@@ -185,3 +185,11 @@ void CloseLuaState(struct lua_State* lua_state)
     lua_close(lua_state); 
 }
 
+void CallLuaFunction(struct lua_State* lua_state, const char* function_name)
+{
+    //获取lua中的showinfo函数
+    lua_getglobal(lua_state, function_name);
+    //cpp 调用无参数的lua函数，无返回值
+    //lua_pcall(global_state_, 1, 0, 0);
+    lua_pcall(lua_state,0,0,0);
+}

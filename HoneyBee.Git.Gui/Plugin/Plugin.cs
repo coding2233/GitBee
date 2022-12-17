@@ -13,11 +13,19 @@ namespace Wanderer
         private static LuaPlugin s_luaPlugin =new LuaPlugin();
 
 
-        public static void Run(string pluginName)
+        public static void Load(string pluginName)
         {
             if (s_luaPlugin != null)
             {
-                s_luaPlugin.CallLua(pluginName);
+                s_luaPlugin.LoadLua(pluginName);
+            }
+        }
+
+        public static void Call(string funcName)
+        {
+            if (s_luaPlugin != null)
+            {
+                s_luaPlugin.CallLua(funcName);
             }
         }
 
@@ -39,7 +47,7 @@ namespace Wanderer
             m_luaState = CreateLuaState();
         }
 
-        internal void CallLua(string scriptName)
+        internal void LoadLua(string scriptName)
         {
             try
             {
@@ -58,6 +66,32 @@ namespace Wanderer
                 if (m_luaState != IntPtr.Zero)
                 {
                     CallLuaScript(m_luaState, scriptName);
+                }
+                else
+                {
+                    Log.Warn("LuaPlugin CallLua m_luaState is null!");
+                }
+            }
+            catch (Exception e)
+            {
+                Log.Warn("LuaPlugin LoadLua exception:{0}", e);
+            }
+        }
+        
+        internal void CallLua(string funcName)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(funcName))
+                {
+                    Log.Warn("func name is null");
+                    return;
+                }
+
+
+                if (m_luaState != IntPtr.Zero)
+                {
+                    CallLuaFunction(m_luaState, funcName);
                 }
                 else
                 {
@@ -86,6 +120,8 @@ namespace Wanderer
         [DllImport("iiso3.dll")]
         extern static void CloseLuaState(IntPtr lua_state);
 
-     
+        [DllImport("iiso3.dll")]
+        extern static void CallLuaFunction(IntPtr lua_state, string function_name);
+
     }
 }

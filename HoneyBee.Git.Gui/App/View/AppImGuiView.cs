@@ -5,6 +5,7 @@ using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
@@ -32,6 +33,7 @@ namespace Wanderer.App.View
             {
                 m_fullLog = logger.fullLog;
             };
+            Plugin.Load("lua/test.lua");
         }
 
         //设置
@@ -120,7 +122,23 @@ namespace Wanderer.App.View
                           
                             ImGui.EndTabItem();
                         }
+
+                        if (ImGui.BeginTabItem("Plugin"))
+                        {
+                            if (ImGui.Button("Call lua"))
+                            {
+                               
+                            }
+
+                            Plugin.Call("OnDraw");
+
+                            ImGui.EndTabItem();
+                        }
+                       
+
                         ImGui.EndTabBar();
+
+                       
                     }
                     ImGui.End();
                 }
