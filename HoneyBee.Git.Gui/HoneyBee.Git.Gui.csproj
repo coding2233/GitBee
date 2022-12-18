@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="lua\cimgui.lua" />
     <None Remove="Program.cs~RFe91c4dc.TMP" />
   </ItemGroup>
 

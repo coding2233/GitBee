@@ -81,43 +81,8 @@ namespace Wanderer.App.View
                     {
                         if (ImGui.BeginTabItem("Commands##PreferenceTabCommands"))
                         {
-                            var commands = GitCommandView.ViewCommands;
-
-                            m_commandsSplit01.Begin();
-                            ImGui.BeginChild("Preference-Commands-Name",ImGui.GetWindowSize()-new System.Numerics.Vector2(0,ImGui.GetTextLineHeight()*2));
-                            for (int i = 0; i < commands.Count; i++)
-                            {
-                                var command = commands[i];
-                                if (ImGui.Selectable($"{command.Target}|{command.Name}|{command.Action}", m_commandSeleted == i))
-                                {
-                                    m_commandSeleted = i;
-                                }
-                            }
-                       
-                            ImGui.EndChild();
-                            ImGui.Button("+");
-                            ImGui.SameLine();
-                            ImGui.Button("-");
-                            m_commandsSplit01.Separate();
-                            m_commandsSplit02.Begin();
-
-                            if (m_commandSeleted >= 0 && m_commandSeleted < commands.Count)
-                            {
-                                var selectCommand = commands[m_commandSeleted];
-                                int targetSelect = 0;
-                                ImGui.Combo("Target", ref targetSelect, new string[] { "branch", "remote", "tag", "commit" }, 4);
-                            }
-                            ImGui.SameLine();
-                            bool showUI = false;
-                            ImGui.Checkbox("With UI", ref showUI);
-                            m_commandsSplit02.Separate();
-
-                            ImGui.Text("$branch selected branch name");
-                            ImGui.Text("$remote selected branch remote name");
-
-                            m_commandsSplit02.End();
-
-                            m_commandsSplit01.End();
+                            OnDrawPreferenceCommand();
+                            
 
                           
                             ImGui.EndTabItem();
@@ -261,6 +226,46 @@ namespace Wanderer.App.View
             ImGui.Text(m_fullLog);
         }
 
+
+        private void OnDrawPreferenceCommand()
+        {
+            var commands = GitCommandView.ViewCommands;
+
+            m_commandsSplit01.Begin();
+            ImGui.BeginChild("Preference-Commands-Name", ImGui.GetWindowSize() - new System.Numerics.Vector2(0, ImGui.GetTextLineHeight() * 2));
+            for (int i = 0; i < commands.Count; i++)
+            {
+                var command = commands[i];
+                if (ImGui.Selectable($"{command.Target}|{command.Name}|{command.Action}", m_commandSeleted == i))
+                {
+                    m_commandSeleted = i;
+                }
+            }
+
+            ImGui.EndChild();
+            ImGui.Button("+");
+            ImGui.SameLine();
+            ImGui.Button("-");
+            m_commandsSplit01.Separate();
+            m_commandsSplit02.Begin();
+            if (m_commandSeleted >= 0 && m_commandSeleted < commands.Count)
+            {
+                var selectCommand = commands[m_commandSeleted];
+                int targetSelect = 0;
+                ImGui.Combo("Target", ref targetSelect, new string[] { "branch", "remote", "tag", "commit" }, 4);
+            }
+            ImGui.SameLine();
+            bool showUI = false;
+            ImGui.Checkbox("With UI", ref showUI);
+            m_commandsSplit02.Separate();
+
+            ImGui.Text("$branch selected branch name");
+            ImGui.Text("$remote selected branch remote name");
+
+            m_commandsSplit02.End();
+
+            m_commandsSplit01.End();
+        }
 
     }
 }

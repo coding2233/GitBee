@@ -1,15 +1,7 @@
-﻿local ffi = require("ffi")
-
-ffi.cdef[[
-	void igText(const char* fmt,...);
-]]
-
-
-local cimgui = ffi.load("cimgui")
-
-print(ffi)
-print(ffi.C)
+﻿
+local cimgui = require("cimgui")
 print(cimgui)
+
 
 if ffi.os == "Windows" then
 	print("ffi widdow")
