@@ -6,6 +6,7 @@ add_requires("luajit")
 
 target("iiso3")
     set_kind("shared")
+    -- add_defines("LUA_BUILD_AS_DLL","LUA_LIB")
     add_files("src/*.cpp")
     -- add_includedirs("imgui/include")
     add_packages("sdl","glew","opengl","imgui","luajit")

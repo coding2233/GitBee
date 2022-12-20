@@ -1,31 +1,90 @@
 {
-    find_program_msvc_arch_x64_plat_windows_checktoolcxx = {
-        ["cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]]
-    },
-    ["lib.detect.has_flags"] = {
-        ["windows_x64_D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe__cxx_cxflags__cl_external_includedir"] = true,
-        ["windows_x64_D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe__cxx_cxflags__cl_sourceDependencies"] = true
-    },
     find_package_windows_x64_fetch_package_xmake = {
         ["xmake::luajit_13e6f4a6b257413e98184c57fe7c168b_release_2.1.0-beta3_external"] = {
             links = {
                 "luajit"
             },
-            version = "2.1.0-beta3",
-            libfiles = {
-                [[C:\Users\wanderer\AppData\Local\.xmake\packages\l\luajit\2.1.0-beta3\13e6f4a6b257413e98184c57fe7c168b\lib\luajit.lib]]
-            },
+            static = true,
             linkdirs = {
                 [[C:\Users\wanderer\AppData\Local\.xmake\packages\l\luajit\2.1.0-beta3\13e6f4a6b257413e98184c57fe7c168b\lib]]
             },
             sysincludedirs = {
                 [[C:\Users\wanderer\AppData\Local\.xmake\packages\l\luajit\2.1.0-beta3\13e6f4a6b257413e98184c57fe7c168b\include\luajit]]
             },
-            static = true
+            libfiles = {
+                [[C:\Users\wanderer\AppData\Local\.xmake\packages\l\luajit\2.1.0-beta3\13e6f4a6b257413e98184c57fe7c168b\lib\luajit.lib]]
+            },
+            version = "2.1.0-beta3"
         }
     },
+    find_program = {
+        tar = "tar",
+        ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]],
+        git = "git",
+        dmd = false,
+        gdc = false,
+        ldc2 = false,
+        unzip = "unzip",
+        ["cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]],
+        gzip = "gzip",
+        zig = false
+    },
+    find_programver = {
+        ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe"] = false
+    },
+    ["lib.detect.has_flags"] = {
+        ["windows_x64_D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe__cxx_cxflags__cl_external_includedir"] = true,
+        ["windows_x64_D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe__cxx_cxflags__cl_sourceDependencies"] = true
+    },
+    find_program_msvc_arch_x64_plat_windows_checktoolcxx = {
+        ["cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]]
+    },
     find_package_windows_x64_fetch_package_system = {
+        ["conan::imgui/cci.20220621+1.88.docking_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
+            links = {
+                "imgui"
+            },
+            syslinks = {
+                "imm32"
+            },
+            linkdirs = {
+                "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/lib"
+            },
+            sysincludedirs = {
+                "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/include"
+            },
+            static = true,
+            libfiles = {
+                [[C:\Users\wanderer\.conan\data\imgui\cci.20220621+1.88.docking\_\_\package\871c6303207aa1b539e682559d0b5180e15f0c30\lib\imgui.lib]]
+            }
+        },
+        ["conan::glew/2.2.0_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
+            links = {
+                "libglew32"
+            },
+            syslinks = {
+                "Glu32",
+                "opengl32"
+            },
+            linkdirs = {
+                "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/lib"
+            },
+            sysincludedirs = {
+                "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/include"
+            },
+            defines = {
+                "GLEW_STATIC"
+            },
+            static = true,
+            libfiles = {
+                [[C:\Users\wanderer\.conan\data\glew\2.2.0\_\_\package\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\lib\libglew32.lib]]
+            }
+        },
         ["conan::sdl/2.26.0_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
+            links = {
+                "SDL2main",
+                "SDL2-static"
+            },
             syslinks = {
                 "user32",
                 "gdi32",
@@ -39,15 +98,6 @@
                 "setupapi",
                 "shell32"
             },
-            links = {
-                "SDL2main",
-                "SDL2-static"
-            },
-            libfiles = {
-                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2-static.lib]],
-                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2main.lib]],
-                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2_test.lib]]
-            },
             linkdirs = {
                 "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/lib"
             },
@@ -55,47 +105,12 @@
                 "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include",
                 "C:/Users/wanderer/.conan/data/sdl/2.26.0/_/_/package/cfd2d1da7fc86f15de47dab91119c8c3542a6771/include/SDL2"
             },
-            static = true
-        },
-        ["conan::glew/2.2.0_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
-            sysincludedirs = {
-                "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/include"
-            },
-            syslinks = {
-                "Glu32",
-                "opengl32"
-            },
-            links = {
-                "libglew32"
-            },
+            static = true,
             libfiles = {
-                [[C:\Users\wanderer\.conan\data\glew\2.2.0\_\_\package\81f6c093a88d8b1162ad274c7d3b82c94599e6b7\lib\libglew32.lib]]
-            },
-            linkdirs = {
-                "C:/Users/wanderer/.conan/data/glew/2.2.0/_/_/package/81f6c093a88d8b1162ad274c7d3b82c94599e6b7/lib"
-            },
-            defines = {
-                "GLEW_STATIC"
-            },
-            static = true
-        },
-        ["conan::imgui/cci.20220621+1.88.docking_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
-            syslinks = {
-                "imm32"
-            },
-            links = {
-                "imgui"
-            },
-            libfiles = {
-                [[C:\Users\wanderer\.conan\data\imgui\cci.20220621+1.88.docking\_\_\package\871c6303207aa1b539e682559d0b5180e15f0c30\lib\imgui.lib]]
-            },
-            linkdirs = {
-                "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/lib"
-            },
-            sysincludedirs = {
-                "C:/Users/wanderer/.conan/data/imgui/cci.20220621+1.88.docking/_/_/package/871c6303207aa1b539e682559d0b5180e15f0c30/include"
-            },
-            static = true
+                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2-static.lib]],
+                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2main.lib]],
+                [[C:\Users\wanderer\.conan\data\sdl\2.26.0\_\_\package\cfd2d1da7fc86f15de47dab91119c8c3542a6771\lib\SDL2_test.lib]]
+            }
         },
         ["conan::opengl/system_652a5ab06c7d47768ecb88df146b911a_release_latest_external"] = {
             libfiles = { },
@@ -104,24 +119,7 @@
             }
         }
     },
-    find_program = {
-        dmd = false,
-        zig = false,
-        ["cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]],
-        git = "git",
-        tar = "tar",
-        gzip = "gzip",
-        unzip = "unzip",
-        ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\cl.exe]],
-        conan = "conan",
-        gdc = false,
-        ldc2 = false,
-        ping = "ping"
-    },
     find_program_msvc_arch_x64_plat_windows_checktoolsh = {
         ["link.exe"] = [[D:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.33.31629\bin\HostX64\x64\link.exe]]
-    },
-    find_programver = {
-        ["D:\\Program Files\\Microsoft Visual Studio\\2022\\Community\\VC\\Tools\\MSVC\\14.33.31629\\bin\\HostX64\\x64\\cl.exe"] = false
     }
 }

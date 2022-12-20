@@ -1,6 +1,7 @@
 #ifndef __IMGUI_IMPL_SDL_OPENGL3_H__
 #define __IMGUI_IMPL_SDL_OPENGL3_H__
 
+
 #include <iostream>
 #include <GL/glew.h>
 #include <SDL.h>
@@ -35,8 +36,33 @@ typedef void (*IMGUI_DRAW_CALLBACK)();
 EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb);
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);
 
-EXPORT_API struct lua_State* CreateLuaState();
-EXPORT_API void CallLuaScript(struct lua_State* lua_state,const char* lua_script);
-EXPORT_API void CloseLuaState(struct lua_State* lua_state);
-EXPORT_API void CallLuaFunction(struct lua_State* lua_state,const char* function_name);
+#if _WIN32
+#pragma comment(linker, "/export:luaL_newstate=luaL_newstate")
+#pragma comment(linker, "/export:luaL_openlibs=luaL_openlibs")
+#pragma comment(linker, "/export:lua_close=lua_close")
+#pragma comment(linker, "/export:luaL_loadfile=luaL_loadfile")
+#pragma comment(linker, "/export:lua_getfield=lua_getfield")
+
+
+// basic stack manipulation
+#pragma comment(linker, "/export:lua_gettop=lua_gettop")
+#pragma comment(linker, "/export:lua_settop=lua_settop")
+#pragma comment(linker, "/export:lua_pushvalue=lua_pushvalue")
+#pragma comment(linker, "/export:lua_remove=lua_remove")
+#pragma comment(linker, "/export:lua_insert=lua_insert")
+#pragma comment(linker, "/export:lua_replace=lua_replace")
+#pragma comment(linker, "/export:lua_checkstack=lua_checkstack")
+#pragma comment(linker, "/export:lua_xmove=lua_xmove")
+
+
+#pragma comment(linker, "/export:lua_call=lua_call")
+#pragma comment(linker, "/export:lua_pcall=lua_pcall")
+#pragma comment(linker, "/export:lua_cpcall=lua_cpcall")
+#pragma comment(linker, "/export:lua_load=lua_load")
+
+#pragma comment(linker, "/export:lua_dump=lua_dump")
+
+#endif
+
+
 #endif

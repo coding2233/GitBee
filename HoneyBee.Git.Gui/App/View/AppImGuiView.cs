@@ -248,11 +248,14 @@ namespace Wanderer.App.View
             ImGui.Button("-");
             m_commandsSplit01.Separate();
             m_commandsSplit02.Begin();
+            var vireTargetNames = Enum.GetNames(typeof(ViewCommandTarget));
             if (m_commandSeleted >= 0 && m_commandSeleted < commands.Count)
             {
-                var selectCommand = commands[m_commandSeleted];
-                int targetSelect = 0;
-                ImGui.Combo("Target", ref targetSelect, new string[] { "branch", "remote", "tag", "commit" }, 4);
+                int targetSelect = (int)commands[m_commandSeleted].Target;
+                if (ImGui.Combo("Target", ref targetSelect, vireTargetNames, vireTargetNames.Length))
+                {
+                    commands[m_commandSeleted].Target = (ViewCommandTarget)targetSelect;
+                }
             }
             ImGui.SameLine();
             bool showUI = false;
