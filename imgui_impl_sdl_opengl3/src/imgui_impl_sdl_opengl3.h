@@ -54,13 +54,72 @@ EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_
 #pragma comment(linker, "/export:lua_checkstack=lua_checkstack")
 #pragma comment(linker, "/export:lua_xmove=lua_xmove")
 
+//access functions (stack -> C)
+#pragma comment(linker, "/export:lua_isnumber=lua_isnumber")
+#pragma comment(linker, "/export:lua_isstring=lua_isstring")
+#pragma comment(linker, "/export:lua_iscfunction=lua_iscfunction")
+#pragma comment(linker, "/export:lua_isuserdata=lua_isuserdata")
+#pragma comment(linker, "/export:lua_type=lua_type")
+#pragma comment(linker, "/export:lua_typename=lua_typename")
 
+#pragma comment(linker, "/export:lua_equal=lua_equal")
+#pragma comment(linker, "/export:lua_rawequal=lua_rawequal")
+#pragma comment(linker, "/export:lua_lessthan=lua_lessthan")
+
+#pragma comment(linker, "/export:lua_tonumber=lua_tonumber")
+#pragma comment(linker, "/export:lua_tointeger=lua_tointeger")
+#pragma comment(linker, "/export:lua_toboolean=lua_toboolean")
+#pragma comment(linker, "/export:lua_tolstring=lua_tolstring")
+#pragma comment(linker, "/export:lua_objlen=lua_objlen")
+#pragma comment(linker, "/export:lua_tocfunction=lua_tocfunction")
+#pragma comment(linker, "/export:lua_touserdata=lua_touserdata")
+#pragma comment(linker, "/export:lua_tothread=lua_tothread")
+#pragma comment(linker, "/export:lua_topointer=lua_topointer")
+
+//push functions (C -> stack)
+#pragma comment(linker, "/export:lua_pushnil=lua_pushnil")
+#pragma comment(linker, "/export:lua_pushnumber=lua_pushnumber")
+#pragma comment(linker, "/export:lua_pushinteger=lua_pushinteger")
+#pragma comment(linker, "/export:lua_pushlstring=lua_pushlstring")
+#pragma comment(linker, "/export:lua_pushstring=lua_pushstring")
+#pragma comment(linker, "/export:lua_pushvfstring=lua_pushvfstring")
+
+#pragma comment(linker, "/export:lua_pushfstring=lua_pushfstring")
+#pragma comment(linker, "/export:lua_pushcclosure=lua_pushcclosure")
+#pragma comment(linker, "/export:lua_pushboolean=lua_pushboolean")
+#pragma comment(linker, "/export:lua_pushlightuserdata=lua_pushlightuserdata")
+#pragma comment(linker, "/export:lua_pushthread=lua_pushthread")
+
+// get functions (Lua -> stack)
+#pragma comment(linker, "/export:lua_gettable=lua_gettable")
+#pragma comment(linker, "/export:lua_getfield=lua_getfield")
+#pragma comment(linker, "/export:lua_rawget=lua_rawget")
+#pragma comment(linker, "/export:lua_rawgeti=lua_rawgeti")
+#pragma comment(linker, "/export:lua_createtable=lua_createtable")
+#pragma comment(linker, "/export:lua_newuserdata=lua_newuserdata")
+#pragma comment(linker, "/export:lua_getmetatable=lua_getmetatable")
+#pragma comment(linker, "/export:lua_getfenv=lua_getfenv")
+
+// set functions (stack -> Lua)
+#pragma comment(linker, "/export:lua_settable=lua_settable")
+#pragma comment(linker, "/export:lua_setfield=lua_setfield")
+#pragma comment(linker, "/export:lua_rawset=lua_rawset")
+#pragma comment(linker, "/export:lua_rawseti=lua_rawseti")
+#pragma comment(linker, "/export:lua_setmetatable=lua_setmetatable")
+#pragma comment(linker, "/export:lua_setfenv=lua_setfenv")
+
+// `load' and `call' functions (load and run Lua code)
 #pragma comment(linker, "/export:lua_call=lua_call")
 #pragma comment(linker, "/export:lua_pcall=lua_pcall")
 #pragma comment(linker, "/export:lua_cpcall=lua_cpcall")
 #pragma comment(linker, "/export:lua_load=lua_load")
 
 #pragma comment(linker, "/export:lua_dump=lua_dump")
+
+//coroutine functions
+#pragma comment(linker, "/export:lua_yield=lua_yield")
+#pragma comment(linker, "/export:lua_resume=lua_resume")
+#pragma comment(linker, "/export:lua_status=lua_status")
 
 #endif
 

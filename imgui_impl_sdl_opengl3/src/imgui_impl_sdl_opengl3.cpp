@@ -163,14 +163,14 @@ char *glsl_version_;
 // }
 
 
- struct lua_State* CreateLuaState()
- {
-     lua_State * lua_state = luaL_newstate(); 
-     luaL_openlibs(lua_state);
-     //luaJIT_setmode(lua_state,-1,LUAJIT_MODE_ON);
-     std::cout << "CreateLuaState:" << lua_state << std::endl;
-     return lua_state;
- }
+ //struct lua_State* CreateLuaState()
+ //{
+ //    lua_State * lua_state = luaL_newstate(); 
+ //    luaL_openlibs(lua_state);
+ //    //luaJIT_setmode(lua_state,-1,LUAJIT_MODE_ON);
+ //    std::cout << "CreateLuaState:" << lua_state << std::endl;
+ //    return lua_state;
+ //}
 
 // void CallLuaScript(struct lua_State* lua_state,const char* lua_script)
 // {
