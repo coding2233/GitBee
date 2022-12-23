@@ -37,11 +37,13 @@ EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);
 
 #if _WIN32
+//luaxlib
 #pragma comment(linker, "/export:luaL_newstate=luaL_newstate")
 #pragma comment(linker, "/export:luaL_openlibs=luaL_openlibs")
 #pragma comment(linker, "/export:lua_close=lua_close")
 #pragma comment(linker, "/export:luaL_loadfile=luaL_loadfile")
-#pragma comment(linker, "/export:lua_getfield=lua_getfield")
+#pragma comment(linker, "/export:luaL_loadbuffer=luaL_loadbuffer")
+#pragma comment(linker, "/export:luaL_loadstring=luaL_loadstring")
 
 
 // basic stack manipulation

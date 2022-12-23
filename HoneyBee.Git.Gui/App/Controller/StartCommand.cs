@@ -23,8 +23,9 @@ namespace Wanderer.App.Controller
 
         [Inject(ContextKeys.CONTEXT)]
         public IContext context { get; set; }
-
- 
+        
+        [Inject]
+        public IPluginService pluginService { get; set; }
 
         public override void Execute()
         {
@@ -34,9 +35,8 @@ namespace Wanderer.App.Controller
             //内容主窗口
             ImGuiView.Create<HomeView>(context,0);
 
-            ////打开默认仓库
-            //string defaultGitRepo = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "../../../../../godot/.git");
-            //dispatcher.Dispatch(AppEvent.ShowGitRepo, defaultGitRepo);
+            //运行插件
+            pluginService.Reload();
         }
     }
 }

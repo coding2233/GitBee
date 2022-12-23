@@ -33,7 +33,6 @@ namespace Wanderer.App.View
             {
                 m_fullLog = logger.fullLog;
             };
-            Plugin.Load("lua/test.lua");
         }
 
         //设置
@@ -95,7 +94,7 @@ namespace Wanderer.App.View
                                
                             }
 
-                            Plugin.Call("OnDraw");
+                            //Plugin.Call("OnDraw");
 
                             ImGui.EndTabItem();
                         }

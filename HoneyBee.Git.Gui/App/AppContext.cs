@@ -25,6 +25,7 @@ namespace Wanderer.App
             crossContextBridge.Bind(AppEvent.ShowGitRepo);
 
             injectionBinder.Bind<IDatabaseService>().To<DatabaseService>().ToSingleton().CrossContext();
+            injectionBinder.Bind<IPluginService>().To<PluginService>().ToSingleton().CrossContext();
             injectionBinder.Bind<IAppModel>().To<AppModel>().ToSingleton().CrossContext();
 
             mediationBinder.Bind<AppImGuiView>().To<AppImGuiMediator>();

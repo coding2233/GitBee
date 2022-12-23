@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <None Remove="lua\cimgui.lua" />
+    <None Remove="lua\Init.lua" />
     <None Remove="Program.cs~RFe91c4dc.TMP" />
   </ItemGroup>
 
@@ -52,6 +53,7 @@
 
 	<ItemGroup>
 		<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="plugin/*.lua" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>
