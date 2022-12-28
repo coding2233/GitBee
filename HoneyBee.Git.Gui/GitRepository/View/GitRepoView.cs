@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Wanderer.App.Service;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 using Wanderer.GitRepository.Mediator;
@@ -20,7 +21,7 @@ namespace Wanderer.GitRepository.View
 {
     public class GitRepoView : ImGuiTabView
     {
-        public override string Name => m_gitRepo==null ? base.Name: m_gitRepo.Name;
+        public override string Name => m_gitRepo == null ? base.Name : m_gitRepo.Name;
 
         public override string UniqueKey => m_repoPath;
 
@@ -35,6 +36,9 @@ namespace Wanderer.GitRepository.View
         private string m_syncDataTip;
         private float m_syncProgress;
 
+        [Inject]
+        public IPluginService plugin { get; set; }
+
         #region 子模块
         private DrawWorkTreeView m_workTreeView;
         private DrawCommitHistoryView m_commitHistoryView;
@@ -42,8 +46,9 @@ namespace Wanderer.GitRepository.View
 
         public GitRepoView(IContext context, string repoPath) : base(context)
         {
+      
             m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
-
+            
             m_repoPath = repoPath;
             m_gitRepoMediator = mediator as GitRepoMediator;
 
@@ -71,7 +76,7 @@ namespace Wanderer.GitRepository.View
                 if (m_gitRepo != null)
                 {
                     m_workTreeView = new DrawWorkTreeView(m_gitRepo);
-                    m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo);
+                    m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo,plugin);
                 }
             }
 
@@ -351,17 +356,20 @@ namespace Wanderer.GitRepository.View
                         ImGui.SameLine();
                         ImGui.Text(branchNode.FullName);
                         ImGui.Separator();
-                        var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Remote);
-                        if (viewCommands != null && viewCommands.Count > 0)
-                        {
-                            foreach (var item in viewCommands)
-                            {
-                                if (ImGui.MenuItem(item.Name))
-                                {
-                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
-                                }
-                            }
-                        }
+
+                        plugin.CallPopupContextItem("OnRemotePopupItem");
+
+                        //var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Remote);
+                        //if (viewCommands != null && viewCommands.Count > 0)
+                        //{
+                        //    foreach (var item in viewCommands)
+                        //    {
+                        //        if (ImGui.MenuItem(item.Name))
+                        //        {
+                        //            GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
+                        //        }
+                        //    }
+                        //}
                     }
                     else
                     {
@@ -369,20 +377,26 @@ namespace Wanderer.GitRepository.View
                         ImGui.SameLine();
                         ImGui.Text(branchNode.FullName);
                         ImGui.Separator();
+
                         if (isCurrentRepositoryHead)
                         {
-                            var viewCmds = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Head);
-                            if (viewCmds != null && viewCmds.Count > 0)
-                            {
-                                foreach (var item in viewCmds)
-                                {
-                                    if (ImGui.MenuItem(item.Name))
-                                    {
-                                        GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
-                                    }
-                                }
-                            }
+                            plugin.CallPopupContextItem("OnHeadPopupItem");
+
+                            //var viewCmds = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Head);
+                            //if (viewCmds != null && viewCmds.Count > 0)
+                            //{
+                            //    foreach (var item in viewCmds)
+                            //    {
+                            //        if (ImGui.MenuItem(item.Name))
+                            //        {
+                            //            GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
+                            //        }
+                            //    }
+                            //}
                         }
+
+                        plugin.CallPopupContextItem("OnBranchPopupItem");
+
                         var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Branch);
                         if (viewCommands != null && viewCommands.Count > 0)
                         {

@@ -19,6 +19,15 @@
         [[xmake l c:\Users\wanderer\.vscode\extensions\tboox.xmake-vscode-1.8.7\assets\config.lua]],
         "xmake ",
         [[xmake lua D:\xmake\actions\build\statistics.lua]],
+        [[xmake lua D:\xmake\actions\build\cleaner.lua]],
+        "xmake ",
+        "xmake ",
+        [[xmake l c:\Users\wanderer\.vscode\extensions\tboox.xmake-vscode-1.8.7\assets\explorer.lua]],
+        [[xmake l c:\Users\wanderer\.vscode\extensions\tboox.xmake-vscode-1.8.7\assets\config.lua]],
+        [[xmake l c:\Users\wanderer\.vscode\extensions\tboox.xmake-vscode-1.8.7\assets\explorer.lua]],
+        [[xmake l c:\Users\wanderer\.vscode\extensions\tboox.xmake-vscode-1.8.7\assets\config.lua]],
+        "xmake ",
+        [[xmake lua D:\xmake\actions\build\statistics.lua]],
         [[xmake lua D:\xmake\actions\build\cleaner.lua]]
     }
 }

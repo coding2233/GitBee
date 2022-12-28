@@ -8,16 +8,17 @@ using System.Threading.Tasks;
 
 namespace Wanderer
 {
-    internal class LuaEnv : IDisposable
+    unsafe internal class LuaEnv : IDisposable
     {
         private const int LUA_REGISTRYINDEX = -10000;
         private const int LUA_ENVIRONINDEX = -10001;
         private const int LUA_GLOBALSINDEX = -10002;
         private const int LUA_MULTRET = -1;
 
-        IntPtr m_luaState;
+        private IntPtr m_luaState;
 
         internal delegate int LuaFucntion(IntPtr lua_state);
+        public delegate int LuaFunction(LuaEnv luaEnv);
         internal LuaEnv()
         {
             m_luaState = luaL_newstate();
@@ -101,6 +102,12 @@ namespace Wanderer
             lua_getfield(m_luaState, LUA_GLOBALSINDEX, name);
         }
 
+        internal void Call(string name)
+        {
+            GetGlobal(name);
+            lua_pcall(m_luaState, 0, LUA_MULTRET, 0);
+        }
+
         [DllImport("iiso3.dll")]
         extern static IntPtr luaL_newstate();
 
@@ -122,5 +129,15 @@ namespace Wanderer
         extern static void lua_getfield(IntPtr lua_state, int idx, string k);
         [DllImport("iiso3.dll")]
         extern static void lua_pushcclosure(IntPtr lua_state, LuaFucntion luaFucntion, int n);
+        [DllImport("iiso3.dll")]
+        extern static byte* lua_tolstring(IntPtr lua_state, int idx,ref int len);
+        internal static string lua_tolstring(IntPtr lua_state, int idx)
+        {
+            int len = 0;
+            var bytes = lua_tolstring(lua_state, idx, ref len);
+            var str = Encoding.UTF8.GetString(bytes, len);
+            return str;
+        }
+       
     }
 }

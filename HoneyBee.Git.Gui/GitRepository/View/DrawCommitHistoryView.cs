@@ -8,6 +8,7 @@ using System.Numerics;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App.Service;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
@@ -34,7 +35,8 @@ namespace Wanderer.GitRepository.View
         private IEnumerable<Commit> m_cacheCommits;
 
         private Dictionary<string, int> m_commitForBranchIndex;
-        public DrawCommitHistoryView(GitRepo gitRepo)
+        private IPluginService m_plugin;
+        public DrawCommitHistoryView(GitRepo gitRepo, IPluginService plugin)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
             m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);
@@ -44,6 +46,7 @@ namespace Wanderer.GitRepository.View
             m_commitForBranchIndex = new Dictionary<string, int>();
 
             m_gitRepo = gitRepo;
+            m_plugin = plugin;
         }
 
         public void Draw()
@@ -178,14 +181,15 @@ namespace Wanderer.GitRepository.View
                             ImGui.Text(item.MessageShort);
                             ImGui.Separator();
 
-                            var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Commit);
-                            foreach (var itemViewCommand in viewCommands)
-                            {
-                                if (ImGui.MenuItem(itemViewCommand.Name))
-                                {
-                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, itemViewCommand);
-                                }
-                            }
+                            m_plugin.CallPopupContextItem("OnCommitPopupItem");
+                            //var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Commit);
+                            //foreach (var itemViewCommand in viewCommands)
+                            //{
+                            //    if (ImGui.MenuItem(itemViewCommand.Name))
+                            //    {
+                            //        GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, itemViewCommand);
+                            //    }
+                            //}
                         }
                         ImGui.EndPopup();
                     }
