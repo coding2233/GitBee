@@ -47,6 +47,7 @@ namespace Wanderer.App.View
             ImGui.PushStyleVar(ImGuiStyleVar.FrameRounding, 3);
             ImGui.PushStyleVar(ImGuiStyleVar.PopupRounding, 3);
             ImGui.PushStyleColor(ImGuiCol.ModalWindowDimBg, Vector4.Zero);
+           
             switch (m_styleColors)
             {
                 case 0:
@@ -71,7 +72,7 @@ namespace Wanderer.App.View
             //DrawMainMenuBar();
             if (m_showPreference)
             {
-                var viewport = ImGui.GetMainViewport();
+               var viewport = ImGui.GetMainViewport();
                 ImGui.OpenPopup("Preference");
                 ImGui.SetNextWindowSize(viewport.WorkSize * 0.7f);
                 if (ImGui.BeginPopupModal("Preference", ref m_showPreference, ImGuiWindowFlags.NoResize| ImGuiWindowFlags.NoMove))
@@ -81,9 +82,7 @@ namespace Wanderer.App.View
                         if (ImGui.BeginTabItem("Commands##PreferenceTabCommands"))
                         {
                             OnDrawPreferenceCommand();
-                            
 
-                          
                             ImGui.EndTabItem();
                         }
 
