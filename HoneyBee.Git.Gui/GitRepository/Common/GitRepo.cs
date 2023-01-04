@@ -163,6 +163,7 @@ namespace Wanderer.GitRepository.Common
             BuildSignature();
             //提交到仓库中
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
+            ReBuildUIData();
         }
 
         private Signature BuildSignature()
