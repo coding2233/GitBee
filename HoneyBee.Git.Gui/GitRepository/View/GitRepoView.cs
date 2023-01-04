@@ -80,7 +80,7 @@ namespace Wanderer.GitRepository.View
                 }
             }
 
-            m_gitRepo.SyncGitRepoTask(null, null);
+            m_gitRepo.ReBuildUIData();
             
             //m_syncDataTip = "正在同步数据";
             //m_gitRepo.SyncGitRepoTask((progress) => {

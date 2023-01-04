@@ -2,7 +2,7 @@
 #include "imgui_impl_sdl_opengl3.h"
 
 
-int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb)
+int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
 {
 char *glsl_version_;
   
@@ -121,8 +121,17 @@ char *glsl_version_;
             ImGui_ImplSDL2_ProcessEvent(&event);
             if (event.type == SDL_QUIT)
                 is_done_ = true;
-            if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
-                is_done_ = true;
+            if (event.type == SDL_WINDOWEVENT)
+            {
+                if (event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+                {
+                    is_done_ = true;
+                }
+                else
+                {
+                    window_event_cb(event.window.event);
+                }
+            }
 
             // Start the Dear ImGui frame
             ImGui_ImplOpenGL3_NewFrame();

@@ -61,7 +61,11 @@ namespace Wanderer.GitRepository.Common
         //更新UI状态
         public void ReBuildUIData()
         {
-            SetBranchNodes();
+            Task.Run(() => {
+                SetBranchNodes();
+                SetTags();
+                SetSubmodules();
+            });
         }
 
         //public string FormatCommandAction(ViewCommand command)
@@ -92,25 +96,6 @@ namespace Wanderer.GitRepository.Common
         //    return action;
         //}
 
-        //同步仓库信息
-        public async void SyncGitRepoTask(Action<float> progress, Action complete)
-        {
-            if (m_runTask)
-            {
-                Log.Info("正在执行任务中，请勿打扰");
-                return;
-            }
-            m_taskProgress = progress;
-            m_runTask = true;
-            var tasks = SyncGitRepoToDatabase();
-            foreach (var itemTask in tasks)
-            {
-                await itemTask;
-            }
-
-            m_runTask = false;
-            complete?.Invoke();
-        }
 
         public void Pull(Func<string,bool> onProgress, Func<TransferProgress, bool> onTransferProgressHandler)
         {
@@ -152,38 +137,6 @@ namespace Wanderer.GitRepository.Common
 
             //next
             //git fetch --all
-        }
-
-
-        //将git数据同步到数据库
-        private List<Task> SyncGitRepoToDatabase()
-        {
-            List<Task> list = new List<Task>();
-
-            try
-            {
-                //分支更新到数据库
-                list.Add(Task.Run(SetBranchNodes));
-
-                //Tags更新到数据
-                list.Add(Task.Run(SetTags));
-
-                //子模块更新到数据
-                list.Add(Task.Run(SetSubmodules));
-
-                ////本地提交更新到数据
-                //list.Add(Task.Run(SetRepoCommits));
-
-
-            }
-            catch (Exception e)
-            {
-                Log.Warn("检查Git仓库与数据库是否匹配,异常: {0}",e);
-            }
-
-            return list;
-
-            //Log.Info($"SyncGitRepoToDatabase complete.");
         }
 
 

@@ -20,7 +20,7 @@ namespace Wanderer.App
             {
                 var commandArgs = System.Environment.GetCommandLineArgs();
                 Log.Info("Hello, GitBee!");
-                int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw);
+                int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw, OnWindowEvent);
             }
             catch (System.Exception e)
             {
@@ -121,11 +121,54 @@ namespace Wanderer.App
             ImGuiView.Render();
         }
 
+        static void OnWindowEvent(int eventType)
+        {
+            SDL_WindowEventID eventID = (SDL_WindowEventID)eventType;
+            if (eventID == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED)
+            {
+                ImGuiView.Focus(false);
+            }
+            else if (eventID == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST)
+            {
+                ImGuiView.Focus(true);
+            }
+            //Log.Info("OnWindowEvent: {0} {1}", eventID, eventType);
+        }
+
         #region native
+        enum SDL_WindowEventID
+        {
+            SDL_WINDOWEVENT_NONE,           /**< Never used */
+            SDL_WINDOWEVENT_SHOWN,          /**< Window has been shown */
+            SDL_WINDOWEVENT_HIDDEN,         /**< Window has been hidden */
+            SDL_WINDOWEVENT_EXPOSED,        /**< Window has been exposed and should be
+                                         redrawn */
+            SDL_WINDOWEVENT_MOVED,          /**< Window has been moved to data1, data2
+                                     */
+            SDL_WINDOWEVENT_RESIZED,        /**< Window has been resized to data1xdata2 */
+            SDL_WINDOWEVENT_SIZE_CHANGED,   /**< The window size has changed, either as
+                                         a result of an API call or through the
+                                         system or user changing the window size. */
+            SDL_WINDOWEVENT_MINIMIZED,      /**< Window has been minimized */
+            SDL_WINDOWEVENT_MAXIMIZED,      /**< Window has been maximized */
+            SDL_WINDOWEVENT_RESTORED,       /**< Window has been restored to normal size
+                                         and position */
+            SDL_WINDOWEVENT_ENTER,          /**< Window has gained mouse focus */
+            SDL_WINDOWEVENT_LEAVE,          /**< Window has lost mouse focus */
+            SDL_WINDOWEVENT_FOCUS_GAINED,   /**< Window has gained keyboard focus */
+            SDL_WINDOWEVENT_FOCUS_LOST,     /**< Window has lost keyboard focus */
+            SDL_WINDOWEVENT_CLOSE,          /**< The window manager requests that the window be closed */
+            SDL_WINDOWEVENT_TAKE_FOCUS,     /**< Window is being offered a focus (should SetWindowInputFocus() on itself or a subwindow, or ignore) */
+            SDL_WINDOWEVENT_HIT_TEST,       /**< Window had a hit test that wasn't SDL_HITTEST_NORMAL. */
+            SDL_WINDOWEVENT_ICCPROF_CHANGED,/**< The ICC profile of the window's display has changed. */
+            SDL_WINDOWEVENT_DISPLAY_CHANGED
+        }
+
         delegate IntPtr IMGUI_INIT_CALLBACK();
         delegate void IMGUI_DRAW_CALLBACK();
+        delegate void WINDOW_EVENT_CALLBACK(int event_type);
         [DllImport("iiso3.dll")]
-        extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb);
+        extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
     
         #endregion
     }
