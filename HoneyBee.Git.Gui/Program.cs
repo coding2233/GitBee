@@ -14,14 +14,13 @@ namespace Wanderer.App
 {
     internal unsafe class Program
     {
-        
         static void Main(string[] args)
         {
             try
             {
                 var commandArgs = System.Environment.GetCommandLineArgs();
-                Log.Info("Hello, Honey Bee - Git!");
-                int result = Create($"Honybee Git - {Application.version}", OnImGuiInit, OnImGuiDraw);
+                Log.Info("Hello, GitBee!");
+                int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw);
             }
             catch (System.Exception e)
             {

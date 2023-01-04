@@ -32,12 +32,6 @@ namespace Wanderer.App.Mediator
             appImGuiView.OnSetStyleColors += OnSetStyleColors;
 
             appImGuiView.SetStyleColors(database.GetCustomerData<int>("StyleColors",1));
-
-            GitCommandView.ViewCommands = database.GetCustomerData<List<ViewCommand>>("ViewCommand");
-            if (GitCommandView.ViewCommands == null)
-            {
-                GitCommandView.ViewCommands = new List<ViewCommand>();
-            }
         }
 
         public override void OnRemove()

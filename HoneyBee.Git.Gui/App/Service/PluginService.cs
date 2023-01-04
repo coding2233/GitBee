@@ -32,7 +32,7 @@ namespace Wanderer.App.Service
             m_luaEnv = new LuaEnv();
             RegisterMethod();
             //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
-            m_luaEnv.DoString("package.path=\"lua/?.lua;plugin/?.lua;\"..package.path");
+            m_luaEnv.DoString("package.path=\"lua/?.lua;lua/common/?.lua;lua/core/?.lua;\"..package.path");
             m_luaEnv.DoFile("lua/init.lua");
             LoadViewCommand();
         }
@@ -49,12 +49,13 @@ namespace Wanderer.App.Service
 
         private void RegisterMethod()
         {
-            m_luaEnv.Register("AddViewCommand",AddViewCommand);
+            m_luaEnv.Register("RunViewCommand", RunViewCommand);
         }
 
-        private static int AddViewCommand(IntPtr lua_state)
+        private static int RunViewCommand(IntPtr lua_state)
         {
             var str = LuaEnv.lua_tolstring(lua_state,1);
+            //GitCommandView.RunGitCommandView<LuaProcessGitCommand>();
             return 0;
         }
 

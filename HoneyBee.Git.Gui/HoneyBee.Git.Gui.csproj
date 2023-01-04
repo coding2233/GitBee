@@ -9,6 +9,7 @@
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <ApplicationIcon>bee.ico</ApplicationIcon>
     <Platforms>AnyCPU;x64</Platforms>
+    <AssemblyName>GitBee</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>
@@ -53,7 +54,8 @@
 
 	<ItemGroup>
 		<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
-		<Content Include="plugin/*.lua" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="lua/common/*.lua" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="lua/core/*.lua" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>

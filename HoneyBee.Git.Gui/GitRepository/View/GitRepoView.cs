@@ -358,18 +358,6 @@ namespace Wanderer.GitRepository.View
                         ImGui.Separator();
 
                         plugin.CallPopupContextItem("OnRemotePopupItem");
-
-                        //var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Remote);
-                        //if (viewCommands != null && viewCommands.Count > 0)
-                        //{
-                        //    foreach (var item in viewCommands)
-                        //    {
-                        //        if (ImGui.MenuItem(item.Name))
-                        //        {
-                        //            GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
-                        //        }
-                        //    }
-                        //}
                     }
                     else
                     {
@@ -381,36 +369,17 @@ namespace Wanderer.GitRepository.View
                         if (isCurrentRepositoryHead)
                         {
                             plugin.CallPopupContextItem("OnHeadPopupItem");
-
-                            //var viewCmds = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Head);
-                            //if (viewCmds != null && viewCmds.Count > 0)
-                            //{
-                            //    foreach (var item in viewCmds)
-                            //    {
-                            //        if (ImGui.MenuItem(item.Name))
-                            //        {
-                            //            GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
-                            //        }
-                            //    }
-                            //}
                         }
 
                         plugin.CallPopupContextItem("OnBranchPopupItem");
-
-                        var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Branch);
-                        if (viewCommands != null && viewCommands.Count > 0)
-                        {
-                            foreach (var item in viewCommands)
-                            {
-                                if (ImGui.MenuItem(item.Name))
-                                {
-                                    GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, item);
-                                }
-                            }
-                        }
                     }
                     ImGui.EndPopup();
                 }
+
+
+            
+
+               
             }
 
             if (!treeNodeEx || branchNode.Data != null)

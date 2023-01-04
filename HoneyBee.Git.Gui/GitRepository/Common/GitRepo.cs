@@ -64,33 +64,33 @@ namespace Wanderer.GitRepository.Common
             SetBranchNodes();
         }
 
-        public string FormatCommandAction(ViewCommand command)
-        {
-            string action = command.Action;
-            if (string.IsNullOrEmpty(action))
-            {
-                action = "git --help";
-            }
-            else
-            {
-                switch (command.Target)
-                {
-                    case ViewCommandTarget.Head:
-                    case ViewCommandTarget.Branch:
-                        break;
-                    case ViewCommandTarget.Remote:
-                        break;
-                    case ViewCommandTarget.Commit:
-                        break;
-                    case ViewCommandTarget.Tag:
-                        break;
-                    default:
-                        break;
-                }
-            }
+        //public string FormatCommandAction(ViewCommand command)
+        //{
+        //    string action = command.Action;
+        //    if (string.IsNullOrEmpty(action))
+        //    {
+        //        action = "git --help";
+        //    }
+        //    else
+        //    {
+        //        switch (command.Target)
+        //        {
+        //            case ViewCommandTarget.Head:
+        //            case ViewCommandTarget.Branch:
+        //                break;
+        //            case ViewCommandTarget.Remote:
+        //                break;
+        //            case ViewCommandTarget.Commit:
+        //                break;
+        //            case ViewCommandTarget.Tag:
+        //                break;
+        //            default:
+        //                break;
+        //        }
+        //    }
 
-            return action;
-        }
+        //    return action;
+        //}
 
         //同步仓库信息
         public async void SyncGitRepoTask(Action<float> progress, Action complete)

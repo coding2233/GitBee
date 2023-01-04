@@ -228,18 +228,18 @@ namespace Wanderer.App.View
 
         private void OnDrawPreferenceCommand()
         {
-            var commands = GitCommandView.ViewCommands;
+            //var commands = GitCommandView.ViewCommands;
 
             m_commandsSplit01.Begin();
             ImGui.BeginChild("Preference-Commands-Name", ImGui.GetWindowSize() - new System.Numerics.Vector2(0, ImGui.GetTextLineHeight() * 2));
-            for (int i = 0; i < commands.Count; i++)
-            {
-                var command = commands[i];
-                if (ImGui.Selectable($"{command.Target}|{command.Name}|{command.Action}", m_commandSeleted == i))
-                {
-                    m_commandSeleted = i;
-                }
-            }
+            //for (int i = 0; i < commands.Count; i++)
+            //{
+            //    var command = commands[i];
+            //    if (ImGui.Selectable($"{command.Target}|{command.Name}|{command.Action}", m_commandSeleted == i))
+            //    {
+            //        m_commandSeleted = i;
+            //    }
+            //}
 
             ImGui.EndChild();
             ImGui.Button("+");
@@ -247,15 +247,15 @@ namespace Wanderer.App.View
             ImGui.Button("-");
             m_commandsSplit01.Separate();
             m_commandsSplit02.Begin();
-            var vireTargetNames = Enum.GetNames(typeof(ViewCommandTarget));
-            if (m_commandSeleted >= 0 && m_commandSeleted < commands.Count)
-            {
-                int targetSelect = (int)commands[m_commandSeleted].Target;
-                if (ImGui.Combo("Target", ref targetSelect, vireTargetNames, vireTargetNames.Length))
-                {
-                    commands[m_commandSeleted].Target = (ViewCommandTarget)targetSelect;
-                }
-            }
+            //var vireTargetNames = Enum.GetNames(typeof(ViewCommandTarget));
+            //if (m_commandSeleted >= 0 && m_commandSeleted < commands.Count)
+            //{
+            //    int targetSelect = (int)commands[m_commandSeleted].Target;
+            //    if (ImGui.Combo("Target", ref targetSelect, vireTargetNames, vireTargetNames.Length))
+            //    {
+            //        commands[m_commandSeleted].Target = (ViewCommandTarget)targetSelect;
+            //    }
+            //}
             ImGui.SameLine();
             bool showUI = false;
             ImGui.Checkbox("With UI", ref showUI);
