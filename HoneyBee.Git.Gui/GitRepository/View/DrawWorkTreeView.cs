@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
@@ -158,7 +159,7 @@ namespace Wanderer
         }
 
 
-        private void DrawStatusEntryTreeNode(StatusEntryTreeViewNode node,bool isStage)
+        private void DrawStatusEntryTreeNode(StatusEntryTreeViewNode node, bool isStage)
         {
             var selectNodes = isStage ? m_stageSelectedNodes : m_unstageSelectedNodes;
             var multipSelectNodes = isStage ? m_stageMultipleSelectionNodes : m_unstageMultipleSelectionNodes;
@@ -170,7 +171,7 @@ namespace Wanderer
                 node.NodeOpened = ImGui.TreeNodeEx(node.Name, nodeFlag);
                 if (ImGui.IsItemClicked())
                 {
-                    if (!ImGui.IsItemToggledOpen() )
+                    if (!ImGui.IsItemToggledOpen())
                     {
                         if (ImGui.GetIO().KeyCtrl)
                         {
@@ -196,7 +197,7 @@ namespace Wanderer
                                 }
                                 indexs.Sort();
                                 int minIndex = indexs[0];
-                                int maxIndex = indexs[indexs.Count-1];
+                                int maxIndex = indexs[indexs.Count - 1];
                                 selectNodes.Clear();
                                 for (int i = 0; i < multipSelectNodes.Count; i++)
                                 {
@@ -224,7 +225,7 @@ namespace Wanderer
                     ImGui.TreePop();
                 }
             }
-            else 
+            else
             {
                 var statusEntry = node.Data;
                 string statusIcon = Icon.Get(Icon.Material_question_mark);
@@ -258,7 +259,7 @@ namespace Wanderer
                 }
 
                 bool selectableSelected = selected;
-                if (ImGui.Selectable(statusIcon+node.Name, ref selectableSelected))
+                if (ImGui.Selectable(statusIcon + node.Name, ref selectableSelected))
                 {
                     var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
                     var diffContext = patch.Content;
@@ -306,7 +307,7 @@ namespace Wanderer
                     }
                 }
             }
-            
+
         }
         private void UpdateStatus()
         {
@@ -326,16 +327,43 @@ namespace Wanderer
                     StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
                 }
 
+                foreach (var item in statuses.Added)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                }
+
+                foreach (var item in statuses.Removed)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                }
+
+                foreach (var item in statuses.RenamedInIndex)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                }
+
                 foreach (var item in m_stageTreeView)
                 {
                     BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes,item);
                 }
 
-                foreach (var item in statuses)
+                foreach (var item in statuses.Missing)
                 {
-                    if (statuses.Staged.Contains(item) || statuses.Ignored.Contains(item))
-                        continue;
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                }
 
+                foreach (var item in statuses.Modified)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                }
+
+                foreach (var item in statuses.Untracked)
+                {
+                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                }
+
+                foreach (var item in statuses.RenamedInWorkDir)
+                {
                     StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
                 }
 

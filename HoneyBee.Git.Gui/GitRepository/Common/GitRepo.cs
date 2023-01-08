@@ -209,7 +209,9 @@ namespace Wanderer.GitRepository.Common
             else
             {
                 if (files.Count() > 0)
+                {
                     Commands.Stage(m_repository, files);
+                }
             }
         }
 

@@ -45,7 +45,7 @@ jobs:
     - name: Expose as artifact
       uses: actions/upload-artifact@v2
       with:
-        name: HoneyBee-Git-Windows
+        name: GitBee-Windows
         path: HoneyBee.Git.Gui/bin/Release/net6.0
   
   # build-macos:
@@ -81,7 +81,7 @@ jobs:
     - name: Download an artifact - windows
       uses: actions/download-artifact@v2
       with:
-        name: HoneyBee-Git-Windows
+        name: GitBee-Windows
         path: windows/
     # - name: Download an artifact - macos
     #   uses: actions/download-artifact@v2
@@ -108,7 +108,7 @@ jobs:
       env:
         BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
         CHANNEL: windows
-        ITCH_GAME: HoneyBee-Git
+        ITCH_GAME: GitBee
         ITCH_USER: wanderer-x
         PACKAGE: windows/
     

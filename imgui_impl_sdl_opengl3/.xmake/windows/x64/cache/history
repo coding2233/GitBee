@@ -34,6 +34,13 @@
         "xmake ",
         [[xmake lua D:\xmake\actions\build\statistics.lua]],
         [[xmake lua D:\xmake\actions\build\cleaner.lua]],
+        "xmake ",
+        "xmake ",
+        "xmake ",
+        "xmake ",
+        "xmake ",
+        "xmake ",
+        "xmake ",
         "xmake "
     }
 }
