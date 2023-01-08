@@ -9,11 +9,11 @@ namespace Wanderer.Common
 {
     public static class Application
     {
-        public static string version => "1.0.a3";
+        public static string version => "1.0.alpha3";
 
         public static Version GetVersion()
         {
-            return new Version() { Major = 1, Minor = 0, Patch = 0, PreVersion = "a3" };
+            return new Version() { Major = 1, Minor = 0, Patch = 3, PreVersion = "alpha" };
         }
 
         private static string m_dataPath;

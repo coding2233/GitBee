@@ -9,6 +9,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
+using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
@@ -36,6 +37,9 @@ namespace Wanderer.GitRepository.View
 
         private Dictionary<string, int> m_commitForBranchIndex;
         private IPluginService m_plugin;
+        private Dictionary<Commit, CommitAtlasInfo> m_commitAltas;
+        private float m_drawAltasOffset;
+
         public DrawCommitHistoryView(GitRepo gitRepo, IPluginService plugin)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
@@ -94,8 +98,13 @@ namespace Wanderer.GitRepository.View
 
             Dictionary<string, CommitBranchDrawIndex> commitBranchDrawIndex=new Dictionary<string, CommitBranchDrawIndex>();
 
-            if (ImGui.BeginTable("GitRepo-Commits", 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
+            CommitAtlasInfo firstCommitAtlasInfo = null;
+
+            //ImGui.SetCursorPosX(ImGui.GetCursorPosX()); 
+
+            if (ImGui.BeginTable("GitRepo-Commits", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
             {
+                ImGui.TableSetupColumn("图谱", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("Description", ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("Date", ImGuiTableColumnFlags.WidthFixed);
                 ImGui.TableSetupColumn("Author", ImGuiTableColumnFlags.WidthFixed);
@@ -136,8 +145,23 @@ namespace Wanderer.GitRepository.View
 
                     //表格
                     ImGui.TableNextRow();
-                  
                     ImGui.TableSetColumnIndex(0);
+                    if (m_commitAltas != null)
+                    {
+                        if (m_commitAltas.TryGetValue(item, out CommitAtlasInfo atlasInfo))
+                        {
+                            atlasInfo.Point = ImGui.GetCursorPos() + ImGui.GetWindowPos() + new Vector2(atlasInfo.PointXOffset, ImGui.GetTextLineHeight() * 0.5f - ImGui.GetScrollY());
+                            if (firstCommitAtlasInfo == null)
+                            {
+                                firstCommitAtlasInfo = atlasInfo;
+                            }
+                        }
+                    }
+                    ImGui.SetNextItemWidth(m_drawAltasOffset);
+                    //ImGui.Text("");
+                    ImGui.TableSetColumnIndex(1);
+
+                    
 
                     if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
                     {
@@ -200,11 +224,11 @@ namespace Wanderer.GitRepository.View
                     //commitBranchDrawIndex1.Parents = item.Parents;
                     //commitBranchDrawIndex.Add(item.Commit, commitBranchDrawIndex1);
 
-                    ImGui.TableSetColumnIndex(1);
-                    ImGui.Text(item.Author.When.DateTime.ToString());
                     ImGui.TableSetColumnIndex(2);
-                    ImGui.Text(item.Author.Name);// [{item.Committer.Email}]
+                    ImGui.Text(item.Author.When.DateTime.ToString());
                     ImGui.TableSetColumnIndex(3);
+                    ImGui.Text(item.Author.Name);// [{item.Committer.Email}]
+                    ImGui.TableSetColumnIndex(4);
                     ImGui.Text($"{item.Sha.Substring(0, 10)}");
 
                  
@@ -214,11 +238,30 @@ namespace Wanderer.GitRepository.View
               
             }
 
+            //绘制图谱
+            DrawCommitAtlas(firstCommitAtlasInfo);
+
             //if (commitBranchDrawIndex.Count > 0)
             //{
             //    DrawIndex(historyCommits[0].Commit, commitBranchDrawIndex);
             //}
 
+        }
+
+        private void DrawCommitAtlas(CommitAtlasInfo atlasInfo)
+        {
+            if (atlasInfo != null)
+            {
+                ImGui.GetWindowDrawList().AddCircleFilled(atlasInfo.Point,ImGui.GetTextLineHeight()*0.25f, atlasInfo.Color);
+                if (atlasInfo.Parents != null)
+                {
+                    foreach (var item in atlasInfo.Parents)
+                    {
+                        ImGui.GetWindowDrawList().AddLine(atlasInfo.Point, item.Point, item.Color);
+                        DrawCommitAtlas(item);
+                    }
+                }
+            }
         }
 
         private void DrawIndex(string key, Dictionary<string, CommitBranchDrawIndex> commitBranchDrawIndex)
@@ -380,8 +423,95 @@ namespace Wanderer.GitRepository.View
             {
                 m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
                 m_cacheRange = range;
+
+                m_commitAltas = new Dictionary<Commit, CommitAtlasInfo>();
+                m_drawAltasOffset = 0;
+                if (m_cacheCommits != null && m_cacheCommits.Count() > 0)
+                {
+                    BuildCommitAltasLines(m_cacheCommits.First(), 0);
+
+                    m_drawAltasOffset += ImGui.GetTextLineHeight();
+                }
             }
             return m_cacheCommits;
         }
+
+
+        private CommitAtlasInfo BuildCommitAltasLines(Commit commit,int atlasId)
+        {
+            if (commit==null || !m_cacheCommits.Contains(commit))
+            {
+                return null;
+            }
+
+            CommitAtlasInfo commitAtlasInfo ;
+            if (!m_commitAltas.TryGetValue(commit, out commitAtlasInfo))
+            {
+                commitAtlasInfo = new CommitAtlasInfo();
+                m_commitAltas.Add(commit, commitAtlasInfo);
+            }
+            commitAtlasInfo.SetAtlasId(atlasId);
+
+            m_drawAltasOffset = Math.Max(m_drawAltasOffset, commitAtlasInfo.PointXOffset);
+
+            if (commit.Parents != null)
+            {
+                int atlasIndex = 0;
+                foreach (var item in commit.Parents)
+                {
+                    var parent = BuildCommitAltasLines(item, atlasId + atlasIndex);
+                    commitAtlasInfo.SetParent(parent);
+                    atlasIndex++;
+                }
+            }
+
+            return commitAtlasInfo;
+        }
+
     }
+
+
+
+    public class CommitAtlasInfo
+    {
+        //public string Id;
+        public Vector2 Point;
+        public float PointXOffset;
+        public uint Color;
+        public List<int> AtlasIds { get; private set; }
+        public List<CommitAtlasInfo> Parents { get; private set; }
+        //public Commit Commit;
+
+        public void SetAtlasId(int atlasId)
+        {
+            if (AtlasIds == null)
+            {
+                AtlasIds = new List<int>();
+            }
+
+            if (!AtlasIds.Contains(atlasId))
+            {
+                AtlasIds.Add(atlasId);
+                AtlasIds.Sort();
+
+                int minIndex = AtlasIds[0];
+                Color = ImGui.ColorConvertFloat4ToU32(AppImGuiView.Colors[minIndex]);
+                PointXOffset = ImGui.GetTextLineHeight() * minIndex;
+            }
+        }
+
+        public void SetParent(CommitAtlasInfo parent)
+        {
+            if (Parents == null)
+            {
+                Parents = new List<CommitAtlasInfo>();
+            }
+            if (parent != null && !Parents.Contains(parent))
+            {
+                Parents.Add(parent);
+            }
+        }
+
+    }
+
 }
