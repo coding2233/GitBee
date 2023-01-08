@@ -7,11 +7,13 @@ using System.Linq;
 using System.Numerics;
 using System.Reflection.Emit;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
+
 
 namespace Wanderer.GitRepository.View
 {
@@ -39,6 +41,7 @@ namespace Wanderer.GitRepository.View
         private IPluginService m_plugin;
         private Dictionary<Commit, CommitAtlasInfo> m_commitAltas;
         private float m_drawAltasOffset;
+        private bool m_buildAltasRuning;
 
         public DrawCommitHistoryView(GitRepo gitRepo, IPluginService plugin)
         {
@@ -419,19 +422,33 @@ namespace Wanderer.GitRepository.View
         IEnumerable<Commit> GetHistoryCommits()
         {
             var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
-            if (!range.Equals(m_cacheRange))
+            if (!range.Equals(m_cacheRange) && !m_buildAltasRuning)
             {
                 m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
                 m_cacheRange = range;
 
-                m_commitAltas = new Dictionary<Commit, CommitAtlasInfo>();
+                if (m_commitAltas == null)
+                {
+                    m_commitAltas = new Dictionary<Commit, CommitAtlasInfo>();
+                }
+                else
+                {
+                    Pool<CommitAtlasInfo>.Release(m_commitAltas.Values);
+                    m_commitAltas.Clear();
+                }
+
                 m_drawAltasOffset = 0;
                 if (m_cacheCommits != null && m_cacheCommits.Count() > 0)
                 {
-                    BuildCommitAltasLines(m_cacheCommits.First(), 0);
-
-                    m_drawAltasOffset += ImGui.GetTextLineHeight();
+                    m_buildAltasRuning = true;
+                    Task.Run(() =>
+                    {
+                        BuildCommitAltasLines(m_cacheCommits.First(), 0);
+                        m_drawAltasOffset += ImGui.GetTextLineHeight();
+                        m_buildAltasRuning = false;
+                    });
                 }
+                    
             }
             return m_cacheCommits;
         }
@@ -447,12 +464,14 @@ namespace Wanderer.GitRepository.View
             CommitAtlasInfo commitAtlasInfo ;
             if (!m_commitAltas.TryGetValue(commit, out commitAtlasInfo))
             {
-                commitAtlasInfo = new CommitAtlasInfo();
+                commitAtlasInfo = Pool<CommitAtlasInfo>.Get();
                 m_commitAltas.Add(commit, commitAtlasInfo);
             }
-            commitAtlasInfo.SetAtlasId(atlasId);
 
-            m_drawAltasOffset = Math.Max(m_drawAltasOffset, commitAtlasInfo.PointXOffset);
+            if (commitAtlasInfo.Parents == null || commitAtlasInfo.Parents.Count == 0)
+            {
+                commitAtlasInfo.SetAtlasId(atlasId);
+            }
 
             if (commit.Parents != null)
             {
@@ -464,6 +483,7 @@ namespace Wanderer.GitRepository.View
                     atlasIndex++;
                 }
             }
+            m_drawAltasOffset = Math.Max(m_drawAltasOffset, commitAtlasInfo.PointXOffset);
 
             return commitAtlasInfo;
         }
@@ -472,7 +492,7 @@ namespace Wanderer.GitRepository.View
 
 
 
-    public class CommitAtlasInfo
+    public class CommitAtlasInfo:IPool
     {
         //public string Id;
         public Vector2 Point;
@@ -480,6 +500,30 @@ namespace Wanderer.GitRepository.View
         public uint Color;
         public List<int> AtlasIds { get; private set; }
         public List<CommitAtlasInfo> Parents { get; private set; }
+
+        public void OnGet()
+        {
+            if (Parents != null)
+            {
+                Parents.Clear();
+            }
+            Parents = null;
+            if (AtlasIds != null)
+            {
+                AtlasIds.Clear();
+            }
+            AtlasIds = null;
+
+            Point = Vector2.Zero;
+            PointXOffset = 0;
+            Color = 0;
+        }
+
+        public void OnRelease()
+        {
+            
+        }
+
         //public Commit Commit;
 
         public void SetAtlasId(int atlasId)
