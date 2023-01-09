@@ -57,7 +57,33 @@ namespace Wanderer.App
                     byte[] buffer = new byte[stream.Length];
                     stream.Read(buffer, 0, buffer.Length);
                     var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
-                    ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesChineseFull());
+                    //ImGui.GetIO().Fonts.GetGlyphRangesChineseFull() 内存占用太高 占用200+MB
+                    //ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon 文字不全 40-50MB
+                    IntPtr glyphRanges = IntPtr.Zero;
+                    //使用自定义文本字符集
+                    string chineseText = "lua/style/chinese.txt";
+                    if (File.Exists(chineseText))
+                    {
+                        var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+                        var textBytes = File.ReadAllBytes(chineseText);
+                        if (textBytes != null && textBytes.Length > 0)
+                        {
+                            fixed (byte* text = textBytes)
+                            {
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
+                                ImVector outRanges;
+                                ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
+                                glyphRanges = outRanges.Data;
+                            }
+                        }
+                    }
+                    //默认选择
+                    if (glyphRanges == IntPtr.Zero)
+                    {
+                        glyphRanges = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
+                    }
+                    ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, glyphRanges);
                 }
             }
 

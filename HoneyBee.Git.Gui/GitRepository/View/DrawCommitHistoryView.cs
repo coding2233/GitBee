@@ -118,6 +118,7 @@ namespace Wanderer.GitRepository.View
                     ImGui.TableNextRow();
                     ImGui.TableSetColumnIndex(0);
 
+                    //图谱绘制
                     int atlasId = 0;
                     float pointXOffset = 0;
                     var atlasLines = commitAtlasLines.FindAll(x => x.Parent == item);

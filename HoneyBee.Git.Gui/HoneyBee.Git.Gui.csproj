@@ -24,6 +24,7 @@
   <ItemGroup>
     <None Remove="lua\cimgui.lua" />
     <None Remove="lua\Init.lua" />
+    <None Remove="lua\style\chinese.txt" />
     <None Remove="Program.cs~RFe91c4dc.TMP" />
   </ItemGroup>
 
@@ -56,6 +57,7 @@
 		<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/common/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/core/*.lua" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="lua/style/*.*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 </Project>
