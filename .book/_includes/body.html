@@ -1,0 +1,49 @@
+<div class="body-inner">
+    <div class="book-header" role="navigation">
+        <!-- Title -->
+        <h1>
+            <i class="fa fa-circle-o-notch fa-spin"></i>
+            {% if page.title %}
+                <a href="." >{{ page.title | escape }}</a>
+            {% else %}
+                <a href="." >{{ site.title | escape }}</a>
+            {% endif %}
+        </h1>
+    </div>
+    <div class="page-wrapper" tabindex="-1" role="main">
+        <div class="page-inner">
+            <div id="book-search-results">
+                <div class="search-noresults">
+                    <section class="normal markdown-section">
+
+                        {% if page.title %}
+                            <h1 id="{{ page.id }}">{{ page.title | escape }}</h1>
+                        {% else %}
+                            <h1 id="{{ page.id }}">{{ site.title | escape }}</h1>
+                        {% endif %}
+
+                        {{ content }}
+                    </section>
+                </div>
+
+                 {%- include search.html -%}
+            </div>
+        </div>
+    </div>
+    <div id="gitalk-container" style="margin-top: 20px;"></div>
+    <link rel="stylesheet" href="https://unpkg.com/gitalk/dist/gitalk.css">
+    <script src="https://unpkg.com/gitalk/dist/gitalk.min.js"></script>
+    <script src="{{site.baseurl}}/gitbook/md5.min.js"></script>
+    <script type="text/javascript"> 
+        var gitalk = new Gitalk({
+        clientID: 'ebebb852bbb1f6685b6c',
+        clientSecret: '34ed7e8dc94481f5ff05f9d1791acdc52cdbd378',
+        repo: 'coding2233.github.io',
+        owner: 'coding2233',
+        admin: 'coding2233',
+        id: md5(location.pathname),      // Ensure uniqueness and length less than 50
+        distractionFreeMode: false  // Facebook-like distraction free mode
+        })
+        gitalk.render('gitalk-container') 
+    </script>
+</div>
