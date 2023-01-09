@@ -1,0 +1,16 @@
+{
+    "plugins": [
+        "gitbook-plugin-gittalk"
+    ],
+    "pluginsConfig": {
+        "gittalk": {
+            "clientID": "ebebb852bbb1f6685b6c",
+            "clientSecret": "34ed7e8dc94481f5ff05f9d1791acdc52cdbd378",
+            "repo": "coding2233.github.io",
+            "owner": "coding2233",
+            "admin": "coding2233",
+            "distractionFreeMode": false
+        }
+    }
+    
+}

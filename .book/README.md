@@ -23,6 +23,6 @@ ImGui.NET SDL对输入法的支持压根没有，极其难用，这里用通过C
 ![](images/005.jpg)
 
 ### 内存优化
-想实现小而美的软件，默认200MB+的内存占用，感觉还是有点夸张。  
-主要原因还是在于ImGui使用静态字符缓存，在调用`ImGui.GetIO().Fonts.GetGlyphRangesChineseFull()`本身使用中文全字符集，会生成一张8K的字体纹理，内存直接跳到200MB+,如果使用`ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon`,虽然这里只占用40-50MB，但是这里只有2500个中文字符，明显不够用。折中这里使用了自定义字符集,读取在`lua/style/chinese.txt`里面的默认3500个字符,虽然也可能出现不显示的字符，体验不完美，但是至少可以手动添加作为弥补，把内存控制到了70MB+。
+想实现小而美的软件，默认200MB+的内存占用，有点不能接受    
+主要原因还是在于ImGui使用静态字符缓存，在调用`ImGui.GetIO().Fonts.GetGlyphRangesChineseFull()`本身使用中文全字符集，会生成一张8K的字体纹理，内存直接跳到200MB+,如果使用`ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon`,虽然这里只占用40-50MB，但是这里只有2500个中文字符，明显不够用。折中这里使用了自定义字符集,读取在`lua/style/chinese.txt`里面的默认3500个字符,虽然也可能出现不显示的字符，体验不完美，但是至少可以手动添加作为弥补，把内存控制到了70MB+  
 ImGui就算这个不使用全字符集的字体内存的占用，感觉还是有点夸张的，看后面有没有更好的解决方案
