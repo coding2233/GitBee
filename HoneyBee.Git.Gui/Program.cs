@@ -70,7 +70,19 @@ namespace Wanderer.App
                         {
                             fixed (byte* text = textBytes)
                             {
+                                //默认字符
                                 ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+                                //默认中文符号
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '，');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '：');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '、');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '！');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '（');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '）');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '￥');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '“');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '”');
+                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '；');
                                 ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
                                 ImVector outRanges;
                                 ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
@@ -95,18 +107,6 @@ namespace Wanderer.App
                 MergeMode = true,
                 PixelSnapH = true,
             };
-
-            ////Load Source code pro font.
-            //using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("SourceCodePro-Black.ttf"))
-            //{
-            //    if (stream.Length > 0)
-            //    {
-            //        byte[] buffer = new byte[stream.Length];
-            //        stream.Read(buffer, 0, buffer.Length);
-            //        var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
-            //        ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesDefault());
-            //    }
-            //}
 
             //Load icon.
             using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("MaterialIcons-Regular.ttf"))
