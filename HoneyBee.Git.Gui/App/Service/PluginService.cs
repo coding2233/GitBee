@@ -39,7 +39,7 @@ namespace Wanderer.App.Service
 
         public void CallPopupContextItem(string method)
         {
-            m_luaEnv.Call(method);
+            m_luaEnv?.Call(method);
         }
 
         private void LoadViewCommand()
