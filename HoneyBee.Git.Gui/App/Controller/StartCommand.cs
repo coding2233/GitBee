@@ -62,8 +62,9 @@ namespace Wanderer.App.Controller
                 {
                     targetOS = "osx";
                 }
-
-                string remoteUrl = "https://github.com/woodpecker-ci/woodpecker/releases/latest/download";
+                
+                // https://github.com/woodpecker-ci/woodpecker/releases/latest/download
+                string remoteUrl = "https://gunfire-res.oss-cn-chengdu.aliyuncs.com/gitbee";
                 string versionText = "checksums.txt";
                 string targetPath = $"{remoteUrl}/{versionText}";
 

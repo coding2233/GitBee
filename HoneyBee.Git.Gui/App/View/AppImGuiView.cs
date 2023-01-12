@@ -12,6 +12,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
+using Wanderer.GitRepository.Common;
 using Wanderer.GitRepository.View;
 
 namespace Wanderer.App.View
@@ -209,6 +210,10 @@ namespace Wanderer.App.View
                     if (ImGui.MenuItem("About"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
+                    }
+                    if (ImGui.MenuItem("Contact"))
+                    {
+                        Process.Start("start", "https://coding2233.github.io/GitBee/");
                     }
                     ImGui.EndMenu();
                 }
