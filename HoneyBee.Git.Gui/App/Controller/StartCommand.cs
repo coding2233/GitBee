@@ -120,11 +120,25 @@ namespace Wanderer.App.Controller
                         else
                         {
                             var targetLineArgs = targetLine.Split(' ');
-                            if (targetLineArgs == null || targetLineArgs.Length < 2)
+                            if (targetLineArgs != null)
+                            {
+                                List<string> tempArgs = new List<string>();
+                                foreach (var tempItem in targetLineArgs)
+                                {
+                                    if (!string.IsNullOrEmpty(tempItem) && !string.IsNullOrEmpty(tempItem.Trim()))
+                                    {
+                                        tempArgs.Add(tempItem.Trim());
+                                    }
+                                }
+                                targetLineArgs = tempArgs.ToArray();
+                            }
+
+                            if (targetLineArgs == null|| targetLineArgs.Length != 2)
                             {
                                 Log.Warn("Check update not target line error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
                                 return;
                             }
+
                             targetPath = $"{remoteUrl}/{targetLineArgs[1]}";
                             response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), targetPath));
                             if (response.StatusCode == HttpStatusCode.OK)
@@ -143,7 +157,7 @@ namespace Wanderer.App.Controller
                                         }
                                         File.WriteAllBytes(localTargetPath, bytes);
                                         string localVersionPath = Path.Combine(Application.UserPath, versionText);
-                                        File.WriteAllText(localTargetPath, responseContent);
+                                        File.WriteAllText(localVersionPath, responseContent);
 
                                         var stdOutBuffer = new StringBuilder();
                                         var stdErrBuffer = new StringBuilder();
@@ -193,10 +207,18 @@ namespace Wanderer.App.Controller
                                         }
                                         
                                         string extractUpdate = Path.Combine(Application.UserPath, "ExtractUpdateFiles.dll");
-                                        Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={System.Environment.GetCommandLineArgs()[0]}");
+                                        try
+                                        {
+                                            string execPath = System.Environment.GetCommandLineArgs()[0];
+                                            Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath}");
 
-                                        //退出当前程序
-                                        System.Environment.Exit(0);
+                                            //退出当前程序
+                                            System.Environment.Exit(0);
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            Log.Error("extractUpdate error:{0}",e);
+                                        }
                                     }
                                 }
                                 else

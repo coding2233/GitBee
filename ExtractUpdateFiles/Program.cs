@@ -41,16 +41,28 @@ internal class Program
         //可运行
         if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath))
         {
-            if (zipFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+            try
             {
-                FastZip fastZip = new FastZip();
-                fastZip.ExtractZip(zipFilePath, extractDir, "");
+                if (zipFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    FastZip fastZip = new FastZip();
+                    fastZip.ExtractZip(zipFilePath, extractDir, "");
+                }
+                else
+                {
+                    ExtractTGZ(zipFilePath, extractDir);
+                }
             }
-            else
+            catch (Exception e)
             {
-                ExtractTGZ(zipFilePath, extractDir);
+                Console.WriteLine(e.Message);
             }
-            Process.Start("dotnet", execPath);
+            File.Delete(zipFilePath);
+            ProcessStartInfo processStartInfo = new ProcessStartInfo();
+            processStartInfo.FileName = "dotnet";
+            processStartInfo.WorkingDirectory = Path.GetDirectoryName(execPath);
+            processStartInfo.Arguments = execPath;
+            Process.Start(processStartInfo);
         }
         //FastZip fastZip = new FastZip();
         //fastZip.CreateZip("test.zip", @"E:\source\temp\HoneyBee.Git.Gui\HoneyBee.Git.Gui\bin\x64\Debug\net6.0\", true, "");

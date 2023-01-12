@@ -94,6 +94,7 @@ jobs:
       run: |
         ls ./
         ls -alh windows/
+        mv windows/runtimes/win-x64 ./ && rm -rf windows/runtimes/ && mkdir -p windows/runtimes && mv win-x64/ windows/runtimes/
         tar -zcvf gitbee_windows.tar.gz windows/
         git rev-parse HEAD >> checksums.txt
         git log --pretty=format:"%s" --graph -1 >> checksums.txt

@@ -219,10 +219,10 @@ namespace Wanderer.App.View
                             Log.Warn("Contact {0}", e);
                         }
                     }
-                    if (ImGui.MenuItem("Contact"))
-                    {
+                    //if (ImGui.MenuItem("Contact"))
+                    //{
                         
-                    }
+                    //}
                     ImGui.EndMenu();
                 }
 
