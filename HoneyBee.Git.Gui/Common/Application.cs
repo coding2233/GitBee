@@ -61,8 +61,14 @@ namespace Wanderer.Common
 
         public static string GetStringMd5(string str)
         {
-            System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            byte[] toData = md5.ComputeHash(System.Text.Encoding.UTF8.GetBytes(str));
+            string fileMD5 =  GetBytesMd5(System.Text.Encoding.UTF8.GetBytes(str));
+            return fileMD5;
+        }
+
+        public static string GetBytesMd5(byte[] data)
+        {
+            System.Security.Cryptography.MD5 md5 = System.Security.Cryptography.MD5.Create();
+            byte[] toData = md5.ComputeHash(data);
             string fileMD5 = BitConverter.ToString(toData).Replace("-", "").ToLower();
             return fileMD5;
         }

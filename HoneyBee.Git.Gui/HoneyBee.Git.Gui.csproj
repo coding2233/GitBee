@@ -58,6 +58,11 @@
 		<Content Include="lua/common/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/core/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/style/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="update/*.dll" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="update\" />
 	</ItemGroup>
 
 </Project>

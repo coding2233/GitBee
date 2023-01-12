@@ -73,6 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-windows]
     steps:
+    - uses: actions/checkout@v2
     # - name: Download an artifact - linux
     #   uses: actions/download-artifact@v2
     #   with:
@@ -93,6 +94,21 @@ jobs:
       run: |
         ls -alh ./
         ls -alh windows/
+        tar -zcvf gitbee_windows.tar.gz windows/
+        git rev-parse HEAD >> checksums.txt
+        git log --pretty=format:"%s" --graph -1 >> checksums.txt
+        md5sum gitbee_windows.tar.gz >> checksums.txt
+        ls -alh
+
+    - name: Upload to oss
+      uses: tvrcgo/upload-to-oss@v0.1.1
+      with:
+        key-id: ${{ secrets.OSS_KEY_ID }}
+        key-secret: ${{ secrets.OSS_KEY_SECRET }}
+        region: oss-cn-chengdu
+        bucket: gunfire-res
+        asset-path: gitbee_windows.tar.gz;checksums.txt
+        target-path: /gitbee/
     
     # - name: itch-butler-linux
     #   uses: josephbmanley/butler-publish-itchio-action@master
