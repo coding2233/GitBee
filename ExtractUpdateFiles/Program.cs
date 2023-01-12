@@ -53,6 +53,7 @@ internal class Program
         //可运行
         if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath) && !string.IsNullOrEmpty(versionPath) && !string.IsNullOrEmpty(versionContent))
         {
+            string versionPathRoot = Path.GetDirectoryName(versionPath);
             try
             {
                 if (zipFilePath.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
@@ -67,22 +68,41 @@ internal class Program
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                if (!string.IsNullOrEmpty(versionPathRoot))
+                {
+                    string dateTime = DateTime.Now.ToString("yyyy_MM_DD_HH_mm_ss");
+                    string content = zipFilePath + "\n" + extractDir + "\n" + execPath + "\n" + versionPath + "\n" + versionContent + "\n" + e.ToString();
+                    File.WriteAllText(Path.Combine(versionPathRoot, $"ExtractException_{dateTime}.txt"), content);
+                }
                 return;
             }
-            File.Delete(zipFilePath);
 
-            if (File.Exists(versionPath))
+            try
             {
-                File.Delete(versionPath);
-            }
-            File.WriteAllText(versionPath, versionContent);
+                Thread.Sleep(100);
 
-            ProcessStartInfo processStartInfo = new ProcessStartInfo();
-            processStartInfo.FileName = "dotnet";
-            processStartInfo.WorkingDirectory = Path.GetDirectoryName(execPath);
-            processStartInfo.Arguments = execPath;
-            Process.Start(processStartInfo);
+                File.Delete(zipFilePath);
+
+                if (File.Exists(versionPath))
+                {
+                    File.Delete(versionPath);
+                }
+                File.WriteAllText(versionPath, versionContent);
+
+                ProcessStartInfo processStartInfo = new ProcessStartInfo();
+                processStartInfo.FileName = "dotnet";
+                processStartInfo.Arguments = execPath;
+                Process.Start(processStartInfo);
+            }
+            catch (Exception e)
+            {
+                if (!string.IsNullOrEmpty(versionPathRoot))
+                {
+                    string dateTime = DateTime.Now.ToString("yyyy_MM_DD_HH_mm_ss");
+                    string content = zipFilePath + "\n" + extractDir + "\n" + execPath + "\n" + versionPath + "\n" + versionContent + "\n" + e.ToString();
+                    File.WriteAllText(Path.Combine(versionPathRoot, $"ExecException_{dateTime}.txt"), content);
+                }
+            }
         }
         //FastZip fastZip = new FastZip();
         //fastZip.CreateZip("test.zip", @"E:\source\temp\HoneyBee.Git.Gui\HoneyBee.Git.Gui\bin\x64\Debug\net6.0\", true, "");

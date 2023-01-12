@@ -19,7 +19,7 @@ namespace Wanderer.App
             try
             {
                 var commandArgs = System.Environment.GetCommandLineArgs();
-                Log.Info("Hello, GitBee!");
+                Log.Info("Hello, GitBee! \n{0}", commandArgs[0]);
                 int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw, OnWindowEvent);
             }
             catch (System.Exception e)
