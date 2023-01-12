@@ -15,6 +15,8 @@ internal class Program
         string zipFilePath = null;
         string extractDir = null;
         string execPath = null;
+        string versionPath = null;
+        string versionContent = null;
 
         for (int i = 0; i < args.Length; i++)
         {
@@ -33,13 +35,23 @@ internal class Program
                 var splitArgs = args[i].Split('=');
                 execPath = splitArgs[1];
             }
+            else if (args[i].StartsWith("VersionPath="))
+            {
+                var splitArgs = args[i].Split('=');
+                versionPath = splitArgs[1];
+            }
+            else if (args[i].StartsWith("VersionContent="))
+            {
+                var splitArgs = args[i].Split('=');
+                versionContent = splitArgs[1];
+            }
         }
 
         //等待0.5s
         Thread.Sleep(500);
 
         //可运行
-        if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath))
+        if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath) && !string.IsNullOrEmpty(versionPath) && !!string.IsNullOrEmpty(versionContent))
         {
             try
             {
@@ -56,8 +68,16 @@ internal class Program
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
+                return;
             }
             File.Delete(zipFilePath);
+
+            if (File.Exists(versionPath))
+            {
+                File.Delete(versionPath);
+            }
+            File.WriteAllText(versionPath, versionContent);
+
             ProcessStartInfo processStartInfo = new ProcessStartInfo();
             processStartInfo.FileName = "dotnet";
             processStartInfo.WorkingDirectory = Path.GetDirectoryName(execPath);

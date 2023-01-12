@@ -156,8 +156,7 @@ namespace Wanderer.App.Controller
                                             File.Delete(localTargetPath);
                                         }
                                         File.WriteAllBytes(localTargetPath, bytes);
-                                        string localVersionPath = Path.Combine(Application.UserPath, versionText);
-                                        File.WriteAllText(localVersionPath, responseContent);
+                                  
 
                                         var stdOutBuffer = new StringBuilder();
                                         var stdErrBuffer = new StringBuilder();
@@ -205,20 +204,32 @@ namespace Wanderer.App.Controller
                                             }
                                             File.Copy(item, itemTargetPath,true);
                                         }
-                                        
-                                        string extractUpdate = Path.Combine(Application.UserPath, "ExtractUpdateFiles.dll");
-                                        try
-                                        {
-                                            string execPath = System.Environment.GetCommandLineArgs()[0];
-                                            Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath}");
 
-                                            //退出当前程序
-                                            System.Environment.Exit(0);
-                                        }
-                                        catch (Exception e)
-                                        {
-                                            Log.Error("extractUpdate error:{0}",e);
-                                        }
+                                        string dialogContent = string.IsNullOrEmpty(commitDesc) ? "Confirm the update" : $"Confirm the update\n{commitDesc}";
+                                        AppImGuiView.DisplayDialog("GitBee has a new version", dialogContent, "OK", "Cancel", (result) => {
+                                            if (result)
+                                            {
+                                                string extractUpdate = Path.Combine(Application.UserPath, "ExtractUpdateFiles.dll");
+                                                try
+                                                {
+                                                    //更新文本
+                                                    string localVersionPath = Path.Combine(Application.UserPath, versionText);
+                                                    //File.WriteAllText(localVersionPath, responseContent);
+
+                                                    string execPath = System.Environment.GetCommandLineArgs()[0];
+                                                    Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath} VersionPath={localVersionPath} VersionContent={responseContent}");
+                                                    //退出当前程序
+                                                    System.Environment.Exit(0);
+                                                }
+                                                catch (Exception e)
+                                                {
+                                                    Log.Error("extractUpdate error:{0}", e);
+                                                }
+                                            }
+                                           
+                                        });
+
+                                       
                                     }
                                 }
                                 else

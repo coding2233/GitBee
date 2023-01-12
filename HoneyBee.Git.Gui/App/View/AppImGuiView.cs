@@ -36,6 +36,31 @@ namespace Wanderer.App.View
             };
         }
 
+        struct DisplayDialogInfo
+        {
+            public string Title;
+            public string Message;
+            public string OK;
+            public string Cancel;
+            public Action<bool> OnCallback;
+        }
+
+        private static DisplayDialogInfo s_displayDialogInfo;
+
+        public static void DisplayDialog(string title, string message, string ok, string cancel, Action<bool> onCallback)
+        {
+            if (s_displayDialogInfo.OnCallback != null || onCallback==null)
+            {
+                return;
+            }
+
+            s_displayDialogInfo.Title = title;
+            s_displayDialogInfo.Message = message;
+            s_displayDialogInfo.OK = string.IsNullOrEmpty(ok) ? "OK" : ok;
+            s_displayDialogInfo.Cancel = cancel;
+            s_displayDialogInfo.OnCallback = onCallback;
+        }
+
         //设置
         internal void SetStyleColors(int styleColors)
         {
@@ -108,7 +133,45 @@ namespace Wanderer.App.View
                 }
             }
 
-           
+            //DisplayDialog
+            bool showDisplayDialog = s_displayDialogInfo.OnCallback != null;
+            if (showDisplayDialog)
+            {
+                string showDisplayDialogTitle = $"{s_displayDialogInfo.Title}##DisplayDialog";
+                //var viewport = ImGui.GetMainViewport();
+                ImGui.OpenPopup(showDisplayDialogTitle);
+                //ImGui.SetNextWindowSize(viewport.WorkSize * 0.3f);
+                if (ImGui.BeginPopupModal(showDisplayDialogTitle, ref showDisplayDialog))
+                {
+                    ImGui.Text(s_displayDialogInfo.Message);
+
+                    if (ImGui.Button(s_displayDialogInfo.OK))
+                    {
+                        s_displayDialogInfo.OnCallback.Invoke(true);
+                        s_displayDialogInfo.OnCallback = null;
+                    }
+
+                    if (!string.IsNullOrEmpty(s_displayDialogInfo.Cancel))
+                    {
+                        ImGui.SameLine();
+                        if (ImGui.Button(s_displayDialogInfo.Cancel))
+                        {
+                            s_displayDialogInfo.OnCallback.Invoke(false);
+                            s_displayDialogInfo.OnCallback = null;
+                        }
+                        ImGui.SameLine();
+                    }
+
+                    ImGui.End();
+                }
+
+                if (!showDisplayDialog)
+                {
+                    s_displayDialogInfo.OnCallback.Invoke(false);
+                    s_displayDialogInfo.OnCallback = null;
+                }
+
+            }
         }
 
         public void DrawMainMenuBar()
