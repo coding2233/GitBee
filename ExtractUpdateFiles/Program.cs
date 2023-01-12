@@ -51,7 +51,7 @@ internal class Program
         Thread.Sleep(500);
 
         //可运行
-        if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath) && !string.IsNullOrEmpty(versionPath) && !!string.IsNullOrEmpty(versionContent))
+        if (!string.IsNullOrEmpty(zipFilePath) && !string.IsNullOrEmpty(extractDir) && !string.IsNullOrEmpty(execPath) && !string.IsNullOrEmpty(versionPath) && !string.IsNullOrEmpty(versionContent))
         {
             try
             {
