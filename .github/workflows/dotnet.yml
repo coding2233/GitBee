@@ -92,13 +92,16 @@ jobs:
 
     - name: Check files
       run: |
-        ls -alh ./
+        ls ./
         ls -alh windows/
         tar -zcvf gitbee_windows.tar.gz windows/
         git rev-parse HEAD >> checksums.txt
         git log --pretty=format:"%s" --graph -1 >> checksums.txt
         md5sum gitbee_windows.tar.gz >> checksums.txt
-        ls -alh
+        mkdir gitbee_oss
+        mv gitbee_windows.tar.gz gitbee_oss/
+        mv checksums.txt gitbee_oss/
+        ls -alh gitbee_oss
 
     - name: Upload to oss
       uses: tvrcgo/upload-to-oss@v0.1.1
@@ -107,7 +110,7 @@ jobs:
         key-secret: ${{ secrets.OSS_KEY_SECRET }}
         region: oss-cn-chengdu
         bucket: gunfire-res
-        asset-path: gitbee_windows.tar.gz;checksums.txt
+        asset-path: ./gitbee_oss/
         target-path: /gitbee/
     
     # - name: itch-butler-linux
