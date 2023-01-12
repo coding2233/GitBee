@@ -97,6 +97,7 @@ jobs:
         tar -zcvf gitbee_windows.tar.gz windows/
         git rev-parse HEAD >> checksums.txt
         git log --pretty=format:"%s" --graph -1 >> checksums.txt
+        echo "\n" >> checksums.txt
         md5sum gitbee_windows.tar.gz >> checksums.txt
         mkdir gitbee_oss
         mv gitbee_windows.tar.gz gitbee_oss/

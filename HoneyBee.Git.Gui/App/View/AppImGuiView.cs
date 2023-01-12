@@ -210,10 +210,18 @@ namespace Wanderer.App.View
                     if (ImGui.MenuItem("About"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
+                        try
+                        {
+                            Process.Start("Explorer", "https://coding2233.github.io/GitBee/");
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Warn("Contact {0}", e);
+                        }
                     }
                     if (ImGui.MenuItem("Contact"))
                     {
-                        Process.Start("start", "https://coding2233.github.io/GitBee/");
+                        
                     }
                     ImGui.EndMenu();
                 }
