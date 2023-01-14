@@ -101,11 +101,11 @@ namespace Wanderer.App.Controller
                             return;
                         }
 
-                        string localPath = Path.Combine(Application.UserPath, versionText);
+                        string localVersionPath = Path.Combine(Application.DataPath, versionText);
                         string localCommitId = null;
-                        if (File.Exists(localPath))
+                        if (File.Exists(localVersionPath))
                         {
-                            var lines = File.ReadAllLines(localPath);
+                            var lines = File.ReadAllLines(localVersionPath);
                             if (lines != null && lines.Length > 0)
                             {
                                 localCommitId = lines[0].Trim();
@@ -212,12 +212,11 @@ namespace Wanderer.App.Controller
                                                 string extractUpdate = Path.Combine(Application.UserPath, "ExtractUpdateFiles.dll");
                                                 try
                                                 {
-                                                    //更新文本
-                                                    string localVersionPath = Path.Combine(Application.UserPath, versionText);
+                                                   
                                                     //File.WriteAllText(localVersionPath, responseContent);
 
                                                     string execPath = System.Environment.GetCommandLineArgs()[0];
-                                                    Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath} VersionPath={localVersionPath} VersionContent={responseContent}");
+                                                    Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath} VersionPath={localVersionPath} VersionContent=\"{responseContent}\"");
                                                     //退出当前程序
                                                     System.Environment.Exit(0);
                                                 }

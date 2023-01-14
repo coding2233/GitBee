@@ -138,10 +138,10 @@ namespace Wanderer.App.View
             if (showDisplayDialog)
             {
                 string showDisplayDialogTitle = $"{s_displayDialogInfo.Title}##DisplayDialog";
-                //var viewport = ImGui.GetMainViewport();
+                var viewport = ImGui.GetMainViewport();
                 ImGui.OpenPopup(showDisplayDialogTitle);
-                //ImGui.SetNextWindowSize(viewport.WorkSize * 0.3f);
-                if (ImGui.BeginPopupModal(showDisplayDialogTitle, ref showDisplayDialog))
+                ImGui.SetNextWindowSize(viewport.WorkSize * 0.3f);
+                if (ImGui.BeginPopupModal(showDisplayDialogTitle, ref showDisplayDialog, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove))
                 {
                     ImGui.Text(s_displayDialogInfo.Message);
 

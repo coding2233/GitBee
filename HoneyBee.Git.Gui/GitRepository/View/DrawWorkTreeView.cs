@@ -309,7 +309,7 @@ namespace Wanderer
             }
 
         }
-        private void UpdateStatus()
+        internal void UpdateStatus()
         {
             try
             {

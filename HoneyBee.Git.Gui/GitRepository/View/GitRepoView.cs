@@ -101,6 +101,14 @@ namespace Wanderer.GitRepository.View
         {
             base.OnEnable();
             CreateGitRepo();
+
+            if (m_workSpaceRadio == WorkSpaceRadio.WorkTree)
+            {
+                if (m_workTreeView != null)
+                {
+                    m_workTreeView.UpdateStatus();
+                }
+            }
         }
 
 
