@@ -358,77 +358,7 @@ namespace Wanderer.GitRepository.View
                 //右键菜单
                 if (ImGui.BeginPopupContextItem())
                 {
-                    if (branchNode.Data.IsRemote)
-                    {
-                        ImGui.Text(Icon.Get(Icon.Material_cloud));
-                        ImGui.SameLine();
-                        ImGui.Text(branchNode.FullName);
-                        ImGui.Separator();
-
-                        plugin.CallPopupContextItem("OnRemotePopupItem");
-                    }
-                    else
-                    {
-                        ImGui.Text(Icon.Get(Icon.Material_download_for_offline));
-                        ImGui.SameLine();
-                        ImGui.Text(branchNode.FullName);
-                        ImGui.Separator();
-
-                        if (ImGui.MenuItem("New Branch"))
-                        {
-                            string newBranchName = "";
-                            GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
-                                if (ImGui.InputText("New Branch Name", ref newBranchName, 200))
-                                {
-                                    
-                                }
-
-                                if (ImGui.Button("OK"))
-                                {
-                                    if (!string.IsNullOrEmpty(newBranchName))
-                                    {
-                                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo,$"branch -c {branchNode.Data.FriendlyName} {newBranchName}");
-                                    }
-                                    return false;
-                                }
-
-                                ImGui.SameLine();
-                                if (ImGui.Button("Cancel"))
-                                {
-                                    return false;
-                                }
-                                return true;
-
-                            });
-                        }
-                        if (ImGui.MenuItem("Delete"))
-                        {
-                            GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
-                                ImGui.Text("Confirm whether to delete the selected branch？");
-
-                                if (ImGui.Button("OK"))
-                                {
-                                    GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -d {branchNode.Data.FriendlyName}");
-                                    return false;
-                                }
-
-                                ImGui.SameLine();
-                                if (ImGui.Button("Cancel"))
-                                {
-                                    return false;
-                                }
-                                return true;
-
-                            });
-                        }
-                        ImGui.Separator();
-                        if (isCurrentRepositoryHead)
-                        {
-                            plugin.CallPopupContextItem("OnHeadPopupItem");
-                        }
-
-                        plugin.CallPopupContextItem("OnBranchPopupItem");
-                    }
+                    OnDrawBranchPopupContextItem(branchNode);
                     ImGui.EndPopup();
                 }
 
@@ -462,6 +392,129 @@ namespace Wanderer.GitRepository.View
             }
         }
 
+
+        private void OnDrawBranchPopupContextItem(BranchTreeViewNode branchNode)
+        {
+            if (branchNode.Data.IsRemote)
+            {
+                ImGui.Text(Icon.Get(Icon.Material_cloud));
+                ImGui.SameLine();
+                ImGui.Text(branchNode.FullName);
+                ImGui.Separator();
+
+                plugin.CallPopupContextItem("OnRemotePopupItem");
+            }
+            else
+            {
+                ImGui.Text(Icon.Get(Icon.Material_download_for_offline));
+                ImGui.SameLine();
+                ImGui.Text(branchNode.FullName);
+                ImGui.Separator();
+
+                if (branchNode.Data.IsCurrentRepositoryHead)
+                {
+                    if (ImGui.MenuItem("Pull"))
+                    {
+                        GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"pull");
+                            return false;
+                        });
+                    }
+                }
+                else
+                {
+                    if (ImGui.MenuItem("Check Out"))
+                    {
+                        GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"checkout {branchNode.Data.FriendlyName}");
+                            return false;
+                        });
+                    }
+
+                    if (ImGui.MenuItem("Fetch"))
+                    {
+                        GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                            ImGui.Text("Confirm whether to fetch the selected branch？");
+
+                            if (ImGui.Button("OK"))
+                            {
+                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}");
+                                return false;
+                            }
+
+                            ImGui.SameLine();
+                            if (ImGui.Button("Cancel"))
+                            {
+                                return false;
+                            }
+                            return true;
+
+                        });
+                    }
+                }
+
+                if (ImGui.MenuItem("New Branch"))
+                {
+                    string newBranchName = "";
+                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                        if (ImGui.InputText("New Branch Name", ref newBranchName, 200))
+                        {
+
+                        }
+
+                        if (ImGui.Button("OK"))
+                        {
+                            if (!string.IsNullOrEmpty(newBranchName))
+                            {
+                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -c {branchNode.Data.FriendlyName} {newBranchName}");
+                            }
+                            return false;
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            return false;
+                        }
+                        return true;
+
+                    });
+                }
+
+                if (ImGui.MenuItem("Delete"))
+                {
+                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                        ImGui.Text("Confirm whether to delete the selected branch？");
+
+                        if (ImGui.Button("OK"))
+                        {
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -d {branchNode.Data.FriendlyName}");
+                            return false;
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            return false;
+                        }
+                        return true;
+
+                    });
+                }
+
+                
+
+                //ImGui.Separator();
+
+
+                //if (branchNode.Data.IsCurrentRepositoryHead)
+                //{
+                //    plugin.CallPopupContextItem("OnHeadPopupItem");
+                //}
+
+                //plugin.CallPopupContextItem("OnBranchPopupItem");
+            }
+        }
 
         private enum WorkSpaceRadio
         {
