@@ -119,127 +119,119 @@ namespace Wanderer.App.Controller
                         //更新
                         else
                         {
-                            var targetLineArgs = targetLine.Split(' ');
-                            if (targetLineArgs != null)
-                            {
-                                List<string> tempArgs = new List<string>();
-                                foreach (var tempItem in targetLineArgs)
+                            string dialogContent = string.IsNullOrEmpty(commitDesc) ? "Confirm the update" : $"Confirm the update\n{commitDesc}";
+                            AppImGuiView.DisplayDialog("GitBee has a new version", dialogContent, "OK", "Cancel", async (dialogContentResult) => {
+                                if (dialogContentResult)
                                 {
-                                    if (!string.IsNullOrEmpty(tempItem) && !string.IsNullOrEmpty(tempItem.Trim()))
+                                    var targetLineArgs = targetLine.Split(' ');
+                                    if (targetLineArgs != null)
                                     {
-                                        tempArgs.Add(tempItem.Trim());
-                                    }
-                                }
-                                targetLineArgs = tempArgs.ToArray();
-                            }
-
-                            if (targetLineArgs == null|| targetLineArgs.Length != 2)
-                            {
-                                Log.Warn("Check update not target line error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
-                                return;
-                            }
-
-                            targetPath = $"{remoteUrl}/{targetLineArgs[1]}";
-                            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), targetPath));
-                            if (response.StatusCode == HttpStatusCode.OK)
-                            {
-                                var bytes = await response.Content.ReadAsByteArrayAsync();
-                                if (bytes != null)
-                                {
-                                    string md5 = Application.GetBytesMd5(bytes);
-                                    Log.Info("Check update download md5: {0} {1}", targetLineArgs[0], md5);
-                                    if (md5.Equals(targetLineArgs[0]))
-                                    {
-                                        string localTargetPath = Path.Combine(Application.UserPath, targetLineArgs[1]);
-                                        if (File.Exists(localTargetPath))
+                                        List<string> tempArgs = new List<string>();
+                                        foreach (var tempItem in targetLineArgs)
                                         {
-                                            File.Delete(localTargetPath);
-                                        }
-                                        File.WriteAllBytes(localTargetPath, bytes);
-                                  
-
-                                        var stdOutBuffer = new StringBuilder();
-                                        var stdErrBuffer = new StringBuilder();
-                                        var result = await Cli.Wrap("dotnet").WithArguments("--version")
-                                            .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
-                                            .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
-                                            .ExecuteAsync();
-
-                                        var stdOut = stdOutBuffer.ToString();
-                                        var stdErr = stdErrBuffer.ToString();
-                                        if (!string.IsNullOrEmpty(stdErr))
-                                        {
-                                            Log.Warn(stdErr);
-                                            return;
-                                        }
-
-                                        if (string.IsNullOrEmpty(stdOut) || stdOut.Length <= 0)
-                                        {
-                                            Log.Warn("Can't find dotnet6.");
-                                            return;
-                                        }
-
-                                        int versionIndex = stdOut.IndexOf(".");
-                                        int version = 0;
-                                        if (int.TryParse(stdOut.Substring(0, versionIndex), out version))
-                                        {
-
-                                        }
-
-                                        Log.Info(stdOut);
-                                        if (version < 6)
-                                        {
-                                            Log.Warn("dotnet version nonsupport: dotnet{0}, please use dotnet6 +", version);
-                                            return;
-                                        }
-
-                                        //提示更新 -> 强制更新
-                                        string extractDir = Path.Combine(Application.DataPath, "update");
-                                        foreach (var item in Directory.GetFiles(extractDir))
-                                        {
-                                            string itemTargetPath = Path.Combine(Application.UserPath,Path.GetFileName(item));
-                                            if (File.Exists(itemTargetPath))
+                                            if (!string.IsNullOrEmpty(tempItem) && !string.IsNullOrEmpty(tempItem.Trim()))
                                             {
-                                                File.Delete(itemTargetPath);
+                                                tempArgs.Add(tempItem.Trim());
                                             }
-                                            File.Copy(item, itemTargetPath,true);
                                         }
+                                        targetLineArgs = tempArgs.ToArray();
+                                    }
 
-                                        string dialogContent = string.IsNullOrEmpty(commitDesc) ? "Confirm the update" : $"Confirm the update\n{commitDesc}";
-                                        AppImGuiView.DisplayDialog("GitBee has a new version", dialogContent, "OK", "Cancel", (result) => {
-                                            if (result)
+                                    if (targetLineArgs == null || targetLineArgs.Length != 2)
+                                    {
+                                        Log.Warn("Check update not target line error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
+                                        return;
+                                    }
+
+                                    targetPath = $"{remoteUrl}/{targetLineArgs[1]}";
+                                    response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), targetPath));
+                                    if (response.StatusCode == HttpStatusCode.OK)
+                                    {
+                                        var bytes = await response.Content.ReadAsByteArrayAsync();
+                                        if (bytes != null)
+                                        {
+                                            string md5 = Application.GetBytesMd5(bytes);
+                                            Log.Info("Check update download md5: {0} {1}", targetLineArgs[0], md5);
+                                            if (md5.Equals(targetLineArgs[0]))
                                             {
+                                                string localTargetPath = Path.Combine(Application.UserPath, targetLineArgs[1]);
+                                                if (File.Exists(localTargetPath))
+                                                {
+                                                    File.Delete(localTargetPath);
+                                                }
+                                                File.WriteAllBytes(localTargetPath, bytes);
+
+
+                                                var stdOutBuffer = new StringBuilder();
+                                                var stdErrBuffer = new StringBuilder();
+                                                var result = await Cli.Wrap("dotnet").WithArguments("--version")
+                                                    .WithStandardOutputPipe(PipeTarget.ToStringBuilder(stdOutBuffer))
+                                                    .WithStandardErrorPipe(PipeTarget.ToStringBuilder(stdErrBuffer))
+                                                    .ExecuteAsync();
+
+                                                var stdOut = stdOutBuffer.ToString();
+                                                var stdErr = stdErrBuffer.ToString();
+                                                if (!string.IsNullOrEmpty(stdErr))
+                                                {
+                                                    Log.Warn(stdErr);
+                                                    return;
+                                                }
+
+                                                if (string.IsNullOrEmpty(stdOut) || stdOut.Length <= 0)
+                                                {
+                                                    Log.Warn("Can't find dotnet6.");
+                                                    return;
+                                                }
+
+                                                int versionIndex = stdOut.IndexOf(".");
+                                                int version = 0;
+                                                if (int.TryParse(stdOut.Substring(0, versionIndex), out version))
+                                                {
+
+                                                }
+
+                                                Log.Info(stdOut);
+                                                if (version < 6)
+                                                {
+                                                    Log.Warn("dotnet version nonsupport: dotnet{0}, please use dotnet6 +", version);
+                                                    return;
+                                                }
+
+                                                //提示更新 -> 强制更新
+                                                string extractDir = Path.Combine(Application.DataPath, "update");
+                                                foreach (var item in Directory.GetFiles(extractDir))
+                                                {
+                                                    string itemTargetPath = Path.Combine(Application.UserPath, Path.GetFileName(item));
+                                                    if (File.Exists(itemTargetPath))
+                                                    {
+                                                        File.Delete(itemTargetPath);
+                                                    }
+                                                    File.Copy(item, itemTargetPath, true);
+                                                }
                                                 string extractUpdate = Path.Combine(Application.UserPath, "ExtractUpdateFiles.dll");
-                                                try
-                                                {
-                                                   
-                                                    //File.WriteAllText(localVersionPath, responseContent);
 
-                                                    string execPath = System.Environment.GetCommandLineArgs()[0];
-                                                    Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath} VersionPath={localVersionPath} VersionContent=\"{responseContent}\"");
-                                                    //退出当前程序
-                                                    System.Environment.Exit(0);
-                                                }
-                                                catch (Exception e)
-                                                {
-                                                    Log.Error("extractUpdate error:{0}", e);
-                                                }
+                                                string execPath = System.Environment.GetCommandLineArgs()[0];
+                                                Process.Start("dotnet", $"{extractUpdate} ZipFilePath={localTargetPath} ExtractDir={Application.DataPath} ExecPath={execPath} VersionPath={localVersionPath} VersionContent=\"{responseContent}\"");
+                                                //退出当前程序
+                                                System.Environment.Exit(0);
                                             }
-                                           
-                                        });
-
-                                       
+                                        }
+                                        else
+                                        {
+                                            Log.Warn("Check update download error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
+                                        }
                                     }
+                                    else
+                                    {
+                                        Log.Warn("Check update download network error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
+                                    }
+
                                 }
-                                else
-                                {
-                                    Log.Warn("Check update download error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
-                                }
-                            }
-                            else
-                            {
-                                Log.Warn("Check update download network error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
-                            }
+
+                            });
+
+
+                          
                         }
                     }
                     else

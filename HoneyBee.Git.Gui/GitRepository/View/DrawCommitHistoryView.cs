@@ -379,6 +379,8 @@ namespace Wanderer.GitRepository.View
 
         IEnumerable<Commit> GetHistoryCommits()
         {
+            //这里可以增加更多的条件，方便操作更多的信息
+
             var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
             if (!range.Equals(m_cacheRange))
             {

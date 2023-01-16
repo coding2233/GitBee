@@ -43,6 +43,7 @@ namespace Wanderer.App.View
             public string OK;
             public string Cancel;
             public Action<bool> OnCallback;
+            public bool FirstFrame;
         }
 
         private static DisplayDialogInfo s_displayDialogInfo;
@@ -59,6 +60,7 @@ namespace Wanderer.App.View
             s_displayDialogInfo.OK = string.IsNullOrEmpty(ok) ? "OK" : ok;
             s_displayDialogInfo.Cancel = cancel;
             s_displayDialogInfo.OnCallback = onCallback;
+            s_displayDialogInfo.FirstFrame = true;
         }
 
         //设置
@@ -138,10 +140,14 @@ namespace Wanderer.App.View
             if (showDisplayDialog)
             {
                 string showDisplayDialogTitle = $"{s_displayDialogInfo.Title}##DisplayDialog";
-                var viewport = ImGui.GetMainViewport();
+                if (s_displayDialogInfo.FirstFrame)
+                {
+                    var viewport = ImGui.GetMainViewport();
+                    ImGui.SetNextWindowSize(viewport.WorkSize * 0.3f);
+                    s_displayDialogInfo.FirstFrame = false;
+                }
                 ImGui.OpenPopup(showDisplayDialogTitle);
-                ImGui.SetNextWindowSize(viewport.WorkSize * 0.3f);
-                if (ImGui.BeginPopupModal(showDisplayDialogTitle, ref showDisplayDialog, ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove))
+                if (ImGui.BeginPopupModal(showDisplayDialogTitle, ref showDisplayDialog))//ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
                 {
                     ImGui.Text(s_displayDialogInfo.Message);
 
