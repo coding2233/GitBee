@@ -210,7 +210,7 @@ namespace Wanderer.Common
                 {
                     s_lastActiveImGuiTabView.OnEnable();
                 }
-                Log.Info("ImGuiTabView {0} Set Active {1}", s_lastActiveImGuiTabView.Name, !lost);
+                //Log.Info("ImGuiTabView {0} Set Active {1}", s_lastActiveImGuiTabView.Name, !lost);
             }
         }
 

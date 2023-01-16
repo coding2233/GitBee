@@ -374,6 +374,54 @@ namespace Wanderer.GitRepository.View
                         ImGui.Text(branchNode.FullName);
                         ImGui.Separator();
 
+                        if (ImGui.MenuItem("New Branch"))
+                        {
+                            string newBranchName = "";
+                            GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                                if (ImGui.InputText("New Branch Name", ref newBranchName, 200))
+                                {
+                                    
+                                }
+
+                                if (ImGui.Button("OK"))
+                                {
+                                    if (!string.IsNullOrEmpty(newBranchName))
+                                    {
+                                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo,$"branch -c {branchNode.Data.FriendlyName} {newBranchName}");
+                                    }
+                                    return false;
+                                }
+
+                                ImGui.SameLine();
+                                if (ImGui.Button("Cancel"))
+                                {
+                                    return false;
+                                }
+                                return true;
+
+                            });
+                        }
+                        if (ImGui.MenuItem("Delete"))
+                        {
+                            GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () => {
+                                ImGui.Text("Confirm whether to delete the selected branch？");
+
+                                if (ImGui.Button("OK"))
+                                {
+                                    GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -d {branchNode.Data.FriendlyName}");
+                                    return false;
+                                }
+
+                                ImGui.SameLine();
+                                if (ImGui.Button("Cancel"))
+                                {
+                                    return false;
+                                }
+                                return true;
+
+                            });
+                        }
+                        ImGui.Separator();
                         if (isCurrentRepositoryHead)
                         {
                             plugin.CallPopupContextItem("OnHeadPopupItem");
