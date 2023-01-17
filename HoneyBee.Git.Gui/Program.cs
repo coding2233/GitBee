@@ -201,7 +201,10 @@ namespace Wanderer.App
         delegate void WINDOW_EVENT_CALLBACK(int event_type);
         [DllImport("iiso3.dll")]
         extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
-    
+
+        [DllImport("iiso3.dll")]
+        internal extern static void SetClipboard(string text);
+
         #endregion
     }
 

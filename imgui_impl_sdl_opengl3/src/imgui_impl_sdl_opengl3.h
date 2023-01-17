@@ -14,6 +14,7 @@
 #include "lua.hpp"
 
 #if defined _WIN32 || defined __CYGWIN__
+#include "windows.h"
 #define API __declspec(dllexport)
 #elif __GNUC__
 #define API  __attribute__((__visibility__("default")))
@@ -36,6 +37,8 @@ typedef void (*WINDOW_EVENT_CALLBACK)(int event_type);
 
 EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb);
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);
+
+EXPORT_API void SetClipboard(const char* text);
 
 #if _WIN32
 //luaxlib

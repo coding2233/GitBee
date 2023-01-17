@@ -166,6 +166,21 @@ char *glsl_version_;
     
 }
 
+void SetClipboard(const char* text)
+{
+#if defined _WIN32
+    HWND hWnd = NULL;
+    OpenClipboard(hWnd);
+    EmptyClipboard();
+    HANDLE hHandle = GlobalAlloc(GMEM_FIXED, 1024);
+    char* pData = (char*)GlobalLock(hHandle);
+    strcpy(pData, text);
+    SetClipboardData(CF_TEXT,hHandle);
+    GlobalUnlock(hHandle);
+    CloseClipboard();
+#endif
+}
+
 // void RenderDrawData(struct ImDrawData* draw_data)
 // {
 //     ImGui_ImplOpenGL3_RenderDrawData(draw_data);
