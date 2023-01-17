@@ -184,9 +184,7 @@ namespace Wanderer.GitRepository.View
             switch (item)
             {
                 case "Sync":
-                    //_git.UpdateStatus();
-                    //start ... 
-                    //explorer ... 打开文件夹
+                    m_gitRepo?.ReBuildUIData();
                     break;
                 case "Terminal":
                     GitCommandView.ShowTerminal(m_repoPath);
@@ -264,7 +262,6 @@ namespace Wanderer.GitRepository.View
                 {
                     ImGui.MenuItem($"{item.Message}");
                 }
-
                 //if (ImGui.Button("Save Stashe"))
                 //{
                     
@@ -406,7 +403,7 @@ namespace Wanderer.GitRepository.View
             {
                 if (ImGui.MenuItem("Copy Branch Name"))
                 {
-                    Program.SetClipboard(branchNode.FullName);
+                    Application.SetClipboard(branchNode.FullName);
                 }
                 ImGui.Separator();
                 ImGui.Text("More...");
@@ -494,6 +491,30 @@ namespace Wanderer.GitRepository.View
                         return true;
 
                     });
+                }
+
+                if (ImGui.MenuItem("Tracking..."))
+                {
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    //{
+                    //    string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
+                    //    ImGui.Text("Confirm whether to fetch the selected branch？");
+                    //    ImGui.Text(fetchCmd);
+
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
+                    //        return false;
+                    //    }
+
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
+
+                    //});
                 }
 
                 ImGui.Separator();
@@ -631,7 +652,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Copy Branch Name"))
                 {
-                    Program.SetClipboard(branchNode.FullName);
+                    Application.SetClipboard(branchNode.FullName);
                 }
 
                 ImGui.Separator();

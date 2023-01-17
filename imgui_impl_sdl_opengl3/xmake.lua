@@ -3,6 +3,7 @@ add_requires("conan::imgui/cci.20220621+1.88.docking",{alias="imgui"})
 add_requires("conan::glew/2.2.0",{alias="glew"})
 add_requires("conan::opengl/system",{alias="opengl"})
 add_requires("conan::luajit/2.0.5",{alias="luajit"})
+-- add_requires("stb")
 -- add_requires("luajit")
 
 target("iiso3")

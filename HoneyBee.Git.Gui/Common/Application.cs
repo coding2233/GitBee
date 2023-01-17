@@ -2,14 +2,18 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Wanderer.Common
 {
-    public static class Application
+    public unsafe static class Application
     {
         public static string version => "1.0.alpha3";
+
+        private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
 
         public static Version GetVersion()
         {
@@ -73,8 +77,57 @@ namespace Wanderer.Common
             return fileMD5;
         }
 
+
+        [DllImport("iiso3.dll")]
+        internal extern static void SetClipboard(string text);
+
+        [DllImport("iiso3.dll")]
+        extern static bool LoadTextureFromFile(string file_name, uint* out_texture, int* out_width, int* out_height);
+
+        internal static GLTexture LoadTextureFromFile(string fileName)
+        {
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                fileName = fileName.Replace("\\", "/");
+                GLTexture glTexture;
+                if (!s_glTextures.TryGetValue(fileName, out glTexture))
+                {
+                    if (File.Exists(fileName))
+                    {
+                        glTexture = new GLTexture();
+                        uint outTexture;
+                        int width;
+                        int height;
+                        if (LoadTextureFromFile(fileName, &outTexture, &width, &height))
+                        {
+                            glTexture.Image = new IntPtr(outTexture);
+                            glTexture.Size = new Vector2(width, height);
+                        }
+                        s_glTextures.Add(fileName, glTexture);
+                    }
+                }
+                return glTexture;
+            }
+
+            return default(GLTexture);
+        }
+
+        [DllImport("iiso3.dll")]
+        extern static void DeleteTexture(IntPtr out_texture);
+        internal static void DeleteTexture(GLTexture glTexture)
+        {
+            if (glTexture.Image != IntPtr.Zero)
+            {
+                DeleteTexture(glTexture.Image);
+            }
+        }
     }
 
+    public struct GLTexture
+    {
+        public IntPtr Image;
+        public Vector2 Size;
+    }
 
     public struct Version
     {

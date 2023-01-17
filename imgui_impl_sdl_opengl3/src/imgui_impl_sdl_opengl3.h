@@ -11,6 +11,10 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+#include "imgui_markdown.h"
+
 #include "lua.hpp"
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -37,6 +41,14 @@ typedef void (*WINDOW_EVENT_CALLBACK)(int event_type);
 
 EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb);
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);
+
+//https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+//https://github.com/nothings/stb
+//image loading/decoding from file/memory: JPG, PNG, TGA, BMP, PSD, GIF, HDR, PIC
+EXPORT_API bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height);
+EXPORT_API void DeleteTexture(GLuint* out_texture);
+EXPORT_API void MarkDown(const char* text,size_t size);
+
 
 EXPORT_API void SetClipboard(const char* text);
 
