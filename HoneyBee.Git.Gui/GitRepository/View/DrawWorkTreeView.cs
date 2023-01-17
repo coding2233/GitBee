@@ -92,9 +92,14 @@ namespace Wanderer
                 }
             }
 
-            foreach (var item in m_stageTreeView)
+            if (m_stageTreeView.Count > 0)
             {
-                DrawStatusEntryTreeNode(item,true);
+                ImGui.BeginChild("DrawStageFilesStatus-TreeView");
+                foreach (var item in m_stageTreeView)
+                {
+                    DrawStatusEntryTreeNode(item, true);
+                }
+                ImGui.EndChild();
             }
         }
 
@@ -126,9 +131,14 @@ namespace Wanderer
                 }
             }
 
-            foreach (var item in m_unstageTreeView)
+            if (m_unstageTreeView.Count > 0)
             {
-                DrawStatusEntryTreeNode(item,false);
+                ImGui.BeginChild("DrawUnstageFileStatus-TreeView");
+                foreach (var item in m_unstageTreeView)
+                {
+                    DrawStatusEntryTreeNode(item, false);
+                }
+                ImGui.EndChild();
             }
         }
 
