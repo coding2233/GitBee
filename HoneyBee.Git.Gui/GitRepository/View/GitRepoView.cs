@@ -359,11 +359,6 @@ namespace Wanderer.GitRepository.View
                     OnDrawBranchPopupContextItem(branchNode);
                     ImGui.EndPopup();
                 }
-
-
-            
-
-               
             }
 
             if (!treeNodeEx || branchNode.Data != null)

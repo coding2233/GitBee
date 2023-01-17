@@ -40,6 +40,10 @@ namespace Wanderer.GitRepository.View
 
         private IPluginService m_plugin;
 
+        private string[] m_localBranchs=new string[0];
+        private int m_selectLocalBranch;
+        private string m_searchCommit = "";
+
         public DrawCommitHistoryView(GitRepo gitRepo, IPluginService plugin)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
@@ -65,6 +69,37 @@ namespace Wanderer.GitRepository.View
         private void DrawHistoryCommits()
         {
             int commitMax = m_gitRepo.GetCommitCount();
+
+            var itemWidth = ImGui.GetWindowWidth() * 0.2f;
+            ImGui.SetNextItemWidth(itemWidth);
+            bool gethistoryCommitsForce = false;
+            if (ImGui.Combo("Branch", ref m_selectLocalBranch, m_localBranchs, m_localBranchs.Length))
+            {
+                gethistoryCommitsForce = true;
+            }
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(itemWidth);
+            int newCommitViewIndex = m_commitViewIndex;
+            if (ImGui.InputInt($"Commit Range ({m_commitViewIndex}-{m_commitViewIndex+m_commitViewMax}/{commitMax})##Commit-Index-InputInt", ref newCommitViewIndex, 1,100, ImGuiInputTextFlags.EnterReturnsTrue))
+            {
+                if (newCommitViewIndex != m_commitViewIndex)
+                {
+                    m_commitViewIndex = newCommitViewIndex;
+                }
+            }
+            ImGui.SameLine();
+            ImGui.SetNextItemWidth(itemWidth);
+            if (ImGui.InputText("Search",ref m_searchCommit,200,ImGuiInputTextFlags.EnterReturnsTrue))
+            {
+                
+            }
+            if (ImGui.IsItemHovered() && string.IsNullOrEmpty(m_searchCommit))
+            {
+                ImGui.SetTooltip("Please input sha/message/author/date time...");
+            }
+
+            ImGui.BeginChild("DrawHistoryCommits-TableData");
+
             if (m_lastCommitScrollY <= 0.0f)
             {
                 //float moveInterval = GetScrollInterval(_commitViewIndex - _commitAddInterval >= 0 ? _commitAddInterval : _commitViewIndex - _commitAddInterval);
@@ -91,7 +126,7 @@ namespace Wanderer.GitRepository.View
             }
             m_lastCommitScrollY = ImGui.GetScrollY();
 
-            var historyCommits = GetHistoryCommits();
+            var historyCommits = GetHistoryCommits(gethistoryCommitsForce);
             if (historyCommits == null)
                 return;
 
@@ -218,15 +253,44 @@ namespace Wanderer.GitRepository.View
                             ImGui.Text(item.MessageShort);
                             ImGui.Separator();
 
-                            m_plugin.CallPopupContextItem("OnCommitPopupItem");
-                            //var viewCommands = GitCommandView.ViewCommands.FindAll(x => x.Target == ViewCommandTarget.Commit);
-                            //foreach (var itemViewCommand in viewCommands)
-                            //{
-                            //    if (ImGui.MenuItem(itemViewCommand.Name))
-                            //    {
-                            //        GitCommandView.RunGitCommandView<CommonProcessGitCommand>(m_gitRepo, itemViewCommand);
-                            //    }
-                            //}
+                            if (ImGui.MenuItem("New Branch..."))
+                            {
+                                //git checkout -b NewBranch a9c146a09505837ec03b
+                                //git branch NewBranch a9c146a09505837ec03b
+                            }
+                            if (ImGui.MenuItem("New Tag..."))
+                            {
+                                //git tag <tagname> <commit>
+                            }
+                            ImGui.Separator();
+                            if (ImGui.MenuItem("Check Out..."))
+                            {
+                                //git checkout <commit>
+                            }
+                            if (ImGui.MenuItem("Rebase..."))
+                            {
+                                //git rebase <commit>
+                            }
+                            if (ImGui.MenuItem("Revert..."))
+                            {
+                                //git revert <commit>
+                            }
+                            if (ImGui.MenuItem("Cherry-Pick..."))
+                            {
+                                //git cherry-pick <commmit>
+                            }
+                            if (ImGui.MenuItem("Save As Patch..."))
+                            {
+                                //
+                            }
+                            ImGui.Separator();
+                            if (ImGui.MenuItem("Copy Info"))
+                            { }
+                            if (ImGui.MenuItem("Copy Hash"))
+                            { }
+                            //m_plugin.CallPopupContextItem("OnCommitPopupItem");
+                            ImGui.Separator();
+                            ImGui.Text("More...");
                         }
                         ImGui.EndPopup();
                     }
@@ -247,6 +311,8 @@ namespace Wanderer.GitRepository.View
 
             }
 
+
+            ImGui.EndChild();
         }
 
        
@@ -377,14 +443,73 @@ namespace Wanderer.GitRepository.View
             return ImGui.GetScrollMaxY() * (size / m_commitViewMax);
         }
 
-        IEnumerable<Commit> GetHistoryCommits()
+        IEnumerable<Commit> GetHistoryCommits(bool force=false)
         {
             //这里可以增加更多的条件，方便操作更多的信息
-
             var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
-            if (!range.Equals(m_cacheRange))
+            if (!range.Equals(m_cacheRange) || m_cacheCommits==null || true)
             {
-                m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
+                List<string> localBranch = new List<string>();
+                localBranch.Add("Default-All-Branch");
+                foreach (var item in m_gitRepo.Repo.Branches)
+                {
+                    if (!item.IsRemote)
+                    {
+                        localBranch.Add(item.FriendlyName);
+                    }
+                }
+                m_localBranchs = localBranch.ToArray();
+
+                if (m_selectLocalBranch <= 0)
+                {
+                    m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
+                }
+                else
+                {
+                    var filter = new CommitFilter
+                    {
+                        //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+                        IncludeReachableFrom = m_localBranchs[m_selectLocalBranch],  // formerly "Until"
+                    };
+                    m_cacheCommits = m_gitRepo.Repo.Commits.QueryBy(filter).Take(range);
+                }
+
+                if (!string.IsNullOrEmpty(m_searchCommit))
+                {
+                    m_cacheCommits = m_cacheCommits.Where((commitInfo) =>
+                    {
+                        if (commitInfo.Message.Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.MessageShort.Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.Sha.Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.Author.Name.Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.Committer.Name.Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
+                        {
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+
                 m_cacheRange = range;
             }
             return m_cacheCommits;

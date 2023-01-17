@@ -84,10 +84,10 @@ namespace Wanderer.Common
 
         public static void Render()
         {
-            //这里可设置背景图片
+            ////这里可设置背景图片
             //var bgImage = Application.LoadTextureFromFile(@"C:\Users\EDY\Pictures\WallPaper\wallhaven-rddgwm.jpg");
             ////ImGui.Image(bgImage.Image, bgImage.Size);
-            //ImGui.GetBackgroundDrawList().AddImage(bgImage.Image, Vector2.Zero, Vector2.One*2000);
+            //ImGui.GetBackgroundDrawList().AddImage(bgImage.Image, Vector2.Zero, Vector2.One * 2000);
             //var bgColor = ImGui.ColorConvertU32ToFloat4(ImGui.GetColorU32(ImGuiCol.WindowBg));
             //bgColor.W = 0.6f;
             //ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.ColorConvertFloat4ToU32(bgColor));
