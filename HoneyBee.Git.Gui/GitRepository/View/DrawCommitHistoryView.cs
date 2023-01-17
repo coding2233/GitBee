@@ -252,45 +252,7 @@ namespace Wanderer.GitRepository.View
                             ImGui.SameLine();
                             ImGui.Text(item.MessageShort);
                             ImGui.Separator();
-
-                            if (ImGui.MenuItem("New Branch..."))
-                            {
-                                //git checkout -b NewBranch a9c146a09505837ec03b
-                                //git branch NewBranch a9c146a09505837ec03b
-                            }
-                            if (ImGui.MenuItem("New Tag..."))
-                            {
-                                //git tag <tagname> <commit>
-                            }
-                            ImGui.Separator();
-                            if (ImGui.MenuItem("Check Out..."))
-                            {
-                                //git checkout <commit>
-                            }
-                            if (ImGui.MenuItem("Rebase..."))
-                            {
-                                //git rebase <commit>
-                            }
-                            if (ImGui.MenuItem("Revert..."))
-                            {
-                                //git revert <commit>
-                            }
-                            if (ImGui.MenuItem("Cherry-Pick..."))
-                            {
-                                //git cherry-pick <commmit>
-                            }
-                            if (ImGui.MenuItem("Save As Patch..."))
-                            {
-                                //
-                            }
-                            ImGui.Separator();
-                            if (ImGui.MenuItem("Copy Info"))
-                            { }
-                            if (ImGui.MenuItem("Copy Hash"))
-                            { }
-                            //m_plugin.CallPopupContextItem("OnCommitPopupItem");
-                            ImGui.Separator();
-                            ImGui.Text("More...");
+                            OnCommitPopupContextItem(item);
                         }
                         ImGui.EndPopup();
                     }
@@ -315,8 +277,88 @@ namespace Wanderer.GitRepository.View
             ImGui.EndChild();
         }
 
-       
 
+        private void OnCommitPopupContextItem(Commit item)
+        {
+            if (ImGui.MenuItem("New Branch..."))
+            {
+                //git checkout -b NewBranch a9c146a09505837ec03b
+                //git branch NewBranch a9c146a09505837ec03b
+            }
+            if (ImGui.MenuItem("New Tag..."))
+            {
+                //git tag <tagname> <commit>
+            }
+            ImGui.Separator();
+            if (ImGui.MenuItem("Check Out..."))
+            {
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    string checkoutCmd = $"checkout {item.Sha}";
+                    ImGui.Text("Confirm whether to checkout the selected commit？");
+                    ImGui.Text(checkoutCmd);
+
+                    if (ImGui.Button("OK"))
+                    {
+                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, checkoutCmd);
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            if (ImGui.MenuItem("Reset..."))
+            {
+                GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                {
+                    string resetCmd = $"reset --hard {item.Sha}";
+                    ImGui.Text("Confirm whether to reset the selected commit？");
+                    ImGui.Text(resetCmd);
+
+                    if (ImGui.Button("OK"))
+                    {
+                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, resetCmd);
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
+            }
+            if (ImGui.MenuItem("Rebase..."))
+            {
+                //git rebase <commit>
+            }
+            if (ImGui.MenuItem("Revert..."))
+            {
+                //git revert <commit>
+            }
+            if (ImGui.MenuItem("Cherry-Pick..."))
+            {
+                //git cherry-pick <commmit>
+            }
+            if (ImGui.MenuItem("Save As Patch..."))
+            {
+                //
+            }
+            ImGui.Separator();
+            if (ImGui.MenuItem("Copy Info"))
+            { }
+            if (ImGui.MenuItem("Copy Hash"))
+            { }
+            //m_plugin.CallPopupContextItem("OnCommitPopupItem");
+            ImGui.Separator();
+            ImGui.Text("More...");
+        }
 
         private void DrawSelectCommit()
         {

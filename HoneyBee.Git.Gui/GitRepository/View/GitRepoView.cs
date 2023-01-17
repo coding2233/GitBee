@@ -407,7 +407,7 @@ namespace Wanderer.GitRepository.View
             {
                 if (ImGui.MenuItem("Check Out"))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"checkout {branchNode.Data.FriendlyName}");
                         return false;
@@ -418,7 +418,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Pull..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         string pullCmd = $"pull {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
                         ImGui.Text("Confirm whether to pull the selected branch？");
@@ -442,7 +442,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Push..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         string pushCmd = $"push {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
                         ImGui.Text("Confirm whether to push the selected branch？");
@@ -466,7 +466,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Fetch..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
                         ImGui.Text("Confirm whether to fetch the selected branch？");
@@ -490,7 +490,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Tracking..."))
                 {
-                    //GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     //{
                     //    string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
                     //    ImGui.Text("Confirm whether to fetch the selected branch？");
@@ -524,7 +524,7 @@ namespace Wanderer.GitRepository.View
                     var headBranch = m_gitRepo.Repo.Head;
                     if (ImGui.MenuItem($"Merge into '{headBranch.FriendlyName}'..."))
                     {
-                        GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                        GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                         {
                             string mergeCmd = $"merge {branchNode.Data.FriendlyName}";
                             ImGui.Text("Confirm whether to merge the selected branch？");
@@ -547,7 +547,7 @@ namespace Wanderer.GitRepository.View
 
                     if (ImGui.MenuItem($"Rebase '{headBranch.FriendlyName}' on '{branchNode.FullName}'..."))
                     {
-                        GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                        GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                         {
                             string rebaseCmd = $"rebase {branchNode.Data.FriendlyName}";
                             ImGui.Text("Confirm whether to rebase the selected branch？");
@@ -572,7 +572,7 @@ namespace Wanderer.GitRepository.View
                 if (ImGui.MenuItem("New Branch..."))
                 {
                     string newBranchName = "";
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         ImGui.InputText("New Branch Name", ref newBranchName, 200);
 
@@ -598,7 +598,7 @@ namespace Wanderer.GitRepository.View
                 if (ImGui.MenuItem("Rename..."))
                 {
                     string newBranchName = "";
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         ImGui.InputText("New Branch Name", ref newBranchName, 200);
 
@@ -623,7 +623,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Delete..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(branchNode.Data, () =>
+                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                     {
                         ImGui.Text("Confirm whether to delete the selected branch？");
 
