@@ -396,6 +396,32 @@ namespace Wanderer.GitRepository.View
 
             if (branchNode.Data.IsRemote)
             {
+                if (ImGui.MenuItem("Fetch..."))
+                {
+                    GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                    {
+                        string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Name}:{branchNode.Name}";
+                        ImGui.Text("Confirm whether to fetch the selected branch？");
+                        ImGui.Text(fetchCmd);
+
+                        if (ImGui.Button("OK"))
+                        {
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
+                            return false;
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            return false;
+                        }
+                        return true;
+
+                    });
+                }
+
+                ImGui.Separator();
+
                 if (ImGui.MenuItem("Copy Branch Name"))
                 {
                     Application.SetClipboard(branchNode.FullName);

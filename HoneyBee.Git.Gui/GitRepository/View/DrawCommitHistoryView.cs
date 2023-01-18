@@ -1,9 +1,11 @@
 ﻿using ImGuiNET;
 using LibGit2Sharp;
+using SFB;
 using strange.extensions.dispatcher.eventdispatcher.api;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection.Emit;
@@ -78,7 +80,7 @@ namespace Wanderer.GitRepository.View
                 gethistoryCommitsForce = true;
             }
             ImGui.SameLine();
-            ImGui.SetNextItemWidth(itemWidth);
+            ImGui.SetNextItemWidth(160);
             int newCommitViewIndex = m_commitViewIndex;
             if (ImGui.InputInt($"Commit Range ({m_commitViewIndex}-{m_commitViewIndex+m_commitViewMax}/{commitMax})##Commit-Index-InputInt", ref newCommitViewIndex, 1,100, ImGuiInputTextFlags.EnterReturnsTrue))
             {
@@ -263,16 +265,12 @@ namespace Wanderer.GitRepository.View
                     ImGui.Text(item.Author.Name);// [{item.Committer.Email}]
                     ImGui.TableSetColumnIndex(4);
                     ImGui.Text($"{item.Sha.Substring(0, 10)}");
-
-
                 }
 
                 Pool<CommitAtlasLine>.Release(commitAtlasLines);
 
                 ImGui.EndTable();
-
             }
-
 
             ImGui.EndChild();
         }
@@ -280,17 +278,62 @@ namespace Wanderer.GitRepository.View
 
         private void OnCommitPopupContextItem(Commit item)
         {
+            var headBranch = m_gitRepo.Repo.Head;
+            string headBranchwName = $"'{headBranch}'";
             if (ImGui.MenuItem("New Branch..."))
             {
-                //git checkout -b NewBranch a9c146a09505837ec03b
-                //git branch NewBranch a9c146a09505837ec03b
+                string newBranchName = "";
+                bool checkout = false;
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    ImGui.InputText("New Branch Name", ref newBranchName, 200);
+                    ImGui.Checkbox("Check Out", ref checkout);
+                    if (ImGui.Button("OK"))
+                    {
+                        if (!string.IsNullOrEmpty(newBranchName))
+                        {
+                            string cmd = checkout ? $"checkout -b {newBranchName} {item.Sha}" : $"branch {newBranchName} {item.Sha}";
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
+                        }
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+
+                });
             }
             if (ImGui.MenuItem("New Tag..."))
             {
-                //git tag <tagname> <commit>
+                string newTagName = "";
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    ImGui.InputText("New Tag", ref newTagName, 200);
+                    if (ImGui.Button("OK"))
+                    {
+                        if (!string.IsNullOrEmpty(newTagName))
+                        {
+                            string cmd = $"tag {newTagName} {item.Sha}";
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
+                        }
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+
+                });
             }
             ImGui.Separator();
-            if (ImGui.MenuItem("Check Out..."))
+            if (ImGui.MenuItem("CheckOut Commit..."))
             {
                 GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
                 {
@@ -312,7 +355,7 @@ namespace Wanderer.GitRepository.View
                     return true;
                 });
             }
-            if (ImGui.MenuItem("Reset..."))
+            if (ImGui.MenuItem($"Reset {headBranchwName} on this commit..."))
             {
                 GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
                 {
@@ -334,27 +377,96 @@ namespace Wanderer.GitRepository.View
                     return true;
                 });
             }
-            if (ImGui.MenuItem("Rebase..."))
+
+            if (ImGui.MenuItem($"Rebase {headBranchwName} on this commit..."))
             {
-                //git rebase <commit>
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    string rebaseCmd = $"rebase {item.Sha}";
+                    ImGui.Text("Confirm whether to rebase the selected commit？");
+                    ImGui.Text(rebaseCmd);
+
+                    if (ImGui.Button("OK"))
+                    {
+                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, rebaseCmd);
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
             }
-            if (ImGui.MenuItem("Revert..."))
+            if (ImGui.MenuItem("Revert Commit..."))
             {
-                //git revert <commit>
+                bool commitChange = true;
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    ImGui.Text("Confirm whether to Revert the selected commit？");
+                    ImGui.Checkbox("Commit this change", ref commitChange);
+
+                    if (ImGui.Button("OK"))
+                    {
+                        string revertCmd = commitChange ? $"revert {item.Sha}" : $"revert --no-commit {item.Sha}";
+                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, revertCmd);
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
+
             }
-            if (ImGui.MenuItem("Cherry-Pick..."))
+            if (ImGui.MenuItem("Cherry-Pick Commit..."))
             {
                 //git cherry-pick <commmit>
+                bool commitChange = true;
+                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                {
+                    ImGui.Text("Confirm whether to cherry-pick the selected commit？");
+                    ImGui.Checkbox("Commit this change", ref commitChange);
+
+                    if (ImGui.Button("OK"))
+                    {
+                        string cherrypickCmd = commitChange ? $"cherry-pick {item.Sha}" : $"cherry-pick --no-commit {item.Sha}";
+                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cherrypickCmd);
+                        return false;
+                    }
+
+                    ImGui.SameLine();
+                    if (ImGui.Button("Cancel"))
+                    {
+                        return false;
+                    }
+                    return true;
+                });
             }
-            if (ImGui.MenuItem("Save As Patch..."))
+            if (ImGui.MenuItem("Save As Patch"))
             {
-                //
+                //var commitPatch = GetCommitPatch(item);
+                //StandaloneFileBrowser.SaveFilePanelAsync("Save As Path", null, item.Sha, "patch", (savePath) => {
+                //    if (!string.IsNullOrEmpty(savePath))
+                //    {
+                //        File.WriteAllText(savePath, commitPatch);
+                //    }
+                //});
             }
             ImGui.Separator();
             if (ImGui.MenuItem("Copy Info"))
-            { }
+            {
+                Application.SetClipboard($"{item.Sha} {item.Author.Name} {item.Author.When.DateTime} {item.MessageShort}");
+            }
             if (ImGui.MenuItem("Copy Hash"))
-            { }
+            {
+                Application.SetClipboard(item.Sha);
+            }
             //m_plugin.CallPopupContextItem("OnCommitPopupItem");
             ImGui.Separator();
             ImGui.Text("More...");
@@ -449,35 +561,36 @@ namespace Wanderer.GitRepository.View
             //子线程取真正的数据绘制
             Task.Run(() =>
             {
-                if (m_selectCommit != null)
+                m_selectCommitPatch = GetCommitPatch(m_selectCommit);
+            });
+        }
+
+        //获取当前提交的Patch
+        private Patch GetCommitPatch(Commit commit)
+        {
+            Patch commitPatch = null;
+            if (commit != null)
+            {
+                if (commit.Parents != null && commit.Parents.Count() > 0)
                 {
-                    //CommitFilter commitFilter = new CommitFilter();
-                    if (m_selectCommit != null)
+                    foreach (var itemParent in commit.Parents)
                     {
-                        if (m_selectCommit.Parents != null && m_selectCommit.Parents.Count() > 0)
+                        var diffPatch = m_gitRepo.Diff.Compare<Patch>(itemParent.Tree, commit.Tree);
+                        if (commitPatch == null)
                         {
-                            foreach (var itemParent in m_selectCommit.Parents)
+                            commitPatch = diffPatch;
+                        }
+                        else
+                        {
+                            foreach (var item in diffPatch)
                             {
-                                var diffPatch = m_gitRepo.Diff.Compare<Patch>(itemParent.Tree, m_selectCommit.Tree);
-                                if (m_selectCommitPatch == null)
-                                {
-                                    m_selectCommitPatch = diffPatch;
-                                }
-                                else
-                                {
-                                    foreach (var item in diffPatch)
-                                    {
-                                        m_selectCommitPatch.Append(item);
-                                    }
-                                }
+                                commitPatch.Append(item);
                             }
                         }
-
                     }
                 }
-
-
-            });
+            }
+            return commitPatch;
         }
 
         private float GetScrollInterval(float size)
