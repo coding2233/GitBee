@@ -58,6 +58,7 @@
 		<Content Include="lua/common/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/core/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/style/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="lua/style/icons/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="update/*.*" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
