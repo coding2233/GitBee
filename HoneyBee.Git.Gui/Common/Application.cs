@@ -14,7 +14,6 @@ namespace Wanderer.Common
         public static string version => "1.0.alpha4";
 
         private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
-
         public static Version GetVersion()
         {
             return new Version() { Major = 1, Minor = 0, Patch = 4, PreVersion = "alpha" };
@@ -77,6 +76,10 @@ namespace Wanderer.Common
             return fileMD5;
         }
 
+        internal static GLTexture GetIcon(string name, bool folder)
+        {
+            
+        }
 
         [DllImport("iiso3.dll")]
         internal extern static void SetClipboard(string text);

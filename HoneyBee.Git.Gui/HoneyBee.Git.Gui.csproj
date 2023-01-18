@@ -25,6 +25,7 @@
     <None Remove="lua\cimgui.lua" />
     <None Remove="lua\Init.lua" />
     <None Remove="lua\style\chinese.txt" />
+    <None Remove="lua\style\style.lua" />
     <None Remove="Program.cs~RFe91c4dc.TMP" />
   </ItemGroup>
 
