@@ -21,6 +21,7 @@ namespace Wanderer.Common
 
         private static string m_dataPath;
         private static string m_userPath;
+        private static string m_tempPath;
 
         public static string DataPath
         {
@@ -59,6 +60,22 @@ namespace Wanderer.Common
                     Directory.CreateDirectory(m_userPath);
                 }
                 return m_userPath;
+            }
+        }
+
+        public static string TempPath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_tempPath))
+                {
+                    m_tempPath = Path.Combine(UserPath,"temp");
+                    if (!Directory.Exists(m_tempPath))
+                    {
+                        Directory.CreateDirectory(m_tempPath);
+                    }
+                }
+                return m_tempPath;
             }
         }
 

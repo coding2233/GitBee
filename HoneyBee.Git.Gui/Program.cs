@@ -38,8 +38,8 @@ namespace Wanderer.App
         static IntPtr OnImGuiInit()
         {
             var context = ImGui.CreateContext();
-
-            string iniFilePath = Path.Combine(Path.GetDirectoryName(System.Environment.GetCommandLineArgs()[0]), "imgui.ini");
+            
+            string iniFilePath = Path.Combine(Application.TempPath,"imgui.ini");
             fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
             {
                 ImGui.GetIO().NativePtr->IniFilename = iniFileName;
@@ -49,97 +49,86 @@ namespace Wanderer.App
             ////Load default font.
             //var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();
 
-            //string font = LuaPlugin.GetString("Style","Font");
-
-            //字体大小
-            int fontSize = 14;
-            //Load chinese font.
-            using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("wqy-microhei.ttc"))
+            string fontPath = LuaPlugin.GetString("Style", "Font");
+            if (string.IsNullOrEmpty(fontPath))
             {
-                if (stream.Length > 0)
-                {
-                    byte[] buffer = new byte[stream.Length];
-                    stream.Read(buffer, 0, buffer.Length);
-                    var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
-                    //ImGui.GetIO().Fonts.GetGlyphRangesChineseFull() 内存占用太高 占用200+MB
-                    //ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon 文字不全 40-50MB
-                    IntPtr glyphRanges = IntPtr.Zero;
-                    //使用自定义文本字符集
-                    string chineseText = "lua/style/chinese.txt";
-                    if (File.Exists(chineseText))
-                    {
-                        var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
-                        var textBytes = File.ReadAllBytes(chineseText);
-                        if (textBytes != null && textBytes.Length > 0)
-                        {
-                            fixed (byte* text = textBytes)
-                            {
-                                //默认字符
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
-                                //默认中文符号
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '，');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '：');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '、');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '！');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '（');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '）');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '￥');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '“');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '”');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '；');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '。');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '？');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '【');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '】');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '《');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '》');
-                                ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
-                                ImVector outRanges;
-                                ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
-                                glyphRanges = outRanges.Data;
-                            }
-                        }
-                    }
-                    //默认选择
-                    if (glyphRanges == IntPtr.Zero)
-                    {
-                        glyphRanges = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
-                    }
-                    ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, glyphRanges);
-                }
+                fontPath = "lua/style/fonts/wqy-microhei.ttc";
             }
 
-            //IntPtr glyphRanges = IntPtr.Zero;
-            //ImVector outRanges;
-            ////使用自定义文本字符集
-            //string chineseText = "lua/style/chinese.txt";
-            //if (File.Exists(chineseText))
-            //{
-            //    var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
-            //    var textBytes = File.ReadAllBytes(chineseText);
-            //    if (textBytes != null && textBytes.Length > 0)
-            //    {
-            //        fixed (byte* text = textBytes)
-            //        {
-            //            //默认字符
-            //            ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
-            //            ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
-            //            ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
-            //            glyphRanges = outRanges.Data;
+            if (!File.Exists(fontPath))
+            {
+                //windows字体保险
+                fontPath = @"C:\\Windows\\Fonts\\msyh.ttc";
+            }
 
-            //            //默认选择
-            //            if (glyphRanges == IntPtr.Zero)
-            //            {
-            //                glyphRanges = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
-            //            }
+            //字体大小
+            int fontSize = (int)LuaPlugin.GetNumber("Style", "FontSize");
+            if (fontSize <= 0)
+            {
+                fontSize = 14;
+            }
 
-            //            string fontPath = "lua/style/fonts/wqy-microhei.ttc";//@"C:\\Windows\\Fonts\\msyh.ttc"
-            //            ImGui.GetIO().Fonts.AddFontFromFileTTF(fontPath, fontSize,null, glyphRanges);
-            //        }
-            //    }
-            //}
+            if (File.Exists(fontPath))
+            {
+                var glyphRanges = LuaPlugin.GetString("Style", "GlyphRanges");
+                IntPtr glyphRangesPtr = IntPtr.Zero;
+                switch (glyphRanges)
+                {
+                    case "GetGlyphRangesDefault":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesDefault();
+                        break;
+                    case "GetGlyphRangesChineseFull":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
+                        break;
+                    case "GetGlyphRangesChineseSimplifiedCommon":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon();
+                        break;
+                    case "GetGlyphRangesCyrillic":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesCyrillic();
+                        break;
+                    case "GetGlyphRangesJapanese":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesJapanese();
+                        break;
+                    case "GetGlyphRangesKorean":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesKorean();
+                        break;
+                    case "GetGlyphRangesThai":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesThai();
+                        break;
+                    case "GetGlyphRangesVietnamese":
+                        glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesVietnamese();
+                        break;
+                    default:
+                        if (!string.IsNullOrEmpty(glyphRanges) && File.Exists(glyphRanges))
+                        {
+                            var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+                            var textBytes = File.ReadAllBytes(glyphRanges);
+                            if (textBytes != null && textBytes.Length > 0)
+                            {
+                                ImVector outRanges;
+                                fixed (byte* text = textBytes)
+                                {
+                                    //默认字符
+                                    ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+                                    ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
+                                    ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
+                                    glyphRangesPtr = outRanges.Data;
+                                }
+                            }
+                        }
+                        break;
+                }
+                if (glyphRangesPtr == IntPtr.Zero)
+                {
+                    glyphRangesPtr = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
+                }
 
-
+                ImGui.GetIO().Fonts.AddFontFromFileTTF(fontPath, fontSize, null, glyphRangesPtr);
+            }
+            else
+            {
+                ImGui.GetIO().Fonts.AddFontDefault();
+            }
 
             ImFontConfigPtr imFontConfigPtr = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
             {
@@ -242,3 +231,76 @@ namespace Wanderer.App
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////Load chinese font.
+//using (Stream stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("wqy-microhei.ttc"))
+//{
+//    if (stream.Length > 0)
+//    {
+//        byte[] buffer = new byte[stream.Length];
+//        stream.Read(buffer, 0, buffer.Length);
+//        var fontIntPtr = Marshal.UnsafeAddrOfPinnedArrayElement(buffer, 0);
+//        //ImGui.GetIO().Fonts.GetGlyphRangesChineseFull() 内存占用太高 占用200+MB
+//        //ImGui.GetIO().Fonts.GetGlyphRangesChineseSimplifiedCommon 文字不全 40-50MB
+//        IntPtr glyphRanges = IntPtr.Zero;
+//        //使用自定义文本字符集
+//        string chineseText = "lua/style/chinese.txt";
+//        if (File.Exists(chineseText))
+//        {
+//            var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+//            var textBytes = File.ReadAllBytes(chineseText);
+//            if (textBytes != null && textBytes.Length > 0)
+//            {
+//                fixed (byte* text = textBytes)
+//                {
+//                    //默认字符
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+//                    //默认中文符号
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '，');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '：');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '、');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '！');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '（');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '）');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '￥');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '“');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '”');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '；');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '。');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '？');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '【');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '】');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '《');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddChar(imFontGlyphRangesBuilder, '》');
+//                    ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
+//                    ImVector outRanges;
+//                    ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
+//                    glyphRanges = outRanges.Data;
+//                }
+//            }
+//        }
+//        //默认选择
+//        if (glyphRanges == IntPtr.Zero)
+//        {
+//            glyphRanges = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
+//        }
+//        ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, glyphRanges);
+//    }
+//}

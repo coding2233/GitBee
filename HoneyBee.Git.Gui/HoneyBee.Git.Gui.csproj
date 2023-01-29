@@ -47,7 +47,7 @@
   </ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="lua\style\fonts\wqy-microhei.ttc" LogicalName="wqy-microhei.ttc" />
+		<!--<EmbeddedResource Include="lua\style\fonts\wqy-microhei.ttc" LogicalName="wqy-microhei.ttc" />-->
 		<EmbeddedResource Include="Fonts/MaterialIcons-Regular.ttf" LogicalName="MaterialIcons-Regular.ttf" />
 	</ItemGroup>
 
@@ -56,13 +56,15 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
+		<!--<Content Include="lua/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/common/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/core/*.lua" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/style/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/style/fonts/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="lua/style/icons/*.*" CopyToOutputDirectory="PreserveNewest" />
-		<Content Include="update/*.*" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="update/*.*" CopyToOutputDirectory="PreserveNewest" />-->
+		<Content Include="lua/**" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="update/**" CopyToOutputDirectory="PreserveNewest" />
 	</ItemGroup>
 
 	<ItemGroup>

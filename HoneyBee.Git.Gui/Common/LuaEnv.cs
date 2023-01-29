@@ -117,9 +117,29 @@ namespace Wanderer
             lua_setfield(m_luaState, idx, name);
         }
 
+        internal void GetTable(int idx)
+        {
+            lua_gettable(m_luaState,idx);
+        }
+
         internal string ToString(int idx)
         {
             return lua_tolstring(m_luaState, idx);
+        }
+
+        internal double ToNumber(int idx)
+        {
+            return lua_tonumber(m_luaState, idx);
+        }
+
+        internal void PushString(string str)
+        {
+            lua_pushstring(m_luaState,str);
+        }
+
+        internal void PushNumber(double number)
+        {
+            lua_pushnumber(m_luaState,number);
         }
 
 
@@ -155,6 +175,12 @@ namespace Wanderer
             var str = Encoding.UTF8.GetString(bytes, len);
             return str;
         }
-       
+        [DllImport("iiso3.dll")]
+        extern static double lua_tonumber(IntPtr lua_state, int idx);
+        [DllImport("iiso3.dll")]
+        extern static void lua_pushstring(IntPtr lua_state, string str);
+        [DllImport("iiso3.dll")]
+        extern static void lua_pushnumber(IntPtr lua_state, double number);
+
     }
 }
