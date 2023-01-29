@@ -20,7 +20,9 @@ namespace Wanderer.App
             {
                 var commandArgs = System.Environment.GetCommandLineArgs();
                 Log.Info("Hello, GitBee! \n{0}", commandArgs[0]);
+                LuaPlugin.Enable();
                 int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw, OnWindowEvent);
+                LuaPlugin.Disable();
             }
             catch (System.Exception e)
             {
@@ -46,6 +48,8 @@ namespace Wanderer.App
             //io->ImeWindowHandle = ofGetWin32Window();
             ////Load default font.
             //var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();
+
+            //string font = LuaPlugin.GetString("Style","Font");
 
             //字体大小
             int fontSize = 14;
@@ -104,6 +108,38 @@ namespace Wanderer.App
                     ImGui.GetIO().Fonts.AddFontFromMemoryTTF(fontIntPtr, fontSize, fontSize, null, glyphRanges);
                 }
             }
+
+            //IntPtr glyphRanges = IntPtr.Zero;
+            //ImVector outRanges;
+            ////使用自定义文本字符集
+            //string chineseText = "lua/style/chinese.txt";
+            //if (File.Exists(chineseText))
+            //{
+            //    var imFontGlyphRangesBuilder = ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder();
+            //    var textBytes = File.ReadAllBytes(chineseText);
+            //    if (textBytes != null && textBytes.Length > 0)
+            //    {
+            //        fixed (byte* text = textBytes)
+            //        {
+            //            //默认字符
+            //            ImGuiNative.ImFontGlyphRangesBuilder_AddRanges(imFontGlyphRangesBuilder, (ushort*)ImGui.GetIO().Fonts.GetGlyphRangesDefault());
+            //            ImGuiNative.ImFontGlyphRangesBuilder_AddText(imFontGlyphRangesBuilder, text, text + textBytes.Length);
+            //            ImGuiNative.ImFontGlyphRangesBuilder_BuildRanges(imFontGlyphRangesBuilder, &outRanges);
+            //            glyphRanges = outRanges.Data;
+
+            //            //默认选择
+            //            if (glyphRanges == IntPtr.Zero)
+            //            {
+            //                glyphRanges = ImGui.GetIO().Fonts.GetGlyphRangesChineseFull();
+            //            }
+
+            //            string fontPath = "lua/style/fonts/wqy-microhei.ttc";//@"C:\\Windows\\Fonts\\msyh.ttc"
+            //            ImGui.GetIO().Fonts.AddFontFromFileTTF(fontPath, fontSize,null, glyphRanges);
+            //        }
+            //    }
+            //}
+
+
 
             ImFontConfigPtr imFontConfigPtr = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
             {

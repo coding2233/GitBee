@@ -1,8 +1,15 @@
-﻿print("hello init.lua")
-require "command"
+﻿--- lua执行优先顺序
+--- custom/lua/init.lua
+--- lua/init.lua
 
-print(cimgui)
+print("hello init.lua ---")
+Style = require "style"
 
-AddViewCommand("test --- AddViewCommand 忠实的")
+--print(cimgui)
+print(Style)
+
+print("lua enable success")
+
+-- AddViewCommand("test --- AddViewCommand 忠实的")
 
 

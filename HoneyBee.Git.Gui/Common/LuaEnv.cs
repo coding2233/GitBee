@@ -94,12 +94,11 @@ namespace Wanderer
 
         internal void SetGlobal(string name)
         {
-            lua_setfield(m_luaState, LUA_GLOBALSINDEX, name);
-
+            SetField(LUA_GLOBALSINDEX,name);
         }
         internal void GetGlobal(string name)
         {
-            lua_getfield(m_luaState, LUA_GLOBALSINDEX, name);
+            GetField(LUA_GLOBALSINDEX,name);
         }
 
         internal void Call(string name)
@@ -107,6 +106,22 @@ namespace Wanderer
             GetGlobal(name);
             lua_pcall(m_luaState, 0, LUA_MULTRET, 0);
         }
+
+        internal void GetField(int idx, string name)
+        {
+            lua_getfield(m_luaState, idx, name);
+        }
+
+        internal void SetField(int idx, string name)
+        {
+            lua_setfield(m_luaState, idx, name);
+        }
+
+        internal string ToString(int idx)
+        {
+            return lua_tolstring(m_luaState, idx);
+        }
+
 
         [DllImport("iiso3.dll")]
         extern static IntPtr luaL_newstate();
@@ -122,7 +137,9 @@ namespace Wanderer
         [DllImport("iiso3.dll")]
         extern static void lua_call(IntPtr lua_state, int nargs, int nresult);
         [DllImport("iiso3.dll")]
-        extern static int lua_pcall(IntPtr lua_state, int nargs, int nresult,int errfunc);
+        extern static int lua_pcall(IntPtr lua_state, int nargs, int nresult,int errfunc); 
+        [DllImport("iiso3.dll")]
+        extern static void lua_gettable(IntPtr lua_state, int idx);
         [DllImport("iiso3.dll")]
         extern static void lua_setfield(IntPtr lua_state, int idx, string k);
         [DllImport("iiso3.dll")]

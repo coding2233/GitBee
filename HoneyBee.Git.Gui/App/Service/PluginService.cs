@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.Common;
 using Wanderer.GitRepository.View;
 
 namespace Wanderer.App.Service
@@ -17,29 +19,20 @@ namespace Wanderer.App.Service
 
     public unsafe class PluginService: IPluginService
     {
-        LuaEnv m_luaEnv;
         public PluginService()
         {
         }
 
         public void Reload()
         {
-            if (m_luaEnv != null)
-            {
-                m_luaEnv.Dispose();
-                m_luaEnv = null;
-            }
-            m_luaEnv = new LuaEnv();
-            RegisterMethod();
-            //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
-            m_luaEnv.DoString("package.path=\"lua/?.lua;lua/common/?.lua;lua/core/?.lua;\"..package.path");
-            m_luaEnv.DoFile("lua/init.lua");
-            LoadViewCommand();
+            LuaPlugin.Reload();
+           
+            //LoadViewCommand();
         }
 
         public void CallPopupContextItem(string method)
         {
-            m_luaEnv?.Call(method);
+            //m_luaEnv?.Call(method);
         }
 
         private void LoadViewCommand()
@@ -49,7 +42,7 @@ namespace Wanderer.App.Service
 
         private void RegisterMethod()
         {
-            m_luaEnv.Register("RunViewCommand", RunViewCommand);
+            //m_luaEnv.Register("RunViewCommand", RunViewCommand);
         }
 
         private static int RunViewCommand(IntPtr lua_state)
