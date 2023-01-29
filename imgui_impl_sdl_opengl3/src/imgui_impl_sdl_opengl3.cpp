@@ -105,11 +105,27 @@ char *glsl_version_;
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version_);
 
-   ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
-   bool is_done_ = false;
+    clock_t clock_start = clock();
+    float default_fps = 30.0f;
+    long frame_rate_time = (1 / default_fps)*1000;
+    long frame = 0;
+
+    ImVec4 clear_color_ = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
+    bool is_done_ = false;
+
 //    bool show_demo=true;
      while (!is_done_)
      {
+         long target_frame_time = frame * frame_rate_time;
+         clock_t clock_run_time = clock();
+         long run_time = clock_run_time - clock_start;
+         //std::cout << "frame: " << frame << " runTime: " << run_time << " targetTime: " << target_frame_time << std::endl;
+
+         if (run_time < target_frame_time)
+         {
+             Sleep(target_frame_time - run_time);
+         }
+         frame++;
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
         // - When io.WantCaptureMouse is true, do not dispatch mouse input data to your main application.
@@ -130,6 +146,20 @@ char *glsl_version_;
                 else
                 {
                     window_event_cb(event.window.event);
+
+                    if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+                    {
+                        clock_start = clock();
+                        frame = 0;
+                        frame_rate_time = (1 / default_fps) * 1000;
+                    }
+                    else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
+                    {
+                        clock_start = clock();
+                        frame = 0;
+                        //frame_rate_time = 1000;
+                        frame_rate_time = (1 / 5.0f) * 1000;
+                    }
                 }
             }
 
