@@ -20,6 +20,7 @@ namespace Wanderer.App.View
     internal class AppImGuiView : ImGuiView
     {
         internal Action<string> OnOpenRepository;
+        internal Action<string> OnSearchRepository;
         internal Action<int> OnSetStyleColors;
         private int m_styleColors;
         //private string m_statusLog = Icon.Get(Icon.Material_open_with);
@@ -212,6 +213,24 @@ namespace Wanderer.App.View
 
                             });
                            
+                        }
+
+                        if (ImGui.MenuItem("Search Repository"))
+                        {
+                            //mainModel.CreateTab<GitRepoWindow>();
+                            StandaloneFileBrowser.OpenFolderPanelAsync("Search Repository", "", false, (folders) => {
+                                if (folders != null && folders.Length > 0)
+                                {
+                                    string searchDirPath = folders[0];
+                                    Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", searchDirPath);
+                                    if (Directory.Exists(searchDirPath))
+                                    {
+                                        OnSearchRepository?.Invoke(searchDirPath);
+                                    }
+                                }
+
+                            });
+
                         }
                         ImGui.EndMenu();
                     }

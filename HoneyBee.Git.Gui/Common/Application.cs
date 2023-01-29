@@ -76,10 +76,10 @@ namespace Wanderer.Common
             return fileMD5;
         }
 
-        internal static GLTexture GetIcon(string name, bool folder)
-        {
+        //internal static GLTexture GetIcon(string name, bool folder)
+        //{
             
-        }
+        //}
 
         [DllImport("iiso3.dll")]
         internal extern static void SetClipboard(string text);

@@ -1,6 +1,8 @@
-﻿using strange.extensions.mediation.impl;
+﻿using strange.extensions.dispatcher.eventdispatcher.api;
+using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -27,12 +29,16 @@ namespace Wanderer.App.Mediator
             base.OnRegister();
             homeView.OnOpenRepository += OnOpenRepositoryCallback;
             homeView.OnRemoveRepository += OnRemoveRepositoryCallback;
+
+            dispatcher.AddListener(AppEvent.SearchGitRepo, OnSearchGitRepo);
         }
 
         public override void OnRemove()
         {
             homeView.OnOpenRepository -= OnOpenRepositoryCallback;
             homeView.OnRemoveRepository -= OnRemoveRepositoryCallback;
+
+            dispatcher.RemoveListener(AppEvent.SearchGitRepo, OnSearchGitRepo);
 
             base.OnRemove();
         }
@@ -54,6 +60,18 @@ namespace Wanderer.App.Mediator
             database.RemoveRepository(gitPath);
             homeView.SetRepositories(database.GetRepositories());
         }
+
+        private void OnSearchGitRepo(IEvent e)
+        {
+            string gitRepoPath = (string)e.data;
+
+            if (!string.IsNullOrEmpty(gitRepoPath) && Directory.Exists(gitRepoPath) && gitRepoPath.EndsWith(".git"))
+            {
+                database.AddRepository(gitRepoPath);
+                homeView.SetRepositories(database.GetRepositories());
+            }
+        }
+
 
     }
 }

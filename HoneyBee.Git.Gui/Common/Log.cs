@@ -213,37 +213,44 @@ namespace Wanderer
 
         public void Log(int level, string file, int line, string log)
         {
-            m_strBuilder.Clear();
-            m_strBuilder.Append(DateTime.Now.ToString("HH:mm:ss"));
-            m_strBuilder.Append(" | ");
-            string strLevel = ((LogLevel)level).ToString();
-            strLevel = strLevel.Replace("LOG_", "");
-            m_strBuilder.Append(strLevel);
-            if (strLevel.Length < 5)
-            {
-                m_strBuilder.Append(" ");
-            }
-            m_strBuilder.Append(" | ");
-            file = Path.GetFileName(file);
-            m_strBuilder.Append(file);
-            m_strBuilder.Append(":");
-            m_strBuilder.Append(line);
-            m_strBuilder.Append(": ");
-            m_strBuilder.Append(log);
-            this.log = log;
-            fullLog = m_strBuilder.ToString();
-            Console.WriteLine(fullLog);
-
-            if (m_logFieStream!=null)
+            try
             {
                 m_strBuilder.Clear();
-                m_strBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd "));
-                m_strBuilder.Append(fullLog);
-                m_strBuilder.Append("\n");
-                var writeLog = m_strBuilder.ToString();
-                var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
-                //System.IO.File.WriteAllText(m_logPath, writeLog);
-                m_logFieStream.Write(buffer,0, buffer.Length);
+                m_strBuilder.Append(DateTime.Now.ToString("HH:mm:ss"));
+                m_strBuilder.Append(" | ");
+                string strLevel = ((LogLevel)level).ToString();
+                strLevel = strLevel.Replace("LOG_", "");
+                m_strBuilder.Append(strLevel);
+                if (strLevel.Length < 5)
+                {
+                    m_strBuilder.Append(" ");
+                }
+                m_strBuilder.Append(" | ");
+                file = Path.GetFileName(file);
+                m_strBuilder.Append(file);
+                m_strBuilder.Append(":");
+                m_strBuilder.Append(line);
+                m_strBuilder.Append(": ");
+                m_strBuilder.Append(log);
+                this.log = log;
+                fullLog = m_strBuilder.ToString();
+                Console.WriteLine(fullLog);
+
+                if (m_logFieStream != null)
+                {
+                    m_strBuilder.Clear();
+                    m_strBuilder.Append(DateTime.Now.ToString("yyyy-MM-dd "));
+                    m_strBuilder.Append(fullLog);
+                    m_strBuilder.Append("\n");
+                    var writeLog = m_strBuilder.ToString();
+                    var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
+                    //System.IO.File.WriteAllText(m_logPath, writeLog);
+                    m_logFieStream.Write(buffer, 0, buffer.Length);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
             }
         }
 

@@ -9,5 +9,6 @@ namespace Wanderer.App
     public enum AppEvent
     {
         ShowGitRepo,
+        SearchGitRepo,
     }
 }
