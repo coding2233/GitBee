@@ -11,12 +11,12 @@ namespace Wanderer.Common
 {
     public unsafe static class Application
     {
-        public static string version => "1.0.alpha4";
+        public static string version => "1.0.alpha5";
 
         private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
         public static Version GetVersion()
         {
-            return new Version() { Major = 1, Minor = 0, Patch = 4, PreVersion = "alpha" };
+            return new Version() { Major = 1, Minor = 0, Patch = 5, PreVersion = "alpha" };
         }
 
         private static string m_dataPath;
