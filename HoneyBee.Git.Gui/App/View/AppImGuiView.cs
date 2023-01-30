@@ -185,9 +185,9 @@ namespace Wanderer.App.View
         {
             if (ImGui.BeginMainMenuBar())
             {
-                if (ImGui.BeginMenu("File"))
+                if (ImGui.BeginMenu(LuaPlugin.GetText("File")))
                 {
-                    if (ImGui.BeginMenu("New"))
+                    if (ImGui.BeginMenu(LuaPlugin.GetText("New")))
                     {
                         //if (ImGui.MenuItem("Folder Diff"))
                         //{
@@ -197,7 +197,7 @@ namespace Wanderer.App.View
                         //{
                         //    //mainModel.CreateTab<DiffFileWindow>();
                         //}
-                        if (ImGui.MenuItem("Open Repository"))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Open Repository")))
                         {
                             //mainModel.CreateTab<GitRepoWindow>();
                             StandaloneFileBrowser.OpenFolderPanelAsync("Open Repository", "", false, (folders) => {
@@ -215,7 +215,7 @@ namespace Wanderer.App.View
                            
                         }
 
-                        if (ImGui.MenuItem("Search Repository"))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Search Repository")))
                         {
                             //mainModel.CreateTab<GitRepoWindow>();
                             StandaloneFileBrowser.OpenFolderPanelAsync("Search Repository", "", false, (folders) => {
@@ -235,33 +235,33 @@ namespace Wanderer.App.View
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.MenuItem("Preference"))
+                    if (ImGui.MenuItem(LuaPlugin.GetText("Preference")))
                     {
                         m_showPreference = true;
                     }
 
                     ImGui.Separator();
-                    if (ImGui.MenuItem("Exit"))
+                    if (ImGui.MenuItem(LuaPlugin.GetText("Exit")))
                     {
                         Environment.Exit(0);
                     }
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu("Edit"))
+                if (ImGui.BeginMenu(LuaPlugin.GetText("Edit")))
                 {
-                    if (ImGui.BeginMenu("Style"))
+                    if (ImGui.BeginMenu(LuaPlugin.GetText("Style")))
                     {
                         var styleIndex = m_styleColors;
-                        if (ImGui.MenuItem("Light", "", styleIndex == 0))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Light"), "", styleIndex == 0))
                         {
                             styleIndex = 0;
                         }
-                        if (ImGui.MenuItem("Drak", "", styleIndex == 1))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Drak"), "", styleIndex == 1))
                         {
                             styleIndex = 1;
                         }
-                        if (ImGui.MenuItem("Classic", "", styleIndex == 2))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Classic"), "", styleIndex == 2))
                         {
                             styleIndex = 2;
                         }
@@ -280,9 +280,9 @@ namespace Wanderer.App.View
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu("Window"))
+                if (ImGui.BeginMenu(LuaPlugin.GetText("Window")))
                 {
-                    if (ImGui.MenuItem("Home"))
+                    if (ImGui.MenuItem(LuaPlugin.GetText("Home")))
                     {
                         ImGuiView.Create<HomeView>(context, 0);
                     }
@@ -293,9 +293,9 @@ namespace Wanderer.App.View
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu("Help"))
+                if (ImGui.BeginMenu(LuaPlugin.GetText("Help")))
                 {
-                    if (ImGui.MenuItem("About"))
+                    if (ImGui.MenuItem(LuaPlugin.GetText("About")))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
                         try

@@ -10,7 +10,7 @@ namespace Wanderer.Common
     public class LuaPlugin
     {
         private static LuaEnv s_luaEnv;
-
+        private static Dictionary<string, string> s_language;
         internal static void Enable()
         {
             Reload();
@@ -33,6 +33,7 @@ namespace Wanderer.Common
                 s_luaEnv = null;
             }
             s_luaEnv = new LuaEnv();
+            s_language = new Dictionary<string, string>();
             RegisterMethod();
             //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
             //s_luaEnv.DoString("package.cpath=\"lua/debug/?.dll;\"..package.cpath");
@@ -66,6 +67,29 @@ namespace Wanderer.Common
             s_luaEnv.PushString(field);
             s_luaEnv.GetTable(-2);
             double value = s_luaEnv.ToNumber(-1);
+            return value;
+        }
+
+        public static string GetText(string key)
+        {
+            string value;
+            if (!s_language.TryGetValue(key, out value))
+            {
+                s_luaEnv.GetGlobal("Style");
+                s_luaEnv.PushString("Language");
+                s_luaEnv.GetTable(-2);
+                s_luaEnv.PushString(key);
+                s_luaEnv.GetTable(-2);
+                value = s_luaEnv.ToString(-1);
+                if (string.IsNullOrEmpty(value))
+                {
+                    value = key;
+                }
+                else
+                {
+                    s_language.Add(key,value);
+                }
+            }
             return value;
         }
 

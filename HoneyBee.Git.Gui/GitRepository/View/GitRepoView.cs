@@ -170,7 +170,7 @@ namespace Wanderer.GitRepository.View
             {
                 ImGui.BeginTooltip();
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0f);
-                ImGui.TextUnformatted(tip);
+                ImGui.TextUnformatted(LuaPlugin.GetText(tip));
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
             }

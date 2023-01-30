@@ -1,5 +1,8 @@
 ﻿Style = {}
 
+-- 语言
+Style.Language = require("language/zh_cn")
+
 -- 字体
 -- C:\\Windows\\Fonts\\msyh.ttc
 Style.Font = "lua/style/fonts/wqy-microhei.ttc"
@@ -18,7 +21,6 @@ Style.FontSize = 14.0
 -- GetGlyphRangesVietnamese
 -- */*.txt 使用自定义字形范围
 Style.GlyphRanges = "lua/style/chinese.txt"
-
 
 
 
