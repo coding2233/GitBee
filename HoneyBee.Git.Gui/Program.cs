@@ -45,6 +45,12 @@ namespace Wanderer.App
                 ImGui.GetIO().NativePtr->IniFilename = iniFileName;
             }
 
+            string logFilePath = Path.Combine(Application.TempPath, "log.ini");
+            fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
+            {
+                ImGui.GetIO().NativePtr->LogFilename = logFileName;
+            }
+
             //io->ImeWindowHandle = ofGetWin32Window();
             ////Load default font.
             //var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();

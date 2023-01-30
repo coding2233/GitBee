@@ -400,13 +400,41 @@ namespace Wanderer.GitRepository.View
                 {
                     GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
                     {
-                        string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Name}:{branchNode.Name}";
+                        int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/")+1;
+                        string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length- friendlyIndex);
+                        string fetchCmd = $"fetch {branchNode.Data.RemoteName} {friendlyName}:{friendlyName}";
                         ImGui.Text("Confirm whether to fetch the selected branch？");
                         ImGui.Text(fetchCmd);
 
                         if (ImGui.Button("OK"))
                         {
                             GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
+                            return false;
+                        }
+
+                        ImGui.SameLine();
+                        if (ImGui.Button("Cancel"))
+                        {
+                            return false;
+                        }
+                        return true;
+
+                    });
+                }
+
+                if (ImGui.MenuItem("Delete..."))
+                {
+                    GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                    {
+                        int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/") + 1;
+                        string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length - friendlyIndex);
+                        string deleteCmd = $"push {branchNode.Data.RemoteName} --delete {friendlyName}";
+                        ImGui.Text("Confirm whether to delete the selected branch？");
+                        ImGui.Text(deleteCmd);
+
+                        if (ImGui.Button("OK"))
+                        {
+                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, deleteCmd);
                             return false;
                         }
 
