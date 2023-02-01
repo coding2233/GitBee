@@ -2,7 +2,12 @@
 #include "imgui_impl_sdl_opengl3.h"
 
 
-int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
+SDL_Window* CreateWindow()
+{
+
+}
+
+int Create(const char* title,Uint32 window_flags, int window_width, int window_height, SDL_Window* sdl_window,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
 {
 char *glsl_version_;
   
@@ -67,15 +72,29 @@ char *glsl_version_;
     SDL_DisplayMode dm;
     SDL_GetCurrentDisplayMode(0, &dm);
 
+    //SDL_WINDOWPOS_CENTERED   SDL_WINDOWPOS_UNDEFINED
+    //
+    if (window_width == 0)
+    {
+        window_width = dm.w * 0.8;
+    }
+    if (window_height == 0)
+    {
+        window_height = dm.h * 0.8;
+    }
+
     auto window = SDL_CreateWindow(
-        title, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dm.w * 0.8, dm.h * 0.8,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL);
+        title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height,
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL| window_flags);
     // init_window_icon();
     if (!window) {
-        fprintf(stderr, "Error creating lite-xl window: %s", SDL_GetError());
+        fprintf(stderr, "Error creating window: %s", SDL_GetError());
         // exit(1);
         return -1;
     }
+
+    sdl_window = window;
+    //SDL_SetWindowOpacity(window, 0.5f);
 
     auto gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
@@ -196,7 +215,11 @@ char *glsl_version_;
     
 }
 
-
+void SDLSetWindowShow(SDL_Window* sdl_window)
+{
+    SDL_ShowWindow(sdl_window);
+    SDL_MaximizeWindow(sdl_window);
+}
 
 bool LoadTextureFromMemory(const unsigned char* buffer,int size, GLuint* out_texture, int* out_width, int* out_height)
 {

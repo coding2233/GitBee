@@ -207,7 +207,7 @@ namespace Wanderer
             }
             logPath = Path.Combine(logPath, DateTime.Now.ToString("yyyy_MM_dd") + ".txt");
             m_logPath = logPath;
-            m_logFieStream = new FileStream(logPath,FileMode.OpenOrCreate, FileAccess.ReadWrite,FileShare.None);
+            m_logFieStream = new FileStream(logPath,FileMode.OpenOrCreate, FileAccess.ReadWrite,FileShare.ReadWrite);
             m_logFieStream.Position = m_logFieStream.Length;
         }
 

@@ -9,37 +9,124 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using Wanderer.Common;
 using Wanderer;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Threading;
 
 namespace Wanderer.App
 {
     internal unsafe class Program
     {
+
         static void Main(string[] args)
         {
-            try
+            bool showLaunch = false;
+            foreach (string arg in args)
             {
-                var commandArgs = System.Environment.GetCommandLineArgs();
-                Log.Info("Hello, GitBee! \n{0}", commandArgs[0]);
-                LuaPlugin.Enable();
-                int result = Create($"GitBee - {Application.version}", OnImGuiInit, OnImGuiDraw, OnWindowEvent);
-                LuaPlugin.Disable();
+                Log.Info("Hello, GitBee! -------------------- {0}", arg);
+
+                if (arg.Equals("$LAUNCH"))
+                {
+                    showLaunch = true;
+                    break;
+                }
             }
-            catch (System.Exception e)
+
+            if (showLaunch)
             {
-                Log.Error("Program throw system exception: {0}", e);
+                IAppWindow window = new AppLaunchWindow();
+                long sdl_window = 0;
+                Create("", (uint)SDLWindowFlag.SDL_WINDOW_BORDERLESS, 600, 380, &sdl_window, window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
             }
-            finally
+            else
             {
-                Log.ShutDown();
+                //这里做一下保护判断，避免参数错误的无限启动
+                if (args.Length > 0)
+                {
+                    return;
+                }
+
+
+                try
+                {
+                    Process launchProcess = null;
+                    if (System.OperatingSystem.IsWindows())
+                    {
+                        string appExecName = $"{Application.DataPath}/{Assembly.GetExecutingAssembly().GetName().Name}.exe";
+                        if (File.Exists(appExecName))
+                        {
+                            ProcessStartInfo processStartInfo = new ProcessStartInfo();
+                            processStartInfo.FileName = appExecName;
+                            processStartInfo.WorkingDirectory = Application.DataPath;
+                            processStartInfo.Arguments = "$LAUNCH";
+                            processStartInfo.UseShellExecute = true;
+                            launchProcess = Process.Start(processStartInfo);
+                        }
+                    }
+
+                    var commandArgs = System.Environment.GetCommandLineArgs();
+                    Log.Info("Hello, GitBee! \n{0}", commandArgs[0]);
+                    LuaPlugin.Enable();
+                    long sdl_window = 0;
+                    IAppWindow window = new AppMainWindow(launchProcess, &sdl_window);
+                    int result = Create($"GitBee - {Application.version}", (uint)SDLWindowFlag.SDL_WINDOW_HIDDEN, 0, 0, &sdl_window,window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
+                    LuaPlugin.Disable();
+                }
+                catch (System.Exception e)
+                {
+                    Log.Error("Program throw system exception: {0}", e);
+                }
+                finally
+                {
+                    Log.ShutDown();
+                }
             }
         }
 
+        #region native
+        enum SDLWindowFlag:uint
+        {
+            SDL_WINDOW_HIDDEN = 0x00000008,             /**< window is not visible */
+            SDL_WINDOW_BORDERLESS = 0x00000010,         /**< no window decoration */
+        }
 
-        static IntPtr OnImGuiInit()
+        delegate IntPtr IMGUI_INIT_CALLBACK();
+        delegate void IMGUI_DRAW_CALLBACK();
+        delegate void WINDOW_EVENT_CALLBACK(int event_type);
+        [DllImport("iiso3.dll")]
+        extern static int Create(string title,uint flags, int window_width, int window_height, void* sdl_window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
+
+        #endregion
+    }
+
+
+    internal interface IAppWindow
+    {
+        IntPtr OnImGuiInit();
+        void OnImGuiDraw();
+        void OnWindowEvent(int eventType);
+
+    }
+
+    internal unsafe class AppMainWindow: IAppWindow
+    {
+        Process m_launchProcess;
+        long* m_sdlWindow;
+        public AppMainWindow(Process launchProcess,long* sdl_window)
+        {
+            m_sdlWindow = sdl_window;
+            m_launchProcess = launchProcess;
+            if (m_launchProcess != null)
+            {
+
+            }
+        }
+
+        public IntPtr OnImGuiInit()
         {
             var context = ImGui.CreateContext();
-            
-            string iniFilePath = Path.Combine(Application.TempPath,"imgui.ini");
+
+            string iniFilePath = Path.Combine(Application.TempPath, "imgui.ini");
             fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
             {
                 ImGui.GetIO().NativePtr->IniFilename = iniFileName;
@@ -174,17 +261,26 @@ namespace Wanderer.App
 
             //逻辑
             var gitGuiContextView = new AppContextView();
+
+            Console.WriteLine((int)m_sdlWindow);
+            if (m_launchProcess != null)
+            {
+                Thread.Sleep(5000);
+                m_launchProcess.Kill();
+                m_launchProcess = null;
+                SDLSetWindowShow(new IntPtr(m_sdlWindow));
+            }
+
             //字体之类
             return context;
         }
 
-
-        static void OnImGuiDraw()
+        public void OnImGuiDraw()
         {
             ImGuiView.Render();
         }
 
-        static void OnWindowEvent(int eventType)
+        public void OnWindowEvent(int eventType)
         {
             SDL_WindowEventID eventID = (SDL_WindowEventID)eventType;
             if (eventID == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED)
@@ -197,6 +293,7 @@ namespace Wanderer.App
             }
             //Log.Info("OnWindowEvent: {0} {1}", eventID, eventType);
         }
+
 
         #region native
         enum SDL_WindowEventID
@@ -227,13 +324,29 @@ namespace Wanderer.App
             SDL_WINDOWEVENT_DISPLAY_CHANGED
         }
 
-        delegate IntPtr IMGUI_INIT_CALLBACK();
-        delegate void IMGUI_DRAW_CALLBACK();
-        delegate void WINDOW_EVENT_CALLBACK(int event_type);
         [DllImport("iiso3.dll")]
-        extern static int Create(string title, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
-
+        static extern void SDLSetWindowShow(IntPtr sdl_window);
         #endregion
+
+    }
+
+
+    internal unsafe class AppLaunchWindow : IAppWindow
+    {
+        public void OnImGuiDraw()
+        {
+            ImGui.Text("GitBee - A Lightweight Git interface management tool");
+        }
+
+        public IntPtr OnImGuiInit()
+        {
+            var context = ImGui.CreateContext();
+            return context;
+        }
+
+        public void OnWindowEvent(int eventType)
+        {
+        }
     }
 
 }
