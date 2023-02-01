@@ -595,6 +595,10 @@ namespace Wanderer.GitRepository.View
                         }
                     }
                 }
+                else
+                {
+                    commitPatch = m_gitRepo.Diff.Compare<Patch>(null, commit.Tree);
+                }
             }
             return commitPatch;
         }

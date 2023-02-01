@@ -80,13 +80,20 @@ namespace Wanderer.GitRepository.Common
         private HashSet<string> m_textureExtension = new HashSet<string>() { ".jpg", ".png", ".tga", ".bmp", ".psd", ".gif", ".hdr", ".pic" };
         private GLTexture m_oldGLTexture;
         private GLTexture m_newGLTexture;
+        private string m_patchText;
+
         public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
             if (CheckTexture(patchEntryChanges.OldPath) || CheckTexture(patchEntryChanges.Path))
             {
+                m_patchText = patchEntryChanges.Patch;
                 m_oldGLTexture = GetTextureFromBlob(patchEntryChanges.OldOid, gitRepo);
                 m_newGLTexture = GetTextureFromBlob(patchEntryChanges.Oid, gitRepo);
-               
+                if (m_newGLTexture.Image ==IntPtr.Zero 
+                    && (patchEntryChanges.Status == ChangeKind.Added || patchEntryChanges.Status == ChangeKind.Modified))
+                {
+                    m_newGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.Path));
+                }
                 //m_oldGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.OldPath));
                 //m_newGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.Path));
                 return true;
@@ -101,14 +108,22 @@ namespace Wanderer.GitRepository.Common
 
             m_oldGLTexture = default(GLTexture);
             m_newGLTexture = default(GLTexture);
+
+            m_patchText = null;
         }
 
         public void Dispose()
         {
+            Clear();
         }
 
         public void OnDraw()
         {
+            if (!string.IsNullOrEmpty(m_patchText))
+            {
+                ImGui.Text(m_patchText);
+                ImGui.Separator();
+            }
             var targetSize = ImGui.GetWindowSize()*0.5f;
             ImGui.Image(m_oldGLTexture.Image, ResizeImage(m_oldGLTexture.Size, targetSize));
             ImGui.SameLine();
@@ -188,7 +203,9 @@ namespace Wanderer.GitRepository.Common
         }
 
         public void Clear()
-        { }
+        {
+            m_diffTexts.Clear();
+        }
 
         private void BuildDiffTexts(string content)
         {
@@ -270,7 +287,6 @@ namespace Wanderer.GitRepository.Common
             }
         }
 
-
         /// <summary>
         /// 绘制不同的状态
         /// </summary>
@@ -323,7 +339,6 @@ namespace Wanderer.GitRepository.Common
             ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
             ImGui.TextUnformatted(line.Text);
         }
-
 
         private void GetNumberItemWidth(string text)
         {

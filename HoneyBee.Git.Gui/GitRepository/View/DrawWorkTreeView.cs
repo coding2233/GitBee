@@ -271,9 +271,7 @@ namespace Wanderer
                 bool selectableSelected = selected;
                 if (ImGui.Selectable(statusIcon + node.Name, ref selectableSelected))
                 {
-                    var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
-                    var diffContext = patch.Content;
-
+                    var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip==null?null:m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
                     m_diffShowView.Build(patch.FirstOrDefault(),m_gitRepo);
 
                     if (ImGui.GetIO().KeyCtrl)
