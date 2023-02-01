@@ -5,6 +5,7 @@ using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -307,10 +308,33 @@ namespace Wanderer.App.View
                             Log.Warn("Contact {0}", e);
                         }
                     }
-                    //if (ImGui.MenuItem("Contact"))
-                    //{
-                        
-                    //}
+
+                    if (ImGui.BeginMenu(LuaPlugin.GetText("License")))
+                    {
+                        //mainModel.CreateTab<AboutTabWindow>();
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Icon")))
+                        {
+                            try
+                            {
+                                Process.Start("Explorer", "https://www.flaticon.com/free-icon/bee_809154?term=bee&page=1&position=2&origin=search&related_id=809154/");
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Warn("Contact {0}", e);
+                            }
+                        }
+                        ImGui.EndMenu();
+                    }
+
+                    if (ImGui.MenuItem(LuaPlugin.GetText("Issues")))
+                    {
+                        //https://github.com/coding2233/GitBee/issues
+                    }
+
+                    if (ImGui.MenuItem(LuaPlugin.GetText("Report a bug")))
+                    {
+
+                    }
                     ImGui.EndMenu();
                 }
 

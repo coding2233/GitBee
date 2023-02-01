@@ -273,7 +273,7 @@ namespace Wanderer.App
 
             if (m_launchProcess != null)
             {
-                Thread.Sleep(1000);
+                Thread.Sleep(500);
                 m_launchProcess.Kill();
                 m_launchProcess = null;
                 SDLSetWindowShow(m_sdlWindow);
