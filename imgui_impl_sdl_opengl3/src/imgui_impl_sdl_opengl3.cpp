@@ -1,16 +1,11 @@
 
 #include "imgui_impl_sdl_opengl3.h"
 
+ static char* glsl_version_;
 
-SDL_Window* CreateWindow()
+
+SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_height, Uint32 window_flags)
 {
-
-}
-
-int Create(const char* title,Uint32 window_flags, int window_width, int window_height, SDL_Window* sdl_window,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
-{
-char *glsl_version_;
-  
     // Decide GL+GLSL versions
 #ifdef __APPLE__
     // GL 3.2 Core + GLSL 150
@@ -32,41 +27,41 @@ char *glsl_version_;
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) != 0) 
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS | SDL_INIT_GAMECONTROLLER) != 0)
     {
-        std::cout<<"Error initializing sdl: "<<SDL_GetError()<<std::endl;
-        return -1;
+        std::cout << "Error initializing sdl: " << SDL_GetError() << std::endl;
+        return nullptr;
     }
     SDL_EnableScreenSaver();
     SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
     // atexit(SDL_Quit);
 
 #ifdef SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR /* Available since 2.0.8 */
-  SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
+    SDL_SetHint(SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, "0");
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 5)
-  SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
+    SDL_SetHint(SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, "1");
 #endif
- #if SDL_VERSION_ATLEAST(2, 0, 18)
-   SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
- #endif
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+    SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
+#endif
 #if SDL_VERSION_ATLEAST(2, 0, 22)
-  SDL_SetHint(SDL_HINT_IME_SUPPORT_EXTENDED_TEXT, "1");
+    SDL_SetHint(SDL_HINT_IME_SUPPORT_EXTENDED_TEXT, "1");
 #endif
 
 #if SDL_VERSION_ATLEAST(2, 0, 8)
-  /* This hint tells SDL to respect borderless window as a normal window.
-  ** For example, the window will sit right on top of the taskbar instead
-  ** of obscuring it. */
-  SDL_SetHint("SDL_BORDERLESS_WINDOWED_STYLE", "1");
+    /* This hint tells SDL to respect borderless window as a normal window.
+    ** For example, the window will sit right on top of the taskbar instead
+    ** of obscuring it. */
+    SDL_SetHint("SDL_BORDERLESS_WINDOWED_STYLE", "1");
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 12)
-  /* This hint tells SDL to allow the user to resize a borderless windoow.
-  ** It also enables aero-snap on Windows apparently. */
-  SDL_SetHint("SDL_BORDERLESS_RESIZABLE_STYLE", "1");
+    /* This hint tells SDL to allow the user to resize a borderless windoow.
+    ** It also enables aero-snap on Windows apparently. */
+    SDL_SetHint("SDL_BORDERLESS_RESIZABLE_STYLE", "1");
 #endif
 #if SDL_VERSION_ATLEAST(2, 0, 9)
-  SDL_SetHint("SDL_MOUSE_DOUBLE_CLICK_RADIUS", "4");
+    SDL_SetHint("SDL_MOUSE_DOUBLE_CLICK_RADIUS", "4");
 #endif
 
     SDL_DisplayMode dm;
@@ -74,37 +69,41 @@ char *glsl_version_;
 
     //SDL_WINDOWPOS_CENTERED   SDL_WINDOWPOS_UNDEFINED
     //
-    if (window_width == 0)
+    if (window_width <= 0)
     {
         window_width = dm.w * 0.8;
     }
-    if (window_height == 0)
+    if (window_height <= 0)
     {
         window_height = dm.h * 0.8;
     }
 
     auto window = SDL_CreateWindow(
         title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL| window_flags);
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | window_flags);
     // init_window_icon();
     if (!window) {
         fprintf(stderr, "Error creating window: %s", SDL_GetError());
         // exit(1);
-        return -1;
+        return nullptr;
     }
 
-    sdl_window = window;
     //SDL_SetWindowOpacity(window, 0.5f);
 
+    return window;
+}
+
+int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
+{
     auto gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
     // SDL_GL_SetSwapInterval(1); // Enable vsync
 
     //Check if Glew OpenGL loader is correct
     int err = glewInit();
-    if (err!=GLEW_OK)
+    if (err != GLEW_OK)
     {
-        std::cout<<glewGetErrorString(err)<<std::endl;
+        std::cout << glewGetErrorString(err) << std::endl;
         fprintf(stderr, "Failed to initialize OpenGL loader!\n");
         return -1;
     }
@@ -118,7 +117,6 @@ char *glsl_version_;
         imgui_context = ImGui::CreateContext();
     }
     ImGui::SetCurrentContext(imgui_context);
-
     
   //  // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
@@ -211,6 +209,7 @@ char *glsl_version_;
             SDL_GL_SwapWindow(window);
 
         }
+        
      }
     
 }
@@ -218,7 +217,7 @@ char *glsl_version_;
 void SDLSetWindowShow(SDL_Window* sdl_window)
 {
     SDL_ShowWindow(sdl_window);
-    SDL_MaximizeWindow(sdl_window);
+    //SDL_MaximizeWindow(sdl_window);
 }
 
 bool LoadTextureFromMemory(const unsigned char* buffer,int size, GLuint* out_texture, int* out_width, int* out_height)

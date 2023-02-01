@@ -34,9 +34,10 @@ namespace Wanderer.App
 
             if (showLaunch)
             {
-                IAppWindow window = new AppLaunchWindow();
-                long sdl_window = 0;
-                Create("", (uint)SDLWindowFlag.SDL_WINDOW_BORDERLESS, 600, 380, &sdl_window, window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
+                 IAppWindow window = new AppLaunchWindow();
+                //SDLWindowFlag.SDL_WINDOW_ALWAYS_ON_TOP|
+                var sdlWindow = CreateSdlWindow("", 600, 360, (uint)(SDLWindowFlag.SDL_WINDOW_BORDERLESS| SDLWindowFlag.SDL_WINDOW_SKIP_TASKBAR));
+                CreateRender(sdlWindow, window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
             }
             else
             {
@@ -50,6 +51,7 @@ namespace Wanderer.App
                 try
                 {
                     Process launchProcess = null;
+#if !DEBUG
                     if (System.OperatingSystem.IsWindows())
                     {
                         string appExecName = $"{Application.DataPath}/{Assembly.GetExecutingAssembly().GetName().Name}.exe";
@@ -63,13 +65,17 @@ namespace Wanderer.App
                             launchProcess = Process.Start(processStartInfo);
                         }
                     }
-
+#endif
                     var commandArgs = System.Environment.GetCommandLineArgs();
                     Log.Info("Hello, GitBee! \n{0}", commandArgs[0]);
                     LuaPlugin.Enable();
-                    long sdl_window = 0;
-                    IAppWindow window = new AppMainWindow(launchProcess, &sdl_window);
-                    int result = Create($"GitBee - {Application.version}", (uint)SDLWindowFlag.SDL_WINDOW_HIDDEN, 0, 0, &sdl_window,window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
+
+                    uint windowFlag = launchProcess == null ? 0 : (uint)SDLWindowFlag.SDL_WINDOW_HIDDEN;
+                    var sdlWindow = CreateSdlWindow($"GitBee - {Application.version}", 0, 0, windowFlag);
+                    IAppWindow window = new AppMainWindow(launchProcess, sdlWindow);
+
+                    CreateRender(sdlWindow, window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);
+
                     LuaPlugin.Disable();
                 }
                 catch (System.Exception e)
@@ -88,14 +94,17 @@ namespace Wanderer.App
         {
             SDL_WINDOW_HIDDEN = 0x00000008,             /**< window is not visible */
             SDL_WINDOW_BORDERLESS = 0x00000010,         /**< no window decoration */
+            SDL_WINDOW_ALWAYS_ON_TOP = 0x00008000,   /**< window should always be above others */
+            SDL_WINDOW_SKIP_TASKBAR = 0x00010000,   /**< window should not be added to the taskbar */
         }
 
         delegate IntPtr IMGUI_INIT_CALLBACK();
         delegate void IMGUI_DRAW_CALLBACK();
         delegate void WINDOW_EVENT_CALLBACK(int event_type);
         [DllImport("iiso3.dll")]
-        extern static int Create(string title,uint flags, int window_width, int window_height, void* sdl_window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
-
+        extern static IntPtr CreateSdlWindow(string title, int window_width, int window_height, uint flags);
+        [DllImport("iiso3.dll")]
+        extern static int CreateRender(IntPtr sdl_window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_type);
         #endregion
     }
 
@@ -111,10 +120,10 @@ namespace Wanderer.App
     internal unsafe class AppMainWindow: IAppWindow
     {
         Process m_launchProcess;
-        long* m_sdlWindow;
-        public AppMainWindow(Process launchProcess,long* sdl_window)
+        IntPtr  m_sdlWindow;
+        public AppMainWindow(Process launchProcess, IntPtr sdlWindow)
         {
-            m_sdlWindow = sdl_window;
+            m_sdlWindow = sdlWindow;
             m_launchProcess = launchProcess;
             if (m_launchProcess != null)
             {
@@ -262,13 +271,12 @@ namespace Wanderer.App
             //逻辑
             var gitGuiContextView = new AppContextView();
 
-            Console.WriteLine((int)m_sdlWindow);
             if (m_launchProcess != null)
             {
-                Thread.Sleep(5000);
+                Thread.Sleep(1000);
                 m_launchProcess.Kill();
                 m_launchProcess = null;
-                SDLSetWindowShow(new IntPtr(m_sdlWindow));
+                SDLSetWindowShow(m_sdlWindow);
             }
 
             //字体之类
@@ -333,9 +341,35 @@ namespace Wanderer.App
 
     internal unsafe class AppLaunchWindow : IAppWindow
     {
+        private const string m_showTipText = "GitBee - A Lightweight Git interface management tool";
         public void OnImGuiDraw()
         {
-            ImGui.Text("GitBee - A Lightweight Git interface management tool");
+            //tabview
+            var viewport = ImGui.GetMainViewport();
+
+            //mainview
+            ImGui.SetNextWindowPos(viewport.WorkPos);
+            ImGui.SetNextWindowSize(viewport.WorkSize);
+            //ImGui.SetNextWindowViewport(viewport.ID);
+            if (ImGui.Begin("AppLaunchWindow", ImGuiWindowFlags.NoMove| ImGuiWindowFlags.NoResize| ImGuiWindowFlags.NoTitleBar| ImGuiWindowFlags.NoInputs))
+            {
+                float cursorPosX = 0;
+                var glTexture = Application.LoadTextureFromFile("lua/style/launch.png");
+                if (glTexture.Image != IntPtr.Zero)
+                {
+                    Vector2 textureSize = Vector2.One * 128;
+                    cursorPosX = (viewport.WorkSize.X - textureSize.X) * 0.5f;
+                    float cursorPosY = (viewport.WorkSize.Y - (textureSize.Y+ ImGui.GetTextLineHeight()*3)) * 0.5f;
+                    ImGui.SetCursorPosX(cursorPosX);
+                    ImGui.SetCursorPosY(cursorPosY);
+                    ImGui.Image(glTexture.Image, textureSize);
+                }
+                var textSize = ImGui.CalcTextSize(m_showTipText);
+                cursorPosX = (viewport.WorkSize.X - textSize.X) * 0.5f;
+                ImGui.SetCursorPosX(cursorPosX);
+                ImGui.Text(m_showTipText);
+            }
+            ImGui.End();
         }
 
         public IntPtr OnImGuiInit()
