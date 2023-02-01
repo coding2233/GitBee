@@ -2,8 +2,10 @@
 using LibGit2Sharp;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,7 +13,156 @@ using Wanderer.Common;
 
 namespace Wanderer.GitRepository.Common
 {
-    public class ShowDiffText
+    public class DiffShowView:IDisposable
+    {
+        List<IShowDiff> m_showDiffs;
+        IShowDiff m_showDiff;
+
+        public DiffShowView()
+        {
+            m_showDiffs = new List<IShowDiff>();
+            m_showDiffs.Add(new ShowDiffTexture());
+            m_showDiffs.Add(new ShowDiffText());
+        }
+
+        public void Build(PatchEntryChanges patchEntryChanges,GitRepo gitRepo)
+        {
+            if (m_showDiff != null)
+            {
+                m_showDiff.Clear();
+                m_showDiff = null;
+            }
+
+            //查找合适的
+            foreach (var item in m_showDiffs)
+            {
+                if (item.Build(patchEntryChanges,gitRepo))
+                {
+                    m_showDiff = item;
+                    break;
+                }
+            }
+        }
+
+        public void Draw()
+        {
+            if (m_showDiff != null)
+            {
+                m_showDiff.OnDraw();
+            }
+        }
+
+        public void Dispose()
+        {
+            m_showDiff = null;
+            if (m_showDiffs != null)
+            {
+                foreach (var item in m_showDiffs)
+                {
+                    item.Dispose();
+                }
+                m_showDiffs.Clear();
+                m_showDiffs = null;
+            }
+        }
+    }
+
+    
+    public interface IShowDiff: IDisposable
+    {
+        bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo);
+        void Clear();
+        void OnDraw();
+    }
+
+    public class ShowDiffTexture : IShowDiff
+    {
+        private HashSet<string> m_textureExtension = new HashSet<string>() { ".jpg", ".png", ".tga", ".bmp", ".psd", ".gif", ".hdr", ".pic" };
+        private GLTexture m_oldGLTexture;
+        private GLTexture m_newGLTexture;
+        public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
+        {
+            if (CheckTexture(patchEntryChanges.OldPath) || CheckTexture(patchEntryChanges.Path))
+            {
+                m_oldGLTexture = GetTextureFromBlob(patchEntryChanges.OldOid, gitRepo);
+                m_newGLTexture = GetTextureFromBlob(patchEntryChanges.Oid, gitRepo);
+               
+                //m_oldGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.OldPath));
+                //m_newGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.Path));
+                return true;
+            }
+            return false;
+        }
+
+        public void Clear()
+        {
+            Application.DeleteTexture(m_oldGLTexture);
+            Application.DeleteTexture(m_newGLTexture);
+
+            m_oldGLTexture = default(GLTexture);
+            m_newGLTexture = default(GLTexture);
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public void OnDraw()
+        {
+            var targetSize = ImGui.GetWindowSize()*0.5f;
+            ImGui.Image(m_oldGLTexture.Image, ResizeImage(m_oldGLTexture.Size, targetSize));
+            ImGui.SameLine();
+            ImGui.SetCursorPosX(targetSize.X);
+            ImGui.Image(m_newGLTexture.Image, ResizeImage(m_newGLTexture.Size, targetSize));
+        }
+
+        private bool CheckTexture(string texturePath)
+        {
+            string extension = Path.GetExtension(texturePath).ToLower();
+            if (m_textureExtension.Contains(extension))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private GLTexture GetTextureFromBlob(ObjectId objectId,GitRepo gitRepo)
+        {
+            if (objectId != ObjectId.Zero)
+            {
+                var blob = gitRepo.Repo.Lookup<Blob>(objectId);
+                if (blob != null)
+                {
+                    using (var blobStream = blob.GetContentStream())
+                    {
+                        if (blobStream.Length > 0)
+                        {
+                            byte[] buffer = new byte[blobStream.Length];
+                            blobStream.Read(buffer, 0, buffer.Length);
+                            var glTexture = Application.LoadTextureFromMemory(buffer);
+                            return glTexture;
+                        }
+                    }
+                }
+            }
+            return default(GLTexture);
+        }
+
+        private Vector2 ResizeImage(Vector2 textureSize, Vector2 targetSize)
+        {
+            if (textureSize == Vector2.Zero)
+            {
+                return targetSize;
+            }
+
+            var scaleSize = targetSize / textureSize;
+            float scale = Math.Min(scaleSize.X, scaleSize.Y);
+            targetSize = textureSize * scale;
+            return targetSize;
+        }
+    }
+
+    public class ShowDiffText: IShowDiff
     {
         private struct DiffText
         {
@@ -25,12 +176,21 @@ namespace Wanderer.GitRepository.Common
         //private string m_diffContext;
         private float m_diffNumberWidth;
 
-        public void Draw()
+        public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
+        {
+            BuildDiffTexts(patchEntryChanges.Patch);
+            return true;
+        }
+
+        public void OnDraw()
         {
             DrawDiffStatus();
         }
 
-        public void BuildDiffTexts(string content)
+        public void Clear()
+        { }
+
+        private void BuildDiffTexts(string content)
         {
             m_diffNumberWidth = 0;
             m_diffTexts.Clear();
@@ -172,6 +332,10 @@ namespace Wanderer.GitRepository.Common
             {
                 m_diffNumberWidth = textSize.X;
             }
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

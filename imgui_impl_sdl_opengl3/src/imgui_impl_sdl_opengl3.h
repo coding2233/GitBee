@@ -46,6 +46,7 @@ EXPORT_API int Create(const char* title,IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_
 //https://github.com/nothings/stb
 //image loading/decoding from file/memory: JPG, PNG, TGA, BMP, PSD, GIF, HDR, PIC
 EXPORT_API bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height);
+EXPORT_API bool LoadTextureFromMemory(const unsigned char* buffer, int size, GLuint* out_texture, int* out_width, int* out_height);
 EXPORT_API void DeleteTexture(GLuint* out_texture);
 EXPORT_API void MarkDown(const char* text,size_t size);
 

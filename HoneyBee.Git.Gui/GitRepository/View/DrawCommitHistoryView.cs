@@ -31,7 +31,7 @@ namespace Wanderer.GitRepository.View
         private Patch m_selectCommitPatch;
         private PatchEntryChanges m_selectCommitPatchEntry;
 
-        private ShowDiffText m_showDiffText;
+        private DiffShowView m_diffShowView;
         private SplitView m_contentSplitView;
 
         private SplitView m_selectCommitDiffSpliteView;
@@ -52,7 +52,7 @@ namespace Wanderer.GitRepository.View
             m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);
             m_selectCommitTreeSpliteView = new SplitView(SplitView.SplitType.Vertical);
 
-            m_showDiffText = new ShowDiffText();
+            m_diffShowView = new DiffShowView();
 
             m_gitRepo = gitRepo;
             m_plugin = plugin;
@@ -534,10 +534,16 @@ namespace Wanderer.GitRepository.View
             {
                 foreach (var item in m_selectCommitPatch)
                 {
+                    //if (item.IsBinaryComparison)
+                    //{
+                    //    ImGui.Separator();
+                    //    ImGui.Text($"{item.id}");
+                    //    ImGui.Text($"{item.OldPath}");
+                    //}
                     if (ImGui.RadioButton(item.Path, m_selectCommitPatchEntry == item))
                     {
                         m_selectCommitPatchEntry = item;
-                        m_showDiffText.BuildDiffTexts(item.Patch);
+                        m_diffShowView.Build(item,m_gitRepo);
                     }
                 }
             }
@@ -547,7 +553,7 @@ namespace Wanderer.GitRepository.View
         {
             if (m_selectCommitPatchEntry != null)
             {
-                m_showDiffText.Draw();
+                m_diffShowView?.Draw();
             }
         }
 

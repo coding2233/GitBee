@@ -23,7 +23,7 @@ namespace Wanderer
 
         private GitRepo m_gitRepo;
 
-        private ShowDiffText m_showDiffText;
+        private DiffShowView m_diffShowView;
 
         private ImGuiTreeNodeFlags m_nodeDefaultFlags;
 
@@ -40,7 +40,7 @@ namespace Wanderer
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;
-            m_showDiffText = new ShowDiffText();
+            m_diffShowView = new DiffShowView();
             UpdateStatus();
         }
 
@@ -51,7 +51,7 @@ namespace Wanderer
             m_horizontalSplitView.Begin();
             DrawStageStatus();
             m_horizontalSplitView.Separate();
-            m_showDiffText.Draw();
+            m_diffShowView?.Draw();
             m_horizontalSplitView.End();
             ImGui.EndChild();
 
@@ -273,7 +273,8 @@ namespace Wanderer
                 {
                     var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
                     var diffContext = patch.Content;
-                    m_showDiffText.BuildDiffTexts(diffContext);
+
+                    m_diffShowView.Build(patch.FirstOrDefault(),m_gitRepo);
 
                     if (ImGui.GetIO().KeyCtrl)
                     {

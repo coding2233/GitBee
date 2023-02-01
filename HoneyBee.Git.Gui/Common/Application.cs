@@ -131,14 +131,51 @@ namespace Wanderer.Common
 
             return default(GLTexture);
         }
-
         [DllImport("iiso3.dll")]
-        extern static void DeleteTexture(IntPtr out_texture);
+        extern static bool LoadTextureFromMemory(byte* buffer,int size, uint* out_texture, int* out_width, int* out_height);
+        internal static GLTexture LoadTextureFromMemory(byte[] buffer)
+        {
+            if (buffer!=null && buffer.Length>0)
+            {
+                GLTexture glTexture = new GLTexture();
+                uint outTexture;
+                int width;
+                int height;
+                fixed (byte* bufferPtr = buffer)
+                {
+                    if (LoadTextureFromMemory(bufferPtr, buffer.Length, & outTexture, &width, &height))
+                    {
+                        glTexture.Image = new IntPtr(outTexture);
+                        glTexture.Size = new Vector2(width, height);
+                    }
+                }
+                return glTexture;
+            }
+
+            return default(GLTexture);
+        }
+        [DllImport("iiso3.dll")]
+        extern static void DeleteTexture(uint* out_texture);
         internal static void DeleteTexture(GLTexture glTexture)
         {
             if (glTexture.Image != IntPtr.Zero)
             {
-                DeleteTexture(glTexture.Image);
+                HashSet<string> textures = new HashSet<string>();
+                foreach (var item in s_glTextures)
+                {
+                    if (item.Value.Image == glTexture.Image)
+                    {
+                        textures.Add(item.Key);
+                    }
+                }
+
+                foreach (var item in textures)
+                {
+                    s_glTextures.Remove(item);
+                }
+
+                uint outTexture = (uint)glTexture.Image;
+                DeleteTexture(&outTexture);
             }
         }
     }
