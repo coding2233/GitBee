@@ -109,6 +109,12 @@ namespace SFB {
             filterString = filterString.Remove(filterString.Length - 1);
             return filterString;
         }
+
+        public string GetExecFullPath(string name)
+        {
+            return name;
+        }
+
     }
 }
 

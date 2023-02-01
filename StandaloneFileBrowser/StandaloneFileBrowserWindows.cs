@@ -5,6 +5,7 @@ using System.IO;
 using System.Windows.Forms;
 using System.Runtime.InteropServices;
 using Ookii.Dialogs;
+using Microsoft.Win32;
 
 namespace SFB {
     // For fullscreen support
@@ -97,6 +98,8 @@ namespace SFB {
             cb.Invoke(SaveFilePanel(title, directory, defaultName, extensions));
         }
 
+       
+
         // .NET Framework FileDialog Filter format
         // https://msdn.microsoft.com/en-us/library/microsoft.win32.filedialog.filter
         private static string GetFilterFromFileExtensionList(ExtensionFilter[] extensions) {
@@ -130,6 +133,22 @@ namespace SFB {
                 return directory;
             }
             return Path.GetDirectoryName(directoryPath) + Path.DirectorySeparatorChar;
+        }
+
+        public string GetExecFullPath(string name)
+        {
+            //name = GitForWindows
+            var subKey = Registry.LocalMachine.OpenSubKey($"SOFTWARE\\{name}\\", false);
+            if (subKey != null)
+            {
+                var value = subKey.GetValue("InstallPath");
+                if (value != null)
+                {
+                    return (string)value;
+                }
+            }
+
+            return "";
         }
     }
 }

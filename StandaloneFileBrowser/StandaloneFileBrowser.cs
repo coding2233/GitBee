@@ -149,5 +149,10 @@ namespace SFB {
         public static void SaveFilePanelAsync(string title, string directory, string defaultName, ExtensionFilter[] extensions, Action<string> cb) {
             _platformWrapper.SaveFilePanelAsync(title, directory, defaultName, extensions, cb);
         }
+
+        public static string GetExecFullPath(string name)
+        {
+             return _platformWrapper.GetExecFullPath(name);
+        }
     }
 }

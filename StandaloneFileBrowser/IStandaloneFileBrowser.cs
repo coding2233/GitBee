@@ -9,5 +9,7 @@ namespace SFB {
         void OpenFilePanelAsync(string title, string directory, ExtensionFilter[] extensions, bool multiselect, Action<string[]> cb);
         void OpenFolderPanelAsync(string title, string directory, bool multiselect, Action<string[]> cb);
         void SaveFilePanelAsync(string title, string directory, string defaultName, ExtensionFilter[] extensions, Action<string> cb);
+
+        string GetExecFullPath(string name);
     }
 }
