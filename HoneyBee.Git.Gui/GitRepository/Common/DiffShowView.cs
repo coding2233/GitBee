@@ -124,10 +124,12 @@ namespace Wanderer.GitRepository.Common
                 ImGui.Text(m_patchText);
                 ImGui.Separator();
             }
-            var targetSize = ImGui.GetWindowSize()*0.5f;
+
+            float minTargetSize = Math.Min(ImGui.GetWindowWidth(), ImGui.GetWindowHeight()) *0.5f;
+            var targetSize = Vector2.One * minTargetSize;
             ImGui.Image(m_oldGLTexture.Image, ResizeImage(m_oldGLTexture.Size, targetSize));
             ImGui.SameLine();
-            ImGui.SetCursorPosX(targetSize.X);
+            ImGui.SetCursorPosX(ImGui.GetWindowWidth()*0.5f);
             ImGui.Image(m_newGLTexture.Image, ResizeImage(m_newGLTexture.Size, targetSize));
         }
 
