@@ -190,14 +190,12 @@ namespace Wanderer.App.View
                 {
                     if (ImGui.BeginMenu(LuaPlugin.GetText("New")))
                     {
-                        //if (ImGui.MenuItem("Folder Diff"))
-                        //{
-                        //    //mainModel.CreateTab<DiffFolderWindow>();
-                        //}
-                        //if (ImGui.MenuItem("File Diff"))
-                        //{
-                        //    //mainModel.CreateTab<DiffFileWindow>();
-                        //}
+
+                        if (ImGui.MenuItem("Clone"))
+                        {
+                            GitCommandView.RunGitCommandView<CloneGitCommand>();
+                        }
+
                         if (ImGui.MenuItem(LuaPlugin.GetText("Open Repository")))
                         {
                             //mainModel.CreateTab<GitRepoWindow>();

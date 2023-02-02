@@ -98,8 +98,6 @@ namespace SFB {
             cb.Invoke(SaveFilePanel(title, directory, defaultName, extensions));
         }
 
-       
-
         // .NET Framework FileDialog Filter format
         // https://msdn.microsoft.com/en-us/library/microsoft.win32.filedialog.filter
         private static string GetFilterFromFileExtensionList(ExtensionFilter[] extensions) {
