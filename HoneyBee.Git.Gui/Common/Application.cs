@@ -11,13 +11,17 @@ namespace Wanderer.Common
 {
     public unsafe static class Application
     {
-        public static string version => "1.0.alpha5";
-
-        private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
+        private static Version s_version;
         public static Version GetVersion()
         {
-            return new Version() { Major = 1, Minor = 0, Patch = 5, PreVersion = "alpha" };
+            if (string.IsNullOrEmpty(s_version.PreVersion))
+            {
+                s_version= new Version() { Major = 0, Minor = 1, Patch = 5, PreVersion = "alpha" };
+            }
+            return s_version;
         }
+
+        private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
 
         private static string m_dataPath;
         private static string m_userPath;
@@ -192,5 +196,16 @@ namespace Wanderer.Common
         public int Minor;
         public int Patch;
         public string PreVersion;
+
+        public override string ToString()
+        {
+            return $"{Major}.{Minor}.{Patch}";
+        }
+
+        public string ToFullString()
+        {
+            return $"{Major}.{Minor}.{Patch}-{PreVersion}";
+        }
+
     }
 }

@@ -50,7 +50,7 @@ namespace Wanderer.App.Controller
         {
             try
             {
-               
+
                 //https://github.com/woodpecker-ci/woodpecker/releases/latest/download/checksums.txt
 
                 string targetOS = "windows";
@@ -75,6 +75,9 @@ namespace Wanderer.App.Controller
                     var responseContent = await response.Content.ReadAsStringAsync();
                     if (!string.IsNullOrEmpty(responseContent))
                     {
+                        Log.Info(responseContent);
+                        return;
+
                         var resLines = responseContent.Split('\n');
                         if (resLines == null || resLines.Length < 3)
                         {

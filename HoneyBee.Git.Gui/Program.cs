@@ -21,17 +21,22 @@ namespace Wanderer.App
         static void Main(string[] args)
         {
             bool showLaunch = false;
-            foreach (string arg in args)
-            {
-                Log.Info("Hello, GitBee! -------------------- {0}", arg);
 
-                if (arg.Equals("$LAUNCH"))
+            if (args != null && args.Length > 0)
+            {
+                switch (args[0])
                 {
-                    showLaunch = true;
-                    break;
+                    case "$LAUNCH":
+                        showLaunch = true;
+                        break;
+                    case "--version":
+                        Console.Write(Application.GetVersion().ToString());
+                        return;
+                    default:
+                        break;
                 }
             }
-
+            
             if (showLaunch)
             {
                  IAppWindow window = new AppLaunchWindow();
@@ -44,6 +49,7 @@ namespace Wanderer.App
                 //这里做一下保护判断，避免参数错误的无限启动
                 if (args.Length > 0)
                 {
+                    Console.Write("args error.");
                     return;
                 }
 
@@ -71,7 +77,7 @@ namespace Wanderer.App
                     LuaPlugin.Enable();
 
                     uint windowFlag = launchProcess == null ? 0 : (uint)SDLWindowFlag.SDL_WINDOW_HIDDEN;
-                    var sdlWindow = CreateSdlWindow($"GitBee - {Application.version}", 0, 0, windowFlag);
+                    var sdlWindow = CreateSdlWindow($"GitBee - {Application.GetVersion().ToFullString()}", 0, 0, windowFlag);
                     IAppWindow window = new AppMainWindow(launchProcess, sdlWindow);
 
                     CreateRender(sdlWindow, window.OnImGuiInit, window.OnImGuiDraw, window.OnWindowEvent);

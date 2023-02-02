@@ -65,7 +65,7 @@
 		<Content Include="lua/style/icons/*.*" CopyToOutputDirectory="PreserveNewest" />
 		<Content Include="update/*.*" CopyToOutputDirectory="PreserveNewest" />-->
 		<Content Include="lua/**" CopyToOutputDirectory="PreserveNewest" />
-		<Content Include="update/**" CopyToOutputDirectory="PreserveNewest" />
+		<!--<Content Include="update/**" CopyToOutputDirectory="PreserveNewest" />-->
 	</ItemGroup>
 
 	<ItemGroup>

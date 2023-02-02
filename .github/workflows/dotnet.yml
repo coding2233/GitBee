@@ -94,15 +94,18 @@ jobs:
       run: |
         mv windows/runtimes/win-x64 ./ && rm -rf windows/runtimes/ && mkdir -p windows/runtimes && mv win-x64/ windows/runtimes/
         tar -zcf gitbee_windows.tar.gz -C windows/ .
-        git rev-parse HEAD >> checksums.txt
-        git log --pretty=format:"%s" --graph -1 >> checksums.txt
-        echo "\n" >> checksums.txt
+        #git rev-parse HEAD >> checksums.txt
+        #git log --pretty=format:"%s" --graph -1 >> checksums.txt
+        #echo "\n" >> checksums.txt
+        sudo apt update && sudo apt install -y nsis
+        export GITBEE_VERSION=$(git rev-parse HEAD)
+        makensis -DSOURCE_DIR=windows -DBUILD_VERSION=${GITBEE_VERSION} installer.nsi
         md5sum gitbee_windows.tar.gz >> checksums.txt
+        md5sum GitBee_Setup.exe >> checksums.txt
         mkdir gitbee_oss
         mv gitbee_windows.tar.gz gitbee_oss/
+        mv GitBee_Setup.exe gitbee_oss/
         mv checksums.txt gitbee_oss/
-        sudo apt update && sudo apt install -y nsis
-        makensis -DSOURCE_DIR=windows installer.nsi
         ls -alh
 
     - name: Upload to oss
