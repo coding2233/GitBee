@@ -30,6 +30,7 @@ namespace Wanderer.App
                         showLaunch = true;
                         break;
                     case "--version":
+                        LuaPlugin.UpdateVersion();
                         Console.Write(Application.GetVersion().ToString());
                         return;
                     default:
@@ -141,17 +142,17 @@ namespace Wanderer.App
         {
             var context = ImGui.CreateContext();
 
-            string iniFilePath = Path.Combine(Application.TempPath, "imgui.ini");
-            fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
-            {
-                ImGui.GetIO().NativePtr->IniFilename = iniFileName;
-            }
+            //string iniFilePath = Path.Combine(Application.TempDataPath, "imgui.ini");
+            //fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
+            //{
+            //    ImGui.GetIO().NativePtr->IniFilename = iniFileName;
+            //}
 
-            string logFilePath = Path.Combine(Application.TempPath, "log.ini");
-            fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
-            {
-                ImGui.GetIO().NativePtr->LogFilename = logFileName;
-            }
+            //string logFilePath = Path.Combine(Application.TempDataPath, "log.ini");
+            //fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
+            //{
+            //    ImGui.GetIO().NativePtr->LogFilename = logFileName;
+            //}
 
             //io->ImeWindowHandle = ofGetWin32Window();
             ////Load default font.

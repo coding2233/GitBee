@@ -36,7 +36,7 @@ namespace Wanderer.App.Service
 
         public DatabaseService()
         {
-            m_userDbPath = Path.Combine(Application.UserPath, $"userdata.db");
+            m_userDbPath = Path.Combine(Application.TempDataPath, $"userdata.db");
 
             m_repositories = GetCustomerData<List<string>>(dataKey, null);
             if (m_repositories == null)

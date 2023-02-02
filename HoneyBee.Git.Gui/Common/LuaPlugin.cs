@@ -13,7 +13,18 @@ namespace Wanderer.Common
         private static Dictionary<string, string> s_language;
         internal static void Enable()
         {
+            UpdateVersion();
             Reload();
+        }
+
+        internal static void UpdateVersion()
+        {
+            string luaVersionPath = "lua/version.lua";
+            if (File.Exists(luaVersionPath))
+            {
+                string versionText = Application.GetVersion().ToString();
+                File.WriteAllText(luaVersionPath, versionText);
+            }
         }
 
         internal static void Disable()

@@ -42,6 +42,7 @@ jobs:
         dotnet build --no-restore -c Release
         cd ../
         dir HoneyBee.Git.Gui/bin/Release/net6.0
+        HoneyBee.Git.Gui/bin/Release/net6.0/GitBee.exe --version
     - name: Expose as artifact
       uses: actions/upload-artifact@v2
       with:
@@ -98,13 +99,13 @@ jobs:
         #git log --pretty=format:"%s" --graph -1 >> checksums.txt
         #echo "\n" >> checksums.txt
         sudo apt update && sudo apt install -y nsis
-        export GITBEE_VERSION=$(git rev-parse HEAD)
+        export GITBEE_VERSION=$(cat windows/lua/version.lua)
         makensis -DSOURCE_DIR=windows -DBUILD_VERSION=${GITBEE_VERSION} installer.nsi
         md5sum gitbee_windows.tar.gz >> checksums.txt
-        md5sum GitBee_Setup.exe >> checksums.txt
+        md5sum *.exe >> checksums.txt
         mkdir gitbee_oss
         mv gitbee_windows.tar.gz gitbee_oss/
-        mv GitBee_Setup.exe gitbee_oss/
+        mv *.exe gitbee_oss/
         mv checksums.txt gitbee_oss/
         ls -alh
 

@@ -50,13 +50,24 @@
 ; MUI end ------
 
 Name "${PRODUCT_NAME} ${PRODUCT_VERSION}"
-OutFile "GitBee_Setup.exe"
+OutFile "GitBee_${BUILD_VERSION}_Setup.exe"
 InstallDir "$PROGRAMFILES\GitBee"
 InstallDirRegKey HKLM "${PRODUCT_DIR_REGKEY}" ""
 ShowInstDetails show
 ShowUnInstDetails show
 
 Section "MainSection" SEC01
+
+  ; check for .NET 6 properly installed
+  SetRegView 64
+  ReadRegStr $0 HKLM SOFTWARE\dotnet\Setup\InstalledVersions\x64\sharedhost Version
+  IntCmp $0 6 Net6 NoNet6 Net6
+NoNet6:
+  MessageBox MB_OK ".NET 6.0 or later version was NOT found! [$0]"
+  Abort
+Net6:
+  MessageBox MB_OK ".NET 6.0 or later version was found! [$0]"
+
   SetOutPath "$INSTDIR"
   SetOverwrite try
   File /r ${SOURCE_DIR}

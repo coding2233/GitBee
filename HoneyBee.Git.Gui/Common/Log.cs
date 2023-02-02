@@ -200,7 +200,7 @@ namespace Wanderer
         private string m_logPath;
         public DefaultLogger()
         {
-            string logPath = Path.Combine(Application.UserPath, "log");
+            string logPath = Path.Combine(Application.TempDataPath, "log");
             if (!Directory.Exists(logPath))
             {
                 Directory.CreateDirectory(logPath);
