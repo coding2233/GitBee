@@ -65,8 +65,6 @@ Section "MainSection" SEC01
 NoNet6:
   MessageBox MB_OK ".NET 6.0 or later version was NOT found! [$0]"
   Abort
-Net6:
-  MessageBox MB_OK ".NET 6.0 or later version was found! [$0]"
 
   SetOutPath "$INSTDIR"
   SetOverwrite try
