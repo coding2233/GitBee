@@ -314,7 +314,8 @@ namespace Wanderer.App.View
                         {
                             try
                             {
-                                Process.Start("Explorer", "https://www.flaticon.com/free-icon/bee_809154?term=bee&page=1&position=2&origin=search&related_id=809154/");
+                                //"\"https://www.flaticon.com/free-icon/bee_809154?term=bee&page=1&position=2&origin=search&related_id=809154/\""
+                                Process.Start("Explorer", "https://www.flaticon.com/free-icon/bee_809154");
                             }
                             catch (Exception e)
                             {
