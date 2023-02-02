@@ -102,7 +102,7 @@ jobs:
         mv gitbee_windows.tar.gz gitbee_oss/
         mv checksums.txt gitbee_oss/
         sudo apt update && sudo apt install -y nsis
-        makensis /DSOURCE_DIR=windows installer.nsi
+        makensis -DSOURCE_DIR=windows installer.nsi
         ls -alh
 
     - name: Upload to oss
