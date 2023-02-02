@@ -101,8 +101,9 @@ jobs:
         mkdir gitbee_oss
         mv gitbee_windows.tar.gz gitbee_oss/
         mv checksums.txt gitbee_oss/
+        mkdir -p HoneyBee.Git.Gui/bin/x64/Release && mv windows HoneyBee.Git.Gui/bin/x64/Release/net6.0
         sudo apt update && sudo apt install -y nsis
-        makensis /DSOURCE_DIR=windows/ ./installer.nsi
+        makensis installer.nsi
         ls -alh
 
     - name: Upload to oss
