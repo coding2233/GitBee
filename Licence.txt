@@ -1,0 +1,2 @@
+GitBee - A Lightweight Git interface management tool.
+Because it is still under development, it is only for personal testing. Please be careful if there is important data!
