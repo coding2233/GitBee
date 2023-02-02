@@ -103,7 +103,10 @@ jobs:
         mkdir gitbee_oss
         mv gitbee_windows.tar.gz gitbee_oss/
         mv checksums.txt gitbee_oss/
+        apt install -y nsis
         ls -alh gitbee_oss
+        makensis /SOURCE_DIR=windows/ ./installer.nsi
+        ls
 
     - name: Upload to oss
       uses: tvrcgo/upload-to-oss@v0.1.1
