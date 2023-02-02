@@ -93,7 +93,7 @@ jobs:
     - name: Check files
       run: |
         mv windows/runtimes/win-x64 ./ && rm -rf windows/runtimes/ && mkdir -p windows/runtimes && mv win-x64/ windows/runtimes/
-        tar -zcvf gitbee_windows.tar.gz -C windows/ .
+        tar -zcf gitbee_windows.tar.gz -C windows/ .
         git rev-parse HEAD >> checksums.txt
         git log --pretty=format:"%s" --graph -1 >> checksums.txt
         echo "\n" >> checksums.txt
@@ -102,8 +102,8 @@ jobs:
         mv gitbee_windows.tar.gz gitbee_oss/
         mv checksums.txt gitbee_oss/
         sudo apt update && sudo apt install -y nsis
-        makensis --version && makensis /SOURCE_DIR=windows/ ./installer.nsi
-        ls
+        makensis /SOURCE_DIR=windows/ ./installer.nsi
+        ls -alh
 
     - name: Upload to oss
       uses: tvrcgo/upload-to-oss@v0.1.1
