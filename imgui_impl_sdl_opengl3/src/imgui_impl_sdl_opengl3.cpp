@@ -212,6 +212,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
         
      }
     
+     return 0;
 }
 
 void SDLSetWindowShow(SDL_Window* sdl_window)
