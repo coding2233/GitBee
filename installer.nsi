@@ -7,6 +7,10 @@
   !define BUILD_VERSION "1.0.0"
 !endif
 
+!ifndef SOURCE_DIR
+  !define SOURCE_DIR "HoneyBee.Git.Gui\bin\x64\Release\net6.0"
+!endif
+
 ; HM NIS Edit Wizard helper defines
 !define PRODUCT_NAME "GitBee"
 !define PRODUCT_VERSION ${BUILD_VERSION}
@@ -55,7 +59,7 @@ ShowUnInstDetails show
 Section "MainSection" SEC01
   SetOutPath "$INSTDIR"
   SetOverwrite try
-  File /r "HoneyBee.Git.Gui\bin\x64\Release\net6.0\"
+  File /r ${SOURCE_DIR}
 SectionEnd
 
 Section -AdditionalIcons
@@ -79,11 +83,11 @@ SectionEnd
 
 Function un.onUninstSuccess
   HideWindow
-  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) 已成功地从你的计算机移除。"
+  MessageBox MB_ICONINFORMATION|MB_OK "$(^Name) Has been successfully removed from your computer."
 FunctionEnd
 
 Function un.onInit
-  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "你确实要完全移除 $(^Name) ，其及所有的组件？" IDYES +2
+  MessageBox MB_ICONQUESTION|MB_YESNO|MB_DEFBUTTON2 "Do you really want to completely remove $(^Name) and all of its components?" IDYES +2
   Abort
 FunctionEnd
 
