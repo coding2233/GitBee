@@ -59,8 +59,13 @@ ShowUnInstDetails show
 Section "MainSection" SEC01
 
   SetOutPath "$INSTDIR"
-  SetOverwrite try
+  SetOverwrite ifnewer
   File /r ${SOURCE_DIR}
+  
+  CreateDirectory "$SMPROGRAMS\GitBee"
+  CreateShortCut "$SMPROGRAMS\GitBee\GitBee.lnk" "$INSTDIR\GitBee.exe"
+  CreateShortCut "$DESKTOP\GitBee.lnk" "$INSTDIR\GitBee.exe"
+  
 SectionEnd
 
 Section -AdditionalIcons
