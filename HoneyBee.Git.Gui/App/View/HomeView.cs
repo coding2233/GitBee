@@ -80,6 +80,14 @@ namespace Wanderer.App.View
                     {
                         m_readMeText = File.ReadAllText(readMePath);
                     }
+                    else
+                    {
+                        readMePath = Path.Combine(m_selectGitPath, "../docs/README.md");
+                        if (File.Exists(readMePath))
+                        {
+                            m_readMeText = File.ReadAllText(readMePath);
+                        }
+                    }
                 }
 
             }

@@ -16,7 +16,7 @@ namespace Wanderer.Common
         {
             if (string.IsNullOrEmpty(s_version.PreVersion))
             {
-                s_version= new Version() { Major = 0, Minor = 1, Patch = 7, PreVersion = "alpha" };
+                s_version= new Version() { Major = 0, Minor = 1, Patch = 8, PreVersion = "alpha" };
             }
             return s_version;
         }
