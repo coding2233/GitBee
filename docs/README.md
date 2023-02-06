@@ -6,7 +6,7 @@
 默认支持ImGui Dark/Light两种界面样式  
 保持美观、轻量、直观、不崩溃， 希望能坚持下去
 
-|![](images/001.jpg)|![](images/002.jpg)|
+|![](docs/images/001.jpg)|![](docs/images/002.jpg)|
 |:---:|:---:|
 
 
