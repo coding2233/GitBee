@@ -301,10 +301,93 @@ void DeleteTexture(GLuint* out_texture)
     }
 }
 
-void MarkDown(const char* text, size_t size)
+
+void LinkCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    std::string url(data_.link, data_.linkLength);
+    if (!data_.isImage)
+    {
+        ShellExecuteA(NULL, "open", url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+    }
+}
+
+inline ImGui::MarkdownImageData ImageCallback(ImGui::MarkdownLinkCallbackData data_)
+{
+    // In your application you would load an image based on data_ input. Here we just use the imgui font texture.
+    ImTextureID image = ImGui::GetIO().Fonts->TexID;
+    // > C++14 can use ImGui::MarkdownImageData imageData{ true, false, image, ImVec2( 40.0f, 20.0f ) };
+    ImGui::MarkdownImageData imageData;
+    imageData.isValid = true;
+    imageData.useLinkCallback = false;
+    imageData.user_texture_id = image;
+    imageData.size = ImVec2(40.0f, 20.0f);
+
+    // For image resize when available size.x > image width, add
+    ImVec2 const contentSize = ImGui::GetContentRegionAvail();
+    if (imageData.size.x > contentSize.x)
+    {
+        float const ratio = imageData.size.y / imageData.size.x;
+        imageData.size.x = contentSize.x;
+        imageData.size.y = contentSize.x * ratio;
+    }
+
+    return imageData;
+}
+
+static MARKDOWN_HEADING_CALLBACK* heading_callback_;
+void ExampleMarkdownFormatCallback(const ImGui::MarkdownFormatInfo& markdownFormatInfo_, bool start_)
+{
+    // Call the default first so any settings can be overwritten by our implementation.
+    // Alternatively could be called or not called in a switch statement on a case by case basis.
+    // See defaultMarkdownFormatCallback definition for furhter examples of how to use it.
+    ImGui::defaultMarkdownFormatCallback(markdownFormatInfo_, start_);
+
+    switch (markdownFormatInfo_.type)
+    {
+        // example: change the colour of heading level 2
+    case ImGui::MarkdownFormatType::HEADING:
+    {
+        if (heading_callback_)
+        {
+            heading_callback_(markdownFormatInfo_.level, start_);
+        }
+        /*if (markdownFormatInfo_.level == 2)
+        {
+            if (start_)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+            }
+            else
+            {
+                ImGui::PopStyleColor();
+            }
+        }*/
+        break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+}
+void MarkDown(const char* text, size_t size, ImGui::MarkdownImageCallback *image_callback, MARKDOWN_HEADING_CALLBACK* heading_callback)
 {
     static ImGui::MarkdownConfig mdConfig;
-    ImGui::Markdown(text,size, mdConfig);
+
+    heading_callback_ = heading_callback;
+    mdConfig.linkCallback = LinkCallback;
+    mdConfig.tooltipCallback = NULL;
+    mdConfig.imageCallback = image_callback;
+    //mdConfig.linkIcon = ICON_FA_LINK;
+    //mdConfig.headingFormats[0] = { H1, true };
+    //mdConfig.headingFormats[1] = { H2, true };
+    //mdConfig.headingFormats[2] = { H3, false };
+    mdConfig.userData = NULL;
+    mdConfig.formatCallback = ExampleMarkdownFormatCallback;
+
+    //ImGui::Markdown(text,size, mdConfig);
+
+    ImGui::Markdown(text, size, mdConfig);
 }
 
 

@@ -25,7 +25,6 @@ namespace Wanderer.App.View
 
         private string m_selectGitPath;
         private string m_selectGitName;
-        private string m_readMeText;
 
         internal Action<string> OnOpenRepository;
         internal Action<string> OnRemoveRepository;
@@ -74,20 +73,18 @@ namespace Wanderer.App.View
                     m_selectGitPath = m_repositories[index];
                     m_selectGitName = m_repositoriesName[index];
                     //README.md
-                    m_readMeText = null;
                     string readMePath = Path.Combine(m_selectGitPath, "../README.md");
-                    if (File.Exists(readMePath))
-                    {
-                        m_readMeText = File.ReadAllText(readMePath);
-                    }
-                    else
+
+                    if (!File.Exists(readMePath))
                     {
                         readMePath = Path.Combine(m_selectGitPath, "../docs/README.md");
-                        if (File.Exists(readMePath))
-                        {
-                            m_readMeText = File.ReadAllText(readMePath);
-                        }
                     }
+
+                    if (File.Exists(readMePath))
+                    {
+                        ImGuiMarkDown.SetMarkdownPath(readMePath);
+                    }
+
                 }
 
             }
@@ -153,15 +150,15 @@ namespace Wanderer.App.View
 
                 ImGui.Separator();
 
-                if (string.IsNullOrEmpty(m_readMeText))
+                if (ImGuiMarkDown.IsValid)
                 {
-                    ImGui.Text("No README.md");
+                    ImGui.BeginChild("Home-OnRepositoryContentDraw-README");
+                    ImGuiMarkDown.Render();
+                    ImGui.EndChild();
                 }
                 else
                 {
-                    ImGui.BeginChild("Home-OnRepositoryContentDraw-README");
-                    ImGui.Text(m_readMeText);
-                    ImGui.EndChild();
+                    ImGui.Text("No README.md");
                 }
             }
         }

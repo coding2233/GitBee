@@ -51,7 +51,9 @@ EXPORT_API void SDLSetWindowShow(SDL_Window* sdl_window);
 EXPORT_API bool LoadTextureFromFile(const char* filename, GLuint* out_texture, int* out_width, int* out_height);
 EXPORT_API bool LoadTextureFromMemory(const unsigned char* buffer, int size, GLuint* out_texture, int* out_width, int* out_height);
 EXPORT_API void DeleteTexture(GLuint* out_texture);
-EXPORT_API void MarkDown(const char* text,size_t size);
+
+typedef void MARKDOWN_HEADING_CALLBACK(int level,bool start);
+EXPORT_API void MarkDown(const char* text, size_t size, ImGui::MarkdownImageCallback* image_callback, MARKDOWN_HEADING_CALLBACK* heading_callback);
 
 
 EXPORT_API void SetClipboard(const char* text);
