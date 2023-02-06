@@ -1,2 +1,6 @@
 GitBee - A Lightweight Git interface management tool.
 Because it is still under development, it is only for personal testing. Please be careful if there is important data!
+
+Before using the software, please install the following software in font form:
+https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/runtime-desktop-6.0.13-windows-x64-installer
+https://github.com/git-for-windows/git/releases/download/v2.39.1.windows.1/Git-2.39.1-64-bit.exe
