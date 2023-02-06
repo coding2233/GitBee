@@ -285,10 +285,21 @@ namespace Wanderer.App.View
                     {
                         ImGuiView.Create<HomeView>(context, 0);
                     }
-                    //if (ImGui.MenuItem("Terminal Window"))
-                    //{
-                    //    //mainModel.CreateTab<TerminalWindow>();
-                    //}
+
+                    if (ImGui.BeginMenu("Debug"))
+                    {
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Material Icons")))
+                        {
+                            ImGuiView.Create<MaterialIconsView>(context, 0);
+                        }
+
+                        ImGui.EndMenu();
+                    }
+
+                    if (ImGui.MenuItem("Terminal"))
+                    {
+                        GitCommandView.ShowTerminal(null);
+                    }
                     ImGui.EndMenu();
                 }
 

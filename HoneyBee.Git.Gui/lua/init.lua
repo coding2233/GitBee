@@ -14,7 +14,8 @@ print("hello init.lua")
 --print("package.path",package.path)
 --print("package.cpath",package.cpath)
 
---require("mobdebug").start()
+-- to debug a script, add the following line to it:
+-- require("mobdebug").start()
 
 require "style"
 

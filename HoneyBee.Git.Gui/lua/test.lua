@@ -15,6 +15,8 @@ end
 ]]--
 
 
+--[[
+
 local dbg = require("debugger")
 
 print[[
@@ -49,3 +51,6 @@ print[[
 	Once you've tried the where command, type 's' to step to
 	the next line. (s = Step to the next executable line)
 ]]
+
+
+]]--
