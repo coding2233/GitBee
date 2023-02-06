@@ -98,47 +98,51 @@ namespace Wanderer.App.Controller
                                 string localVersion = $"GitBee_{Application.GetVersion()}_Setup.exe";
                                 if (!string.IsNullOrEmpty(remoteVersion) && !localVersion.Equals(remoteVersion))
                                 {
-                                    string dialogContent = "Confirm the update.";
-                                    AppImGuiView.DisplayDialog("GitBee has a new version", dialogContent, "OK", "Cancel", async (dialogContentResult) => {
-                                        if (dialogContentResult)
-                                        {
-                                            targetPath = $"{remoteUrl}/{remoteVersion}";
-                                            response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), targetPath));
-                                            if (response.StatusCode == HttpStatusCode.OK)
-                                            {
-                                                var bytes = await response.Content.ReadAsByteArrayAsync();
-                                                if (bytes != null)
-                                                {
-                                                    string md5 = Application.GetBytesMd5(bytes);
-                                                    Log.Info("Check update download md5: {0} {1}", remoteMd5, md5);
-                                                    if (md5.Equals(remoteMd5))
-                                                    {
-                                                        string localTargetPath = Path.Combine(Application.TempDataPath, remoteVersion);
-                                                        if (File.Exists(localTargetPath))
-                                                        {
-                                                            File.Delete(localTargetPath);
-                                                        }
-                                                        File.WriteAllBytes(localTargetPath, bytes);
+                                    Application.UpdateDownloadURL = $"{remoteUrl}/{remoteVersion}".Replace("\\","/");
 
-                                                        Process.Start(localTargetPath);
+                                    //string dialogContent = "Confirm the update.";
+                                    //AppImGuiView.DisplayDialog("GitBee has a new version", dialogContent, "OK", "Cancel", async (dialogContentResult) => {
+                                    //    if (dialogContentResult)
+                                    //    {
+                                    //        targetPath = $"{remoteUrl}/{remoteVersion}";
+                                    //        response = await httpClient.SendAsync(new HttpRequestMessage(new HttpMethod("GET"), targetPath));
+                                    //        if (response.StatusCode == HttpStatusCode.OK)
+                                    //        {
+                                    //            var bytes = await response.Content.ReadAsByteArrayAsync();
+                                    //            if (bytes != null)
+                                    //            {
+                                    //                string md5 = Application.GetBytesMd5(bytes);
+                                    //                Log.Info("Check update download md5: {0} {1}", remoteMd5, md5);
+                                    //                if (md5.Equals(remoteMd5))
+                                    //                {
+                                    //                    string localTargetPath = Path.Combine(Application.TempDataPath, remoteVersion);
+                                    //                    if (File.Exists(localTargetPath))
+                                    //                    {
+                                    //                        File.Delete(localTargetPath);
+                                    //                    }
+                                    //                    File.WriteAllBytes(localTargetPath, bytes);
 
-                                                        //退出当前程序
-                                                        System.Environment.Exit(0);
-                                                    }
-                                                }
-                                                else
-                                                {
-                                                    Log.Warn("Check update download error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
-                                                }
-                                            }
-                                            else
-                                            {
-                                                Log.Warn("Check update download network error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
-                                            }
+                                    //                    Process.Start(localTargetPath);
 
-                                        }
+                                    //                    //退出当前程序
+                                    //                    System.Environment.Exit(0);
+                                    //                }
+                                    //            }
+                                    //            else
+                                    //            {
+                                    //                Log.Warn("Check update download error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
+                                    //            }
+                                    //        }
+                                    //        else
+                                    //        {
+                                    //            Log.Warn("Check update download network error. {0} -> {1} -> {2}", targetPath, responseContent, targetLine);
+                                    //        }
 
-                                    });
+                                    //    }
+
+                                    //});
+
+
                                 }
                             }
                         }

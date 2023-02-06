@@ -303,8 +303,23 @@ namespace Wanderer.App.View
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu(LuaPlugin.GetText("Help")))
+
+                string helpText = LuaPlugin.GetText("Help");
+                if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
                 {
+                    helpText += Icon.Get(Icon.Material_tips_and_updates);
+                }
+
+                if (ImGui.BeginMenu(helpText))
+                {
+                    if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
+                    {
+                        if (ImGui.MenuItem("Update"+ Icon.Get(Icon.Material_tips_and_updates)))
+                        {
+                            Process.Start("Explorer", Application.UpdateDownloadURL);
+                        }
+                    }
+
                     if (ImGui.MenuItem(LuaPlugin.GetText("About")))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();

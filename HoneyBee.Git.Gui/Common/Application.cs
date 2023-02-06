@@ -28,6 +28,8 @@ namespace Wanderer.Common
         private static string m_tempPath;
         private static string m_tempDataPath;
 
+        internal static string UpdateDownloadURL;
+
         public static string DataPath
         {
             get
