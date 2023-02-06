@@ -79,7 +79,10 @@ namespace Wanderer
             if (!s_textures.TryGetValue(linkPtr, out glTexture))
             {
                 string linkPath = System.Text.Encoding.UTF8.GetString(imageLinkData.link, imageLinkData.linkLength);
-                linkPath = Path.Combine(s_mdPathRoot, linkPath);
+                if (!linkPath.StartsWith("http"))
+                {
+                    linkPath = Path.Combine(s_mdPathRoot, linkPath);
+                }
                 glTexture = Application.LoadTextureFromFile(linkPath);
                 s_textures.Add(linkPtr, glTexture);
             }

@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -16,12 +18,13 @@ namespace Wanderer.Common
         {
             if (string.IsNullOrEmpty(s_version.PreVersion))
             {
-                s_version= new Version() { Major = 0, Minor = 1, Patch = 9, PreVersion = "alpha" };
+                s_version= new Version() { Major = 0, Minor = 1, Patch = 10, PreVersion = "alpha" };
             }
             return s_version;
         }
 
         private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
+        private static Dictionary<string, string> s_networkGLTextures = new Dictionary<string, string>();
 
         private static string m_dataPath;
         private static string m_userPath;
@@ -116,9 +119,10 @@ namespace Wanderer.Common
             return fileMD5;
         }
 
+      
         //internal static GLTexture GetIcon(string name, bool folder)
         //{
-            
+
         //}
 
         [DllImport("iiso3.dll")]
@@ -135,7 +139,24 @@ namespace Wanderer.Common
                 GLTexture glTexture;
                 if (!s_glTextures.TryGetValue(fileName, out glTexture))
                 {
-                    if (File.Exists(fileName))
+                    string texturePath = fileName;
+                    if (fileName.StartsWith("http"))
+                    {
+                        if (!s_networkGLTextures.TryGetValue(fileName, out texturePath))
+                        {
+                            string urlMD5 = Application.GetStringMd5(fileName);
+                            texturePath = Path.Combine(TempDataPath, $"{urlMD5}{Path.GetExtension(fileName)}");
+                            if (!File.Exists(urlMD5))
+                            {
+                                TaskQueue.DownloadNetworkTexture(fileName, texturePath);
+                            }
+                          
+                            s_networkGLTextures.Add(fileName, texturePath);
+                        }
+                        
+                    }
+
+                    if (File.Exists(texturePath))
                     {
                         glTexture = new GLTexture();
                         uint outTexture;
