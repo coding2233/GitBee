@@ -86,19 +86,28 @@ namespace Wanderer.Common
             string value;
             if (!s_language.TryGetValue(key, out value))
             {
-                s_luaEnv.GetGlobal("Style");
-                s_luaEnv.PushString("Language");
-                s_luaEnv.GetTable(-2);
-                s_luaEnv.PushString(key);
-                s_luaEnv.GetTable(-2);
-                value = s_luaEnv.ToString(-1);
-                if (string.IsNullOrEmpty(value))
+                try
                 {
-                    value = key;
+                    s_luaEnv.GetGlobal("Style");
+                    s_luaEnv.PushString("Language");
+                    s_luaEnv.GetTable(-2);
+                    s_luaEnv.PushString(key);
+                    s_luaEnv.GetTable(-2);
+                    value = s_luaEnv.ToString(-1);
+                    if (string.IsNullOrEmpty(value))
+                    {
+                        value = key;
+                    }
+                    else
+                    {
+                        s_language.Add(key, value);
+                    }
                 }
-                else
+                catch (Exception e)
                 {
-                    s_language.Add(key,value);
+                    Log.Info("Language not find key: {0}  {1}",key,e);
+                    value = key;
+                    s_language.Add(key, value);
                 }
             }
             return value;
