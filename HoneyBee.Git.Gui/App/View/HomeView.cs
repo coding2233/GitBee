@@ -59,8 +59,11 @@ namespace Wanderer.App.View
                 }
             }
 
-            //选择默认的
-            SelectRepo(0);
+            if (string.IsNullOrEmpty(m_selectGitPath))
+            {
+                //选择默认的
+                SelectRepo(0);
+            }
         }
 
 

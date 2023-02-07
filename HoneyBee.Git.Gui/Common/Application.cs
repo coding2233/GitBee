@@ -146,7 +146,7 @@ namespace Wanderer.Common
                         {
                             string urlMD5 = Application.GetStringMd5(fileName);
                             texturePath = Path.Combine(TempDataPath, $"{urlMD5}{Path.GetExtension(fileName)}");
-                            if (!File.Exists(urlMD5))
+                            if (!File.Exists(texturePath))
                             {
                                 TaskQueue.DownloadNetworkTexture(fileName, texturePath);
                             }
@@ -162,7 +162,7 @@ namespace Wanderer.Common
                         uint outTexture;
                         int width;
                         int height;
-                        if (LoadTextureFromFile(fileName, &outTexture, &width, &height))
+                        if (LoadTextureFromFile(texturePath, &outTexture, &width, &height))
                         {
                             glTexture.Image = new IntPtr(outTexture);
                             glTexture.Size = new Vector2(width, height);
