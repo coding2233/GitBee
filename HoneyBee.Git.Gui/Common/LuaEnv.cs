@@ -10,10 +10,10 @@ namespace Wanderer
 {
     unsafe internal class LuaEnv : IDisposable
     {
-        private const int LUA_REGISTRYINDEX = -10000;
-        private const int LUA_ENVIRONINDEX = -10001;
-        private const int LUA_GLOBALSINDEX = -10002;
-        private const int LUA_MULTRET = -1;
+        internal const int LUA_REGISTRYINDEX = -10000;
+        internal const int LUA_ENVIRONINDEX = -10001;
+        internal const int LUA_GLOBALSINDEX = -10002;
+        internal const int LUA_MULTRET = -1;
 
         private IntPtr m_luaState;
 
@@ -101,10 +101,28 @@ namespace Wanderer
             GetField(LUA_GLOBALSINDEX,name);
         }
 
-        internal void Call(string name)
+        internal int Call(string name,int nresult = LUA_MULTRET, params object[] args)
         {
             GetGlobal(name);
-            lua_pcall(m_luaState, 0, LUA_MULTRET, 0);
+            int narg = 0;
+            if (args != null)
+            {
+                foreach (var item in args)
+                {
+                    narg++;
+                    if (item is string)
+                    {
+                        PushString((string)item);
+                    }
+                    else if (item is int || item is float || item is double || item is long)
+                    {
+                        PushNumber((double)item);
+                    }
+                }
+            }
+            int result= lua_pcall(m_luaState, narg, nresult, 0);
+
+            return result;
         }
 
         internal void GetField(int idx, string name)

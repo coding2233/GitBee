@@ -21,6 +21,3 @@ Style.FontSize = 14.0
 -- GetGlyphRangesVietnamese
 -- */*.txt 使用自定义字形范围
 Style.GlyphRanges = "lua/style/chinese.txt"
-
-
-

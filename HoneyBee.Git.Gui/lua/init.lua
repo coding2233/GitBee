@@ -15,17 +15,13 @@ print("hello init.lua")
 --print("package.cpath",package.cpath)
 
 -- to debug a script, add the following line to it:
--- require("mobdebug").start()
+ require("mobdebug").start()
 
 require "style"
+require "icon"
 
 --print(cimgui)
 print("Style",Style)
-
-for k,v in pairs(Style) do
-	print(k,v)
-end
-
 
 print("lua enable success")
 

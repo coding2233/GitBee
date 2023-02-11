@@ -18,7 +18,7 @@ namespace Wanderer.Common
         {
             if (string.IsNullOrEmpty(s_version.PreVersion))
             {
-                s_version= new Version() { Major = 0, Minor = 1, Patch = 10, PreVersion = "alpha" };
+                s_version= new Version() { Major = 0, Minor = 1, Patch = 11, PreVersion = "alpha" };
             }
             return s_version;
         }
@@ -32,6 +32,8 @@ namespace Wanderer.Common
         private static string m_tempDataPath;
 
         internal static string UpdateDownloadURL;
+
+        internal const float FontOffset = 3.0f;
 
         public static string DataPath
         {

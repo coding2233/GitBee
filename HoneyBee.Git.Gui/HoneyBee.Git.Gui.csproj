@@ -69,7 +69,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="update\" />
+	  <Folder Include="Icons\" />
+	  <Folder Include="lua\style\icons\" />
 	</ItemGroup>
 
 </Project>

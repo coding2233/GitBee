@@ -178,7 +178,11 @@ namespace Wanderer
             if (node.Children != null && node.Children.Count > 0)
             {
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected : m_nodeDefaultFlags;
-                node.NodeOpened = ImGui.TreeNodeEx(node.Name, nodeFlag);
+
+                var folderIconPos =ImGui.GetWindowPos()+ ImGui.GetCursorPos()+new Vector2(ImGui.GetTextLineHeight(),-ImGui.GetScrollY() + Application.FontOffset);
+                var folderIconPosMax = folderIconPos + new Vector2(ImGui.GetTextLineHeight()*2, ImGui.GetTextLineHeight());
+
+                node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
                 if (ImGui.IsItemClicked())
                 {
                     if (!ImGui.IsItemToggledOpen())
@@ -226,6 +230,9 @@ namespace Wanderer
                     }
                 }
 
+                //文件夹图标
+                ImGui.GetWindowDrawList().AddImage(node.NodeOpened? LuaPlugin.GetFolderIcon("default_folder_opened").Image: LuaPlugin.GetFolderIcon("default_folder").Image, folderIconPos, folderIconPosMax);
+
                 if (node.NodeOpened)
                 {
                     foreach (var item in node.Children)
@@ -238,41 +245,84 @@ namespace Wanderer
             else
             {
                 var statusEntry = node.Data;
+                string stateStr = statusEntry.State.ToString();
+                uint textColor = 0;
                 string statusIcon = Icon.Get(Icon.Material_question_mark);
                 switch (statusEntry.State)
                 {
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_fiber_new);
+                        textColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0, 1, 0, 1));
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
                         statusIcon = Icon.Get(Icon.Material_delete);
+                        textColor = ImGui.GetColorU32(ImGuiCol.TextDisabled);
                         break;
                     case FileStatus.RenamedInIndex:
                     case FileStatus.RenamedInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_edit_note);
+                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
                         break;
                     case FileStatus.ModifiedInIndex:
                     case FileStatus.ModifiedInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_update);
+                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
                         break;
                     case FileStatus.TypeChangeInIndex:
                     case FileStatus.TypeChangeInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_change_circle);
+                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
                         break;
                     case FileStatus.Conflicted:
                         statusIcon = Icon.Get(Icon.Material_warning);
+                        textColor = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 1));
                         break;
                     default:
                         break;
                 }
 
+                //ImGui.Image(Application.LoadTextureFromFile("lua/style/icons/default_file.png").Image, new Vector2(ImGui.GetTextLineHeight() * 2.0f, ImGui.GetTextLineHeight()));
+                //ImGui.SameLine();
+
+                var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
+                var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
                 bool selectableSelected = selected;
-                if (ImGui.Selectable(statusIcon + node.Name, ref selectableSelected))
+
+                if (stateStr.StartsWith("Delete"))
                 {
-                    var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip==null?null:m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
-                    m_diffShowView.Build(patch.FirstOrDefault(),m_gitRepo);
+                    //ImGui.BeginDisabled();
+                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled));
+                }
+
+                var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
+            
+                if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
+                {
+                    ImGui.TreePop();
+                }
+
+                //文件图标
+                ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
+
+                if (stateStr.StartsWith("Delete"))
+                {
+                    ImGui.PopStyleColor();
+                    //var heightInterval = (ImGui.GetItemRectMax().Y - ImGui.GetItemRectMin().Y) * 0.5f;
+                    //ImGui.GetWindowDrawList().AddLine(ImGui.GetItemRectMin()+new Vector2(0, heightInterval), ImGui.GetItemRectMax()-new Vector2(0, heightInterval),ImGui.GetColorU32(ImGuiCol.TextDisabled));
+                }
+
+
+                if (ImGui.IsItemHovered())
+                {
+                    ImGui.SetTooltip(stateStr);
+                }
+
+                if (ImGui.IsItemClicked())
+                {
+                    var patch = m_gitRepo.Diff.Compare<Patch>(m_gitRepo.Repo.Head.Tip == null ? null : m_gitRepo.Repo.Head.Tip.Tree, DiffTargets.Index | DiffTargets.WorkingDirectory, new List<string>() { statusEntry.FilePath });
+                    m_diffShowView.Build(patch.FirstOrDefault(), m_gitRepo);
 
                     if (ImGui.GetIO().KeyCtrl)
                     {
@@ -315,6 +365,7 @@ namespace Wanderer
                         selectNodes.Add(node);
                     }
                 }
+
             }
 
         }

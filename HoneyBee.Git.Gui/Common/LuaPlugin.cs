@@ -11,6 +11,9 @@ namespace Wanderer.Common
     {
         private static LuaEnv s_luaEnv;
         private static Dictionary<string, string> s_language;
+        private static Dictionary<string, GLTexture> s_folderIcons;
+        private static Dictionary<string, GLTexture> s_fileIcons;
+
         internal static void Enable()
         {
             UpdateVersion();
@@ -20,11 +23,9 @@ namespace Wanderer.Common
         internal static void UpdateVersion()
         {
             string luaVersionPath = "lua/version.lua";
-            if (File.Exists(luaVersionPath))
-            {
-                string versionText = Application.GetVersion().ToString();
-                File.WriteAllText(luaVersionPath, versionText);
-            }
+            string versionText = Application.GetVersion().ToString();
+            luaVersionPath = Path.Combine(Application.DataPath, luaVersionPath);
+            File.WriteAllText(luaVersionPath, versionText);
         }
 
         internal static void Disable()
@@ -45,6 +46,8 @@ namespace Wanderer.Common
             }
             s_luaEnv = new LuaEnv();
             s_language = new Dictionary<string, string>();
+            s_folderIcons= new Dictionary<string, GLTexture>();
+            s_fileIcons= new Dictionary<string, GLTexture>();
             RegisterMethod();
             //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
             //s_luaEnv.DoString("package.cpath=\"lua/debug/?.dll;\"..package.cpath");
@@ -111,6 +114,55 @@ namespace Wanderer.Common
                 }
             }
             return value;
+        }
+
+        public static GLTexture GetFolderIcon(string folderName)
+        {
+            try
+            {
+                GLTexture folderIcon;
+                if (!s_folderIcons.TryGetValue(folderName, out folderIcon))
+                {
+                    s_luaEnv.Call("GetFolderIcon", 1, folderName);
+                    string iconPath = s_luaEnv.ToString(-1);
+                    folderIcon = Application.LoadTextureFromFile(iconPath);
+                    s_folderIcons.Add(folderName, folderIcon);
+                }
+                return folderIcon;
+            }
+            catch (Exception e)
+            {
+                Log.Info("GetFolderIcon error. {0} {1}", folderName,e);
+            }
+            return default(GLTexture);
+        }
+
+        public static GLTexture GetFileIcon(string fileName)
+        {
+            try
+            {
+                string fileExtension = Path.GetExtension(fileName);
+                if (fileExtension == null)
+                {
+                    fileExtension = "";
+                }
+
+                GLTexture fileIcon;
+                if (!s_fileIcons.TryGetValue(fileExtension, out fileIcon))
+                {
+                    s_luaEnv.Call("GetFileIcon", 1, fileExtension);
+                    string iconPath = s_luaEnv.ToString(-1);
+                    fileIcon = Application.LoadTextureFromFile(iconPath);
+                    s_fileIcons.Add(fileExtension, fileIcon);
+                }
+                return fileIcon;
+            }
+            catch (Exception e)
+            {
+                Log.Info("GetFileIcon error. {0} {1}", fileName, e);
+            }
+
+            return default(GLTexture);
         }
 
         private static void RegisterMethod()

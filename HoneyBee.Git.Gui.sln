@@ -9,9 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StrangeIoc", "StrangeIoc\St
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StandaloneFileBrowser", "StandaloneFileBrowser\StandaloneFileBrowser.csproj", "{5171EB26-F16F-4A74-8A3A-3268ED0990EE}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ExtractUpdateFiles", "ExtractUpdateFiles\ExtractUpdateFiles.csproj", "{2585754D-37AE-48DB-A287-32F8F3F681EC}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HoneyBee.Git", "HoneyBee.Git\HoneyBee.Git.csproj", "{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HoneyBee.Git", "HoneyBee.Git\HoneyBee.Git.csproj", "{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -45,14 +43,6 @@ Global
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|x64.ActiveCfg = Release|x64
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|x64.Build.0 = Release|x64
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Debug|x64.Build.0 = Debug|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Release|x64.ActiveCfg = Release|Any CPU
-		{2585754D-37AE-48DB-A287-32F8F3F681EC}.Release|x64.Build.0 = Release|Any CPU
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Debug|x64.ActiveCfg = Debug|Any CPU
