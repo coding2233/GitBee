@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.NetworkInformation;
 using System.Numerics;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
@@ -90,7 +91,7 @@ namespace Wanderer.GitRepository.Common
                 m_oldGLTexture = GetTextureFromBlob(patchEntryChanges.OldOid, gitRepo);
                 m_newGLTexture = GetTextureFromBlob(patchEntryChanges.Oid, gitRepo);
                 if (m_newGLTexture.Image ==IntPtr.Zero 
-                    && (patchEntryChanges.Status == ChangeKind.Added || patchEntryChanges.Status == ChangeKind.Modified))
+                    && (patchEntryChanges.Status == ChangeKind.Added || patchEntryChanges.Status == ChangeKind.Modified || patchEntryChanges.Status ==ChangeKind.Conflicted))
                 {
                     m_newGLTexture = Application.LoadTextureFromFile(Path.Combine(gitRepo.RootPath, patchEntryChanges.Path));
                 }
@@ -195,7 +196,7 @@ namespace Wanderer.GitRepository.Common
 
         public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
-            BuildDiffTexts(patchEntryChanges.Patch);
+            BuildDiffTexts(patchEntryChanges, gitRepo);
             return true;
         }
 
@@ -209,12 +210,22 @@ namespace Wanderer.GitRepository.Common
             m_diffTexts.Clear();
         }
 
-        private void BuildDiffTexts(string content)
+        private void BuildDiffTexts(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
+            string content = patchEntryChanges.Patch;
             m_diffNumberWidth = 0;
             m_diffTexts.Clear();
             if (string.IsNullOrEmpty(content))
                 return;
+
+            if (patchEntryChanges.Status == ChangeKind.Conflicted)
+            {
+                string textPath = Path.Combine(gitRepo.RootPath, patchEntryChanges.Path);
+                if (File.Exists(textPath))
+                {
+                    content += File.ReadAllText(textPath);
+                }
+            }
 
             ////windows换行符 替换为linux换行符
             //content = content.Replace("\r\n", "\n");

@@ -173,7 +173,7 @@ namespace Wanderer.Common
             return default(GLTexture);
         }
 
-        public unsafe static Vector4 GetColor(string key)
+        public unsafe static Vector4 GetColor(string key, bool fromBg = true)
         {
             try
             {
@@ -196,8 +196,8 @@ namespace Wanderer.Common
 
                     s_colors.Add(key, value);
                 }
-
-                value += (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg)) * 0.5f;
+                Vector4 formColor = fromBg ? (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg)) : (*ImGui.GetStyleColorVec4(ImGuiCol.Text));
+                value += formColor * 0.5f;
                 return value;
             }
             catch (Exception e)
@@ -208,9 +208,9 @@ namespace Wanderer.Common
             return Vector4.One;
         }
 
-        public static uint GetColorU32(string key)
+        public static uint GetColorU32(string key,bool fromBg=true)
         {
-            return ImGui.GetColorU32(GetColor(key));
+            return ImGui.GetColorU32(GetColor(key, fromBg));
         }
 
         private static void RegisterMethod()

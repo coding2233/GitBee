@@ -253,28 +253,31 @@ namespace Wanderer
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_fiber_new);
-                        textColor = LuaPlugin.GetColorU32("NewText");
+                        textColor = LuaPlugin.GetColorU32("NewText",false);
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
                         statusIcon = Icon.Get(Icon.Material_delete_forever);
-                        textColor = LuaPlugin.GetColorU32("Delete");
+                        textColor = LuaPlugin.GetColorU32("Delete",false);
                         break;
                     case FileStatus.RenamedInIndex:
                     case FileStatus.RenamedInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_drive_file_rename_outline);
+                        textColor = LuaPlugin.GetColorU32("NewText",false);
                         break;
                     case FileStatus.ModifiedInIndex:
                     case FileStatus.ModifiedInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_update);
+                        textColor = LuaPlugin.GetColorU32("NewText", false);
                         break;
                     case FileStatus.TypeChangeInIndex:
                     case FileStatus.TypeChangeInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_change_circle);
+                        textColor = LuaPlugin.GetColorU32("NewText", false);
                         break;
                     case FileStatus.Conflicted:
                         statusIcon = Icon.Get(Icon.Material_warning);
-                        //textColor = LuaPlugin.GetColorU32("WarnText");
+                        textColor = LuaPlugin.GetColorU32("WarnText", false);
                         break;
                     default:
                         break;
@@ -391,6 +394,11 @@ namespace Wanderer
 
                 foreach (var item in statuses)
                 {
+                    if (item.State == FileStatus.Ignored)
+                    {
+                        continue;
+                    }
+
                     if (item.State == FileStatus.NewInIndex || item.State == FileStatus.ModifiedInIndex || item.State == FileStatus.RenamedInIndex || item.State == FileStatus.TypeChangeInIndex)
                     {
                         StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
