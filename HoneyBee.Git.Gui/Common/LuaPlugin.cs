@@ -1,7 +1,9 @@
-﻿using System;
+﻿using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,6 +15,7 @@ namespace Wanderer.Common
         private static Dictionary<string, string> s_language;
         private static Dictionary<string, GLTexture> s_folderIcons;
         private static Dictionary<string, GLTexture> s_fileIcons;
+        private static Dictionary<string, Vector4> s_colors;
 
         internal static void Enable()
         {
@@ -48,6 +51,11 @@ namespace Wanderer.Common
             s_language = new Dictionary<string, string>();
             s_folderIcons= new Dictionary<string, GLTexture>();
             s_fileIcons= new Dictionary<string, GLTexture>();
+            s_colors = new Dictionary<string, Vector4>();
+            s_colors.Add("NewText", new Vector4(0.2235f, 0.3607f, 0.2431f, 1));
+            s_colors.Add("DeleteText", new Vector4(0.3725f, 0.2705f, 0.3019f, 1));
+            //s_colors.Add("WarnText", new Vector4(1, 0.83529f, 0.30980f, 1));
+            //
             RegisterMethod();
             //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
             //s_luaEnv.DoString("package.cpath=\"lua/debug/?.dll;\"..package.cpath");
@@ -163,6 +171,46 @@ namespace Wanderer.Common
             }
 
             return default(GLTexture);
+        }
+
+        public unsafe static Vector4 GetColor(string key)
+        {
+            try
+            {
+                Vector4 value;
+                if (!s_colors.TryGetValue(key, out value))
+                {
+                    s_luaEnv.GetGlobal("Style");
+                    s_luaEnv.PushString("Color");
+                    s_luaEnv.GetTable(-2);
+                    s_luaEnv.PushString(key);
+                    s_luaEnv.GetTable(-2);
+
+                    uint colorU32 = (uint)s_luaEnv.ToNumber(-1);
+                    value = ImGui.ColorConvertU32ToFloat4(colorU32);
+                    //value = new Vector4();
+                    //var r = (float)s_luaEnv.ToNumber(-1);
+                    //var g = (float)s_luaEnv.ToNumber(-2);
+                    //var b = (float)s_luaEnv.ToNumber(-3);
+                    //var a = (float)s_luaEnv.ToNumber(-4);
+
+                    s_colors.Add(key, value);
+                }
+
+                value += (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg)) * 0.5f;
+                return value;
+            }
+            catch (Exception e)
+            {
+                Log.Info("Language not find key: {0}  {1}", key, e);
+
+            }
+            return Vector4.One;
+        }
+
+        public static uint GetColorU32(string key)
+        {
+            return ImGui.GetColorU32(GetColor(key));
         }
 
         private static void RegisterMethod()

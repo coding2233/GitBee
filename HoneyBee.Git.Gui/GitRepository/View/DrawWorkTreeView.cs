@@ -246,42 +246,40 @@ namespace Wanderer
             {
                 var statusEntry = node.Data;
                 string stateStr = statusEntry.State.ToString();
-                uint textColor = 0;
+                uint textColor = ImGui.GetColorU32(ImGuiCol.Text);
                 string statusIcon = Icon.Get(Icon.Material_question_mark);
                 switch (statusEntry.State)
                 {
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_fiber_new);
-                        textColor = ImGui.ColorConvertFloat4ToU32(new Vector4(0, 1, 0, 1));
+                        textColor = LuaPlugin.GetColorU32("NewText");
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_delete);
-                        textColor = ImGui.GetColorU32(ImGuiCol.TextDisabled);
+                        statusIcon = Icon.Get(Icon.Material_delete_forever);
+                        textColor = LuaPlugin.GetColorU32("Delete");
                         break;
                     case FileStatus.RenamedInIndex:
                     case FileStatus.RenamedInWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_edit_note);
-                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
+                        statusIcon = Icon.Get(Icon.Material_drive_file_rename_outline);
                         break;
                     case FileStatus.ModifiedInIndex:
                     case FileStatus.ModifiedInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_update);
-                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
                         break;
                     case FileStatus.TypeChangeInIndex:
                     case FileStatus.TypeChangeInWorkdir:
                         statusIcon = Icon.Get(Icon.Material_change_circle);
-                        textColor = ImGui.GetColorU32(ImGuiCol.Text);
                         break;
                     case FileStatus.Conflicted:
                         statusIcon = Icon.Get(Icon.Material_warning);
-                        textColor = ImGui.ColorConvertFloat4ToU32(new Vector4(1, 0, 0, 1));
+                        //textColor = LuaPlugin.GetColorU32("WarnText");
                         break;
                     default:
                         break;
                 }
+
 
                 //ImGui.Image(Application.LoadTextureFromFile("lua/style/icons/default_file.png").Image, new Vector2(ImGui.GetTextLineHeight() * 2.0f, ImGui.GetTextLineHeight()));
                 //ImGui.SameLine();
@@ -290,28 +288,29 @@ namespace Wanderer
                 var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
                 bool selectableSelected = selected;
 
-                if (stateStr.StartsWith("Delete"))
-                {
-                    //ImGui.BeginDisabled();
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetColorU32(ImGuiCol.TextDisabled));
-                }
+             
+
+                ImGui.PushStyleColor(ImGuiCol.Text, textColor);
+
 
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
-            
-                if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
+
+                if (ImGui.TreeNodeEx($"\t\t{statusIcon} {node.Name}", nodeFlag))
                 {
                     ImGui.TreePop();
                 }
 
                 //文件图标
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
+                //ImGui.GetWindowDrawList().AddText(fileIconPosMax, textColor, statusIcon);
 
-                if (stateStr.StartsWith("Delete"))
-                {
-                    ImGui.PopStyleColor();
-                    //var heightInterval = (ImGui.GetItemRectMax().Y - ImGui.GetItemRectMin().Y) * 0.5f;
-                    //ImGui.GetWindowDrawList().AddLine(ImGui.GetItemRectMin()+new Vector2(0, heightInterval), ImGui.GetItemRectMax()-new Vector2(0, heightInterval),ImGui.GetColorU32(ImGuiCol.TextDisabled));
-                }
+                ImGui.PopStyleColor();
+                //if (stateStr.StartsWith("Delete"))
+                //{
+                   
+                //    //var heightInterval = (ImGui.GetItemRectMax().Y - ImGui.GetItemRectMin().Y) * 0.5f;
+                //    //ImGui.GetWindowDrawList().AddLine(ImGui.GetItemRectMin()+new Vector2(0, heightInterval), ImGui.GetItemRectMax()-new Vector2(0, heightInterval),ImGui.GetColorU32(ImGuiCol.TextDisabled));
+                //}
 
 
                 if (ImGui.IsItemHovered())
@@ -382,55 +381,85 @@ namespace Wanderer
                 m_stageMultipleSelectionNodes.Clear();
                 m_unstageMultipleSelectionNodes.Clear();
 
-                foreach (var item in statuses.Staged)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
-                }
+        
 
-                foreach (var item in statuses.Added)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                }
+                //foreach (var item in statuses.Staged)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                //}
 
-                foreach (var item in statuses.Removed)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                }
 
-                foreach (var item in statuses.RenamedInIndex)
+                foreach (var item in statuses)
                 {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                    if (item.State == FileStatus.NewInIndex || item.State == FileStatus.ModifiedInIndex || item.State == FileStatus.RenamedInIndex || item.State == FileStatus.TypeChangeInIndex)
+                    {
+                        StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                    }
+                    else
+                    {
+                        StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                    }
                 }
 
                 foreach (var item in m_stageTreeView)
                 {
-                    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes,item);
-                }
-
-                foreach (var item in statuses.Missing)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                }
-
-                foreach (var item in statuses.Modified)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                }
-
-                foreach (var item in statuses.Untracked)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                }
-
-                foreach (var item in statuses.RenamedInWorkDir)
-                {
-                    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes, item);
                 }
 
                 foreach (var item in m_unstageTreeView)
                 {
                     BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
                 }
+
+                //foreach (var item in statuses.Staged)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
+                //}
+
+                //foreach (var item in statuses.Added)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in statuses.Removed)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in statuses.RenamedInIndex)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in m_stageTreeView)
+                //{
+                //    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes,item);
+                //}
+
+                //foreach (var item in statuses.Missing)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in statuses.Modified)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in statuses.Untracked)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in statuses.RenamedInWorkDir)
+                //{
+                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+                //}
+
+                //foreach (var item in m_unstageTreeView)
+                //{
+                //    BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
+                //}
             }
             catch (Exception e)
             {

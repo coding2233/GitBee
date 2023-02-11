@@ -64,9 +64,6 @@ namespace Wanderer.Common
             }
         }
 
-   
-
-
         private static AppImGuiView s_appImGuiView;
         private static Vector2 s_statusBarSize;
 

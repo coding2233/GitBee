@@ -21,3 +21,7 @@ Style.FontSize = 14.0
 -- GetGlyphRangesVietnamese
 -- */*.txt 使用自定义字形范围
 Style.GlyphRanges = "lua/style/chinese.txt"
+
+-- 自定义颜色
+-- 以dark模板为准
+Style.Color = require("color")
