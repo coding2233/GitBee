@@ -55,3 +55,12 @@ function GetFileIconName( fileExtension )
     end
 	return "default_file"
 end
+
+
+function GetIcon( name )
+    local iconPath = "lua/style/icons/icon_"..name..".png"
+	if file_exists(iconPath) then
+		return iconPath
+	end
+	return "lua/style/icons/icon_unknown.png"
+end

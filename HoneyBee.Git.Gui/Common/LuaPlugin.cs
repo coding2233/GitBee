@@ -15,6 +15,7 @@ namespace Wanderer.Common
         private static Dictionary<string, string> s_language;
         private static Dictionary<string, GLTexture> s_folderIcons;
         private static Dictionary<string, GLTexture> s_fileIcons;
+        private static Dictionary<string, GLTexture> s_normalIcons;
         private static Dictionary<string, Vector4> s_colors;
 
         internal static void Enable()
@@ -51,6 +52,7 @@ namespace Wanderer.Common
             s_language = new Dictionary<string, string>();
             s_folderIcons= new Dictionary<string, GLTexture>();
             s_fileIcons= new Dictionary<string, GLTexture>();
+            s_normalIcons = new Dictionary<string, GLTexture>();
             s_colors = new Dictionary<string, Vector4>();
             s_colors.Add("NewText", new Vector4(0.2235f, 0.3607f, 0.2431f, 1));
             s_colors.Add("DeleteText", new Vector4(0.3725f, 0.2705f, 0.3019f, 1));
@@ -168,6 +170,29 @@ namespace Wanderer.Common
             catch (Exception e)
             {
                 Log.Info("GetFileIcon error. {0} {1}", fileName, e);
+            }
+
+            return default(GLTexture);
+        }
+
+        public static GLTexture GetIcon(string name)
+        {
+            try
+            {
+               
+                GLTexture icon;
+                if (!s_normalIcons.TryGetValue(name, out icon))
+                {
+                    s_luaEnv.Call("GetIcon", 1, name);
+                    string iconPath = s_luaEnv.ToString(-1);
+                    icon = Application.LoadTextureFromFile(iconPath);
+                    s_normalIcons.Add(name, icon);
+                }
+                return icon;
+            }
+            catch (Exception e)
+            {
+                Log.Info("GetIcon error. {0} {1}", name, e);
             }
 
             return default(GLTexture);

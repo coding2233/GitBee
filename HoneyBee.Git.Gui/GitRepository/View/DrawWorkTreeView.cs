@@ -246,75 +246,53 @@ namespace Wanderer
             {
                 var statusEntry = node.Data;
                 string stateStr = statusEntry.State.ToString();
-                uint textColor = ImGui.GetColorU32(ImGuiCol.Text);
-                string statusIcon = Icon.Get(Icon.Material_question_mark);
+                string statusIcon = "unknown";
                 switch (statusEntry.State)
                 {
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_fiber_new);
-                        textColor = LuaPlugin.GetColorU32("NewText",false);
+                        statusIcon = "add";
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_delete_forever);
-                        textColor = LuaPlugin.GetColorU32("Delete",false);
+                        statusIcon = "delete";
                         break;
                     case FileStatus.RenamedInIndex:
                     case FileStatus.RenamedInWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_drive_file_rename_outline);
-                        textColor = LuaPlugin.GetColorU32("NewText",false);
+                        statusIcon = "modified";
                         break;
                     case FileStatus.ModifiedInIndex:
                     case FileStatus.ModifiedInWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_update);
-                        textColor = LuaPlugin.GetColorU32("NewText", false);
+                        statusIcon = "modified";
                         break;
                     case FileStatus.TypeChangeInIndex:
                     case FileStatus.TypeChangeInWorkdir:
-                        statusIcon = Icon.Get(Icon.Material_change_circle);
-                        textColor = LuaPlugin.GetColorU32("NewText", false);
+                        statusIcon = "modified";
                         break;
                     case FileStatus.Conflicted:
-                        statusIcon = Icon.Get(Icon.Material_warning);
-                        textColor = LuaPlugin.GetColorU32("WarnText", false);
+                        statusIcon = "warn";
                         break;
                     default:
                         break;
                 }
 
-
-                //ImGui.Image(Application.LoadTextureFromFile("lua/style/icons/default_file.png").Image, new Vector2(ImGui.GetTextLineHeight() * 2.0f, ImGui.GetTextLineHeight()));
-                //ImGui.SameLine();
-
                 var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
                 var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
                 bool selectableSelected = selected;
 
-             
-
-                ImGui.PushStyleColor(ImGuiCol.Text, textColor);
-
-
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
 
-                if (ImGui.TreeNodeEx($"\t\t{statusIcon} {node.Name}", nodeFlag))
+                if (ImGui.TreeNodeEx($"\t\t\t{node.Name}", nodeFlag))
                 {
                     ImGui.TreePop();
                 }
 
                 //文件图标
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
-                //ImGui.GetWindowDrawList().AddText(fileIconPosMax, textColor, statusIcon);
-
-                ImGui.PopStyleColor();
-                //if (stateStr.StartsWith("Delete"))
-                //{
-                   
-                //    //var heightInterval = (ImGui.GetItemRectMax().Y - ImGui.GetItemRectMin().Y) * 0.5f;
-                //    //ImGui.GetWindowDrawList().AddLine(ImGui.GetItemRectMin()+new Vector2(0, heightInterval), ImGui.GetItemRectMax()-new Vector2(0, heightInterval),ImGui.GetColorU32(ImGuiCol.TextDisabled));
-                //}
-
+                var statusIconPos = fileIconPosMax;
+                statusIconPos.Y = fileIconPos.Y;
+                var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();
+                ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetIcon(statusIcon).Image, statusIconPos, statusIconPosMax);
 
                 if (ImGui.IsItemHovered())
                 {
