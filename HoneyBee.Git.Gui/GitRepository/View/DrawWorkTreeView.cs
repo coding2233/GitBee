@@ -247,15 +247,18 @@ namespace Wanderer
                 var statusEntry = node.Data;
                 string stateStr = statusEntry.State.ToString();
                 string statusIcon = "unknown";
+                uint popTextColor = ImGui.GetColorU32(ImGuiCol.Text);
                 switch (statusEntry.State)
                 {
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = "add";
+                        popTextColor = LuaPlugin.GetColorU32("NewText",false);
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
                         statusIcon = "delete";
+                        popTextColor = LuaPlugin.GetColorU32("DeleteText", false);
                         break;
                     case FileStatus.RenamedInIndex:
                     case FileStatus.RenamedInWorkdir:
@@ -271,10 +274,13 @@ namespace Wanderer
                         break;
                     case FileStatus.Conflicted:
                         statusIcon = "warn";
+                        popTextColor = LuaPlugin.GetColorU32("WarnText", false);
                         break;
                     default:
                         break;
                 }
+
+                ImGui.PushStyleColor(ImGuiCol.Text, popTextColor);
 
                 var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
                 var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
@@ -293,6 +299,9 @@ namespace Wanderer
                 statusIconPos.Y = fileIconPos.Y;
                 var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetIcon(statusIcon).Image, statusIconPos, statusIconPosMax);
+
+
+                ImGui.PopStyleColor();
 
                 if (ImGui.IsItemHovered())
                 {

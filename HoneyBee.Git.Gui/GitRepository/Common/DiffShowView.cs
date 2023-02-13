@@ -323,15 +323,11 @@ namespace Wanderer.GitRepository.Common
             uint col = 0;
             if (line.Status == 1)
             {
-                var styleColorsValue = ImGuiView.StyleColors == 0 ? 0.5f : 0.0f;
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.2235f, 0.3607f, 0.2431f, 1f) + Vector4.One * styleColorsValue);
-                //col = LuaPlugin.GetColorU32("NewTextBg");
+                col = LuaPlugin.GetColorU32("NewTextBg");
             }
             else if (line.Status == 2)
             {
-                var styleColorsValue = ImGuiView.StyleColors == 0 ? 0.5f : 0.0f;
-                col = ImGui.ColorConvertFloat4ToU32(new Vector4(0.3725f, 0.2705f, 0.3019f, 1f) + Vector4.One * styleColorsValue);
-                //col = LuaPlugin.GetColorU32("DeletTextBg");
+                col = LuaPlugin.GetColorU32("DeleteTextBg");
             }
             if (col != 0)
             {

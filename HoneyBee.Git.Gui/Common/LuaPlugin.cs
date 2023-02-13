@@ -54,9 +54,6 @@ namespace Wanderer.Common
             s_fileIcons= new Dictionary<string, GLTexture>();
             s_normalIcons = new Dictionary<string, GLTexture>();
             s_colors = new Dictionary<string, Vector4>();
-            s_colors.Add("NewText", new Vector4(0.2235f, 0.3607f, 0.2431f, 1));
-            s_colors.Add("DeleteText", new Vector4(0.3725f, 0.2705f, 0.3019f, 1));
-            //s_colors.Add("WarnText", new Vector4(1, 0.83529f, 0.30980f, 1));
             //
             RegisterMethod();
             //package.cpath = "../ybslib/bin/?.so;"..package.cpathpackage.cpath = "../ybslib/bin/?.so;"..package.cpath
@@ -221,8 +218,20 @@ namespace Wanderer.Common
 
                     s_colors.Add(key, value);
                 }
-                Vector4 formColor = fromBg ? (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg)) : (*ImGui.GetStyleColorVec4(ImGuiCol.Text));
-                value += formColor * 0.5f;
+                //Vector4 formColor = fromBg ? (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg)) : (*ImGui.GetStyleColorVec4(ImGuiCol.Text));
+                Vector4 formColor = (*ImGui.GetStyleColorVec4(ImGuiCol.WindowBg));
+                value = value + formColor * 0.5f;
+
+                //bool isHalf = (formColor.X + formColor.Y + formColor.Z) * 0.3333f > 0.5f;
+                //if (isHalf)
+                //{
+                //    value = value * formColor;
+                //}
+                //else
+                //{
+                //}
+                //value =( value + formColor) * 0.5f;
+
                 return value;
             }
             catch (Exception e)
