@@ -250,6 +250,10 @@ namespace Wanderer
                 uint popTextColor = ImGui.GetColorU32(ImGuiCol.Text);
                 switch (statusEntry.State)
                 {
+                    case FileStatus.Conflicted:
+                        statusIcon = "warn";
+                        popTextColor = LuaPlugin.GetColorU32("WarnText", false);
+                        break;
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = "add";
@@ -260,23 +264,23 @@ namespace Wanderer
                         statusIcon = "delete";
                         popTextColor = LuaPlugin.GetColorU32("DeleteText", false);
                         break;
-                    case FileStatus.RenamedInIndex:
-                    case FileStatus.RenamedInWorkdir:
-                        statusIcon = "modified";
-                        break;
+
                     case FileStatus.ModifiedInIndex:
                     case FileStatus.ModifiedInWorkdir:
-                        statusIcon = "modified";
-                        break;
+                    case FileStatus.RenamedInIndex:
+                    case FileStatus.RenamedInWorkdir:
                     case FileStatus.TypeChangeInIndex:
                     case FileStatus.TypeChangeInWorkdir:
                         statusIcon = "modified";
                         break;
-                    case FileStatus.Conflicted:
-                        statusIcon = "warn";
-                        popTextColor = LuaPlugin.GetColorU32("WarnText", false);
-                        break;
+                    
                     default:
+                        if (CheckFileStatus(statusEntry.State, FileStatus.ModifiedInIndex)
+                            || CheckFileStatus(statusEntry.State, FileStatus.RenamedInIndex)
+                            || CheckFileStatus(statusEntry.State, FileStatus.TypeChangeInIndex))
+                        {
+                            statusIcon = "modified";
+                        }
                         break;
                 }
 
@@ -284,7 +288,6 @@ namespace Wanderer
 
                 var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
                 var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
-                bool selectableSelected = selected;
 
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
 
@@ -372,13 +375,6 @@ namespace Wanderer
                 m_unstageMultipleSelectionNodes.Clear();
 
         
-
-                //foreach (var item in statuses.Staged)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                //}
-
-
                 foreach (var item in statuses)
                 {
                     if (item.State == FileStatus.Ignored)
@@ -386,9 +382,10 @@ namespace Wanderer
                         continue;
                     }
 
-                    if (item.State == FileStatus.NewInIndex || item.State == FileStatus.ModifiedInIndex 
-                        || item.State == FileStatus.RenamedInIndex || item.State == FileStatus.TypeChangeInIndex
-                        || item.State == FileStatus.DeletedFromIndex)
+                    //FileStatus.xxxxInIndex index ~= stage
+                    if (CheckFileStatus(item.State, FileStatus.NewInIndex) || CheckFileStatus(item.State, FileStatus.ModifiedInIndex)
+                        || CheckFileStatus(item.State, FileStatus.RenamedInIndex) || CheckFileStatus(item.State, FileStatus.TypeChangeInIndex)
+                        || CheckFileStatus(item.State, FileStatus.DeletedFromIndex))
                     {
                         StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
                     }
@@ -408,60 +405,17 @@ namespace Wanderer
                     BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
                 }
 
-                //foreach (var item in statuses.Staged)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView,item.FilePath,item);
-                //}
-
-                //foreach (var item in statuses.Added)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in statuses.Removed)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in statuses.RenamedInIndex)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in m_stageTreeView)
-                //{
-                //    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes,item);
-                //}
-
-                //foreach (var item in statuses.Missing)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in statuses.Modified)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in statuses.Untracked)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in statuses.RenamedInWorkDir)
-                //{
-                //    StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                //}
-
-                //foreach (var item in m_unstageTreeView)
-                //{
-                //    BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
-                //}
+                
             }
             catch (Exception e)
             {
                 Log.Warn("DrawWorkTreeView exception: {0}",e);
             }
+        }
+
+        private bool CheckFileStatus(FileStatus fileStatus, FileStatus checkStatus)
+        {
+            return (fileStatus & checkStatus) == checkStatus;
         }
 
         private void BuildMultipleSelectionNodes(List<StatusEntryTreeViewNode> nodes, StatusEntryTreeViewNode node)
