@@ -386,7 +386,9 @@ namespace Wanderer
                         continue;
                     }
 
-                    if (item.State == FileStatus.NewInIndex || item.State == FileStatus.ModifiedInIndex || item.State == FileStatus.RenamedInIndex || item.State == FileStatus.TypeChangeInIndex)
+                    if (item.State == FileStatus.NewInIndex || item.State == FileStatus.ModifiedInIndex 
+                        || item.State == FileStatus.RenamedInIndex || item.State == FileStatus.TypeChangeInIndex
+                        || item.State == FileStatus.DeletedFromIndex)
                     {
                         StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
                     }
