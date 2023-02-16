@@ -291,17 +291,17 @@ namespace Wanderer
 
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
 
-                if (ImGui.TreeNodeEx($"\t\t\t{node.Name}", nodeFlag))
+                if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
                 {
                     ImGui.TreePop();
                 }
 
                 //文件图标
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
-                var statusIconPos = fileIconPosMax;
-                statusIconPos.Y = fileIconPos.Y;
-                var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();
-                ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetIcon(statusIcon).Image, statusIconPos, statusIconPosMax);
+                //var statusIconPos = fileIconPosMax;
+                //statusIconPos.Y = fileIconPos.Y;
+                //var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();
+                //ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetIcon(statusIcon).Image, statusIconPos, statusIconPosMax);
 
 
                 ImGui.PopStyleColor();
