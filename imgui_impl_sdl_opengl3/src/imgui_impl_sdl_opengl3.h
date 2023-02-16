@@ -16,23 +16,8 @@
 #include "imgui_markdown.h"
 
 #include "lua.hpp"
+#include "iiso3_export.h"
 
-#if defined _WIN32 || defined __CYGWIN__
-#include "windows.h"
-#define API __declspec(dllexport)
-#elif __GNUC__
-#define API  __attribute__((__visibility__("default")))
-#else
-#define API
-#endif
-
-#if defined __cplusplus
-#define EXTERN extern "C"
-#else
-#define EXTERN extern
-#endif
-
-#define EXPORT_API EXTERN API
 
 typedef struct ImGuiContext* (*IMGUI_INIT_CALLBACK)();
 typedef void (*IMGUI_DRAW_CALLBACK)();
