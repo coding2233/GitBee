@@ -1019,6 +1019,16 @@ void TextEditor::Render()
 						if (elapsed > 800)
 							mStartTime = timeEnd;
 					}
+
+					// Notify OS of text input position for advanced IME (-1 x offset so that Windows IME can cover our cursor. Bit of an extra nicety.)
+					if (!IsReadOnly())
+					{
+						auto& currentContext= *ImGui::GetCurrentContext();
+						currentContext.PlatformImeData.WantVisible = true;
+						//currentContext.FontSize*2.0f
+						currentContext.PlatformImeData.InputPos = ImVec2(textScreenPos.x+ TextDistanceToLineStart(mState.mCursorPosition) - 1.0f, textScreenPos.y);
+						currentContext.PlatformImeData.InputLineHeight = currentContext.FontSize;
+					}
 				}
 			}
 
@@ -1122,7 +1132,7 @@ void TextEditor::Render()
 			if (local.x >= mTextStart)
 			{
 				auto pos = ScreenPosToCoordinates(mpos);
-				printf("Coord(%d, %d)\n", pos.mLine, pos.mColumn);
+				//printf("Coord(%d, %d)\n", pos.mLine, pos.mColumn);
 				auto id = GetWordAt(pos);
 				if (!id.empty())
 				{

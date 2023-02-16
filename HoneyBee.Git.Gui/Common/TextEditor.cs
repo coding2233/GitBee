@@ -132,8 +132,8 @@ namespace Wanderer
         public TextEditor()
         {
             _igTextEditor = igNewTextEditor();
-            //igSetPaletteTextEditor(_igTextEditor, _style);
-            readOnly = true;
+            //igSetPaletteTextEditor(_igTextEditor, 1);
+            //readOnly = true;
             igSetShowWhitespacesTextEditor(_igTextEditor, false);
             _allTextEditor.Add(this);
         }
