@@ -10,5 +10,7 @@ namespace Wanderer.App
     {
         ShowGitRepo,
         SearchGitRepo,
+        OpenFile,
+        OpenFolder,
     }
 }

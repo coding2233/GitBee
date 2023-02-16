@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.App.Model;
 using Wanderer.App.Service;
 using Wanderer.GitRepository.Common;
@@ -42,5 +43,23 @@ namespace Wanderer.GitRepository.Mediator
         }
 
 
+        public override void OnRegister()
+        {
+            base.OnRegister();
+            gitRepoView.OnTextEditor = trext;
+        }
+
+        public override void OnRemove()
+        {
+            gitRepoView.OnTextEditor = trext;
+
+            base.OnRemove();
+        }
+
+
+        private void trext(string path)
+        {
+            dispatcher.Dispatch(AppEvent.OpenFile, path);
+        }
     }
 }

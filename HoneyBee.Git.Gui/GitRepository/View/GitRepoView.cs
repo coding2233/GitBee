@@ -45,6 +45,8 @@ namespace Wanderer.GitRepository.View
         private DrawCommitHistoryView m_commitHistoryView;
         #endregion
 
+        public Action<string> OnTextEditor;
+
         public GitRepoView(IContext context, string repoPath) : base(context)
         {
       
@@ -77,6 +79,7 @@ namespace Wanderer.GitRepository.View
                 if (m_gitRepo != null)
                 {
                     m_workTreeView = new DrawWorkTreeView(m_gitRepo);
+                    m_workTreeView.OnEditorText = OnTextEditor;
                     m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo,plugin);
                 }
             }
@@ -204,7 +207,6 @@ namespace Wanderer.GitRepository.View
                 default:
                     break;
             }
-
         }
 
         private void OnRepoKeysDraw()

@@ -23,6 +23,8 @@ namespace Wanderer.App
         protected override void mapBindings()
         {
             crossContextBridge.Bind(AppEvent.ShowGitRepo);
+            crossContextBridge.Bind(AppEvent.OpenFile);
+            crossContextBridge.Bind(AppEvent.OpenFolder);
 
             injectionBinder.Bind<IDatabaseService>().To<DatabaseService>().ToSingleton().CrossContext();
             injectionBinder.Bind<IPluginService>().To<PluginService>().ToSingleton().CrossContext();

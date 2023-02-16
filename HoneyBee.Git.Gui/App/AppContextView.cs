@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
 using Wanderer.GitRepository;
+using Wanderer.TextCodeEditor;
 
 namespace Wanderer.App
 {
@@ -39,6 +40,9 @@ namespace Wanderer.App
         {
             //Git仓库 
             new GitRepositoryContext(this);
+
+            //文本编辑
+            new TextEditorContext(this);
         }
     }
 }

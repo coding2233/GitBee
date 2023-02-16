@@ -1,5 +1,6 @@
 using ImGuiNET;
 using LibGit2Sharp;
+using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -35,6 +36,8 @@ namespace Wanderer
 
         private List<StatusEntryTreeViewNode> m_stageMultipleSelectionNodes =new List<StatusEntryTreeViewNode>();
         private List<StatusEntryTreeViewNode> m_unstageMultipleSelectionNodes =new List<StatusEntryTreeViewNode>();
+
+        public Action<string> OnEditorText;
 
         public DrawWorkTreeView(GitRepo gitRepo)
         {
@@ -293,8 +296,21 @@ namespace Wanderer
 
                 if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
                 {
+                   
+
                     ImGui.TreePop();
                 }
+
+
+                if (ImGui.BeginPopupContextItem())
+                {
+                    if (ImGui.MenuItem("Edit"))
+                    {
+                        OnEditorText?.Invoke(Path.Combine(m_gitRepo.RootPath, node.FullName));
+                    }
+                    ImGui.EndPopup();
+                }
+
 
                 //文件图标
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
