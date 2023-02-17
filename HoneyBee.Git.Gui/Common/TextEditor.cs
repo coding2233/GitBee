@@ -1,4 +1,6 @@
-﻿using System;
+﻿using ImGuiNET;
+using strange.extensions.mediation.impl;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
@@ -142,6 +144,15 @@ namespace Wanderer.Common
         {
             if (_igTextEditor != IntPtr.Zero)
             {
+                //    ImGui::Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
+                //    editor.IsOverwrite() ? "Ovr" : "Ins",
+                //    editor.CanUndo() ? "*" : " ",
+                //editor.GetLanguageDefinition().mName.c_str(), fileToEdit);
+
+                //string overWrite = IsOverwrite ? "Ovr" : "Ins";
+                //string canUndo = CanUndo ? "*" : " ";
+                //ImGui.Text($"{CursorPosition.X}/{-CursorPosition.Y} {TotalLines} lines | {overWrite} | {canUndo}");
+
                 igRenderTextEditor(_igTextEditor, title, size, border);
             }
         }

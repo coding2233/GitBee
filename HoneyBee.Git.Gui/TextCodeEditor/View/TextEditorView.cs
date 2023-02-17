@@ -74,7 +74,7 @@ namespace Wanderer.TextCodeEditor
 
         public override void OnDraw()
         {
-            m_textEditor.Render(m_fileName,ImGui.GetWindowSize());
+            m_textEditor.Render(m_fileName,ImGui.GetContentRegionAvail());
         }
 
         protected void OnToolbarDraw()
