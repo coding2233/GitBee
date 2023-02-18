@@ -6,6 +6,7 @@ Style.Language = require("language/zh_cn")
 -- 字体
 -- C:\\Windows\\Fonts\\msyh.ttc
 Style.Font = "lua/style/fonts/wqy-microhei.ttc"
+Style.AsciiFont = "lua/style/fonts/SourceCodePro-Medium.ttf"
 -- 字体大小
 Style.FontSize = 14.0
 

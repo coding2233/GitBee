@@ -239,6 +239,7 @@ namespace Wanderer.App
                 ImGui.GetIO().Fonts.AddFontDefault();
             }
 
+
             ImFontConfigPtr imFontConfigPtr = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
             {
                 OversampleH = 1,
@@ -271,6 +272,13 @@ namespace Wanderer.App
                     }
                     imFontConfigPtr.GlyphOffset = glyphOffset;
                 }
+            }
+
+            //普通的AsciiFont
+            string asciiFontPath = LuaPlugin.GetString("Style", "AsciiFont");
+            if (!string.IsNullOrEmpty(asciiFontPath) && File.Exists(asciiFontPath))
+            {
+                ImGui.GetIO().Fonts.AddFontFromFileTTF(asciiFontPath, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesDefault());
             }
 
             ImGui.GetIO().Fonts.Build();
