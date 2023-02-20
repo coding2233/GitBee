@@ -130,6 +130,8 @@ namespace Wanderer.App
     {
         Process m_launchProcess;
         IntPtr m_sdlWindow;
+        AppContextView m_appContextView;
+
         public AppMainWindow(Process launchProcess, IntPtr sdlWindow)
         {
             m_sdlWindow = sdlWindow;
@@ -286,7 +288,7 @@ namespace Wanderer.App
             ImGui.GetIO().Fonts.Build();
 
             //逻辑
-            var gitGuiContextView = new AppContextView();
+            m_appContextView = new AppContextView();
 
             if (m_launchProcess != null)
             {
@@ -326,7 +328,11 @@ namespace Wanderer.App
             {
                 SDL_DropEvent* dropEvent = (SDL_DropEvent*)(data);
                 string file = Util.StringFromPtr(dropEvent->file);
-                Log.Info("drop file {0}", file);
+                if (m_appContextView != null && !string.IsNullOrEmpty(file))
+                {
+                    Log.Info("drop file {0}", file);
+                    m_appContextView.OnDropFileEvent(file);
+                }
             }
 
             //Log.Info("OnWindowEvent: {0} {1}", eventID, eventType);

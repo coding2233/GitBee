@@ -1,4 +1,5 @@
-﻿using strange.extensions.context.api;
+﻿using LibGit2Sharp;
+using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using System;
 using System.Collections.Generic;
@@ -14,10 +15,11 @@ namespace Wanderer.App
 {
     public class AppContextView : ContextView
     {
-
+        AppContext m_appContext;
         public AppContextView()
         {
-            context = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
+            m_appContext = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
+            context = m_appContext;
             //添加子Context
             AddChildContext();
             //启动
@@ -33,8 +35,16 @@ namespace Wanderer.App
         protected override void OnDestroy()
         {
             base.OnDestroy();
+            m_appContext = null;
         }
-       
+
+        internal void OnDropFileEvent(string path)
+        {
+            if (m_appContext != null)
+            {
+                m_appContext.dispatcher.Dispatch(AppEvent.OpenFile, path);
+            }
+        }
 
         private void AddChildContext()
         {

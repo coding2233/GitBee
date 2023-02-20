@@ -25,6 +25,9 @@ namespace Wanderer.TextCodeEditor
 
         public override string UniqueKey => m_filePath;
 
+        public override bool Unsave => m_textEditor != null ? m_textEditor.IsTextChanged : false;
+            
+
         private string m_filePath;
         private string m_fileName;
         private TextEditor m_textEditor;

@@ -9,7 +9,7 @@ namespace Wanderer.Common
 {
     public class ImGuiTabView : ImGuiView
     {
-        public bool Unsave { get; protected set; }
+        public virtual bool Unsave { get; protected set; }
 
         public virtual string UniqueKey { get; }
 

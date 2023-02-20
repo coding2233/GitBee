@@ -148,33 +148,54 @@ namespace Wanderer.Common
                 //关闭tabview
                 if (s_imGuiTabViewsWaitClose.Count > 0)
                 {
-                    ImGui.OpenPopup("TabView close popup modal");
-                    ImGui.SetNextWindowSize(new Vector2(384,200));
-                    if (ImGui.BeginPopupModal("TabView close popup modal"))
+                    bool unsaveAsk = false;
+                    foreach (var item in s_imGuiTabViewsWaitClose)
                     {
-                        ImGui.Text("Make sure to close the tabview:");
-                        foreach (var item in s_imGuiTabViewsWaitClose)
+                        if (item.Unsave)
                         {
-                            ImGui.Text($"<{item.Name}>");
+                            unsaveAsk = true;
+                            break;
                         }
-
-                        if (ImGui.Button("OK"))
+                    }
+                    if (unsaveAsk)
+                    {
+                        ImGui.OpenPopup("TabView close popup modal");
+                        ImGui.SetNextWindowSize(new Vector2(384, 200));
+                        if (ImGui.BeginPopupModal("TabView close popup modal"))
                         {
+                            ImGui.Text("Make sure to close the tabview:");
                             foreach (var item in s_imGuiTabViewsWaitClose)
                             {
-                                s_imGuiTabViews.Remove(item);
-                                item.Dispose();
+                                ImGui.Text($"<{item.Name}>");
                             }
-                            s_imGuiTabViewsWaitClose.Clear();
-                            ImGui.CloseCurrentPopup();
+
+                            if (ImGui.Button("OK"))
+                            {
+                                foreach (var item in s_imGuiTabViewsWaitClose)
+                                {
+                                    s_imGuiTabViews.Remove(item);
+                                    item.Dispose();
+                                }
+                                s_imGuiTabViewsWaitClose.Clear();
+                                ImGui.CloseCurrentPopup();
+                            }
+                            ImGui.SameLine();
+                            if (ImGui.Button("Cancel"))
+                            {
+                                s_imGuiTabViewsWaitClose.Clear();
+                                ImGui.CloseCurrentPopup();
+                            }
+                            ImGui.EndPopup();
                         }
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
+                    }
+                    else
+                    {
+                        foreach (var item in s_imGuiTabViewsWaitClose)
                         {
-                            s_imGuiTabViewsWaitClose.Clear();
-                            ImGui.CloseCurrentPopup();
+                            s_imGuiTabViews.Remove(item);
+                            item.Dispose();
                         }
-                        ImGui.EndPopup();
+                        s_imGuiTabViewsWaitClose.Clear();
                     }
                 }
             }
