@@ -135,10 +135,18 @@ namespace Wanderer.Common
         {
             _igTextEditor = igNewTextEditor();
             //igSetPaletteTextEditor(_igTextEditor, 1);
+            //var ldf = igGetLanguageDefinition(_igTextEditor, "Lua", new string[] { "aa"}, 1, new string[] { "aa"}, 0, null, "", "","", false, false);
+            //igSetLanguageDefinition(_igTextEditor, ldf);
             //readOnly = true;
             igSetShowWhitespacesTextEditor(_igTextEditor, false);
             _allTextEditor.Add(this);
         }
+
+        bool TokenizeCallback000(char* in_begin, char* in_end, ref char* out_begin, ref char* out_end)
+        {
+            return false;
+        }
+
 
         public void Render(string title, Vector2 size, bool border = false)
         {
@@ -242,7 +250,12 @@ namespace Wanderer.Common
 
         [DllImport("iiso3.dll", CallingConvention = CallingConvention.Cdecl)]
         private static extern bool igIsTextChangedTextEditor(IntPtr textEditor);
+        delegate bool TokenizeCallback(char* in_begin, char* in_end, ref char* out_begin, ref char* out_end);
 
+        [DllImport("iiso3.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern IntPtr igGetLanguageDefinition(IntPtr text_editor, string lang_def_name, string []keywords, int keywords_length,string[] identifiers, int identifiers_length, TokenizeCallback tokenize_callback, string comment_start, string comment_end, string sigle_line_comment, bool case_sensitive, bool auto_indentation);
+        [DllImport("iiso3.dll", CallingConvention = CallingConvention.Cdecl)]
 
+        private static extern void igSetLanguageDefinition(IntPtr text_editor,IntPtr a_language_def);
     }
 }

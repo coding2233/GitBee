@@ -1,6 +1,7 @@
 #ifndef __IISO3_EXPORT_H__
 #define __IISO3_EXPORT_H__
 
+#include <iostream>
 #include "TextEditor.h"
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -38,6 +39,7 @@ EXPORT_API int igGetTotalLinesTextEditor(TextEditor * textEditor);
 EXPORT_API bool igIsOverwriteTextEditor(TextEditor * textEditor);
 EXPORT_API bool igCanUndoTextEditor(TextEditor * textEditor);
 EXPORT_API bool igIsTextChangedTextEditor(TextEditor * textEditor);
-
+EXPORT_API const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_editor, std::string lang_def_name, const std::string keywords[], int keywords_length, std::string identifiers[], int identifiers_length, TextEditor::LanguageDefinition::TokenizeCallback tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation);
+EXPORT_API void igSetLanguageDefinition(TextEditor* text_editor, const TextEditor::LanguageDefinition& aLanguageDef);
 
 #endif

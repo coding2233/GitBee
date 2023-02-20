@@ -87,3 +87,63 @@ bool igIsTextChangedTextEditor(TextEditor* text_editor)
     return text_editor->IsTextChanged();
 }
 
+const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_editor,std::string lang_def_name, const std::string keywords[],int keywords_length, std::string identifiers[],int identifiers_length, TextEditor::LanguageDefinition::TokenizeCallback tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation)
+{
+	if (lang_def_name.empty())
+	{
+		return TextEditor::LanguageDefinition::CPlusPlus();
+	}
+
+	std::cout << lang_def_name << std::endl;
+
+	if (lang_def_name == "C++")
+	{
+		return TextEditor::LanguageDefinition::CPlusPlus();
+	}
+	else if (lang_def_name == "C")
+	{
+		return TextEditor::LanguageDefinition::C();
+	}
+	else if (lang_def_name == "Lua")
+	{
+		return TextEditor::LanguageDefinition::Lua();
+	}
+	else
+	{
+		TextEditor::LanguageDefinition langDef;
+
+		for (size_t i = 0; i < keywords_length; i++)
+		{
+			langDef.mKeywords.insert(keywords[i]);
+		}
+
+		for (size_t i = 0; i < identifiers_length; i++)
+		{
+			TextEditor::Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(identifiers[i], id));
+		}
+
+
+		langDef.mTokenize = tokenize_callback;
+
+		langDef.mCommentStart = comment_start;
+		langDef.mCommentEnd = comment_end;
+		langDef.mSingleLineComment = sigle_line_comment;
+		langDef.mCaseSensitive = case_sensitive;
+		langDef.mAutoIndentation = auto_indentation;
+
+		langDef.mName = lang_def_name;
+
+		return langDef;
+	}
+	
+	return TextEditor::LanguageDefinition::CPlusPlus();
+	// const LanguageDefinition& aLanguageDef
+}
+
+
+void igSetLanguageDefinition(TextEditor* text_editor, const TextEditor::LanguageDefinition& aLanguageDef)
+{
+	text_editor->SetLanguageDefinition(aLanguageDef);
+}
