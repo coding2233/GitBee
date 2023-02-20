@@ -21,11 +21,11 @@
 
 typedef struct ImGuiContext* (*IMGUI_INIT_CALLBACK)();
 typedef void (*IMGUI_DRAW_CALLBACK)();
-typedef void (*WINDOW_EVENT_CALLBACK)(int event_type);
+typedef void (*SDL_EVENT_CALLBACK)(int type,void* data);
 // typedef void (*IMGUI_Free_CALLBACK)();
 
 EXPORT_API SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_height, Uint32 window_flags);
-EXPORT_API int CreateRender(SDL_Window* window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, WINDOW_EVENT_CALLBACK window_event_cb);
+EXPORT_API int CreateRender(SDL_Window* window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, SDL_EVENT_CALLBACK sdl_event_cb);
 EXPORT_API void SDLSetWindowShow(SDL_Window* sdl_window);
 
 // EXPORT_API void RenderDrawData(struct ImDrawData* draw_data);

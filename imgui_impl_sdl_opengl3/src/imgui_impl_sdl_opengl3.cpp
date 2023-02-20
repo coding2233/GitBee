@@ -93,7 +93,7 @@ SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_heig
     return window;
 }
 
-int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,WINDOW_EVENT_CALLBACK window_event_cb)
+int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DRAW_CALLBACK imgui_draw_cb,SDL_EVENT_CALLBACK sdl_event_cb)
 {
     auto gl_context = SDL_GL_CreateContext(window);
     SDL_GL_MakeCurrent(window, gl_context);
@@ -123,7 +123,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
     ImGui_ImplOpenGL3_Init(glsl_version_);
 
     clock_t clock_start = clock();
-    float default_fps = 30.0f;
+    float default_fps = 60.0f;
     long frame_rate_time = (1 / default_fps)*1000;
     long frame = 0;
 
@@ -162,8 +162,10 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                 }
                 else
                 {
-                    window_event_cb(event.window.event);
-
+                    if (sdl_event_cb)
+                    {
+                        sdl_event_cb(SDL_WINDOWEVENT, &event.window);
+                    }
                     if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                     {
                         clock_start = clock();
@@ -177,6 +179,13 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                         //frame_rate_time = 1000;
                         frame_rate_time = (1 / 5.0f) * 1000;
                     }
+                }
+            }
+            else if (event.type == SDL_DROPFILE)
+            {
+                if (sdl_event_cb)
+                {
+                    sdl_event_cb(SDL_DROPFILE, &event.drop);
                 }
             }
 
