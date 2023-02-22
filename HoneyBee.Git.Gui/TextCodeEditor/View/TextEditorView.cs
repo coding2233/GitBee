@@ -3,6 +3,7 @@ using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
 using SFB;
 using strange.extensions.context.api;
+using strange.extensions.dispatcher.eventdispatcher.api;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -69,8 +70,17 @@ namespace Wanderer.TextCodeEditor
                     m_filePath = Guid.NewGuid().ToString();
                     m_folderPath = filePath;
                 }
+
                 m_folderView = new TextEditorFolderView(context, m_folderPath);
+                m_folderView.dispatcher.AddListener("OpenFile",OnOpenFile);
             }
+        }
+
+        private void OnOpenFile(IEvent e)
+        {
+            string filePath = (string)e.data;
+            Log.Info(filePath);
+            m_textEditor.text = File.ReadAllText(filePath);
         }
 
        

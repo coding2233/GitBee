@@ -26,6 +26,7 @@ namespace Wanderer.TextCodeEditor.View
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.FramePadding;
             m_folderPath = folderPath;
             m_folderTreeView = BuildFolderNode(folderPath);
+            m_folderTreeView.NodeOpened = true;
             //m_folderTreeView.ad
         }
 
@@ -70,12 +71,16 @@ namespace Wanderer.TextCodeEditor.View
                     ImGui.TreePop();
                 }
                 ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
+
+                if (ImGui.IsItemClicked())
+                {
+                    m_nodeSelected = node;
+
+                    dispatcher.Dispatch("OpenFile", node.FullName);
+                }
             }
 
-            if (ImGui.IsItemClicked())
-            {
-                m_nodeSelected = node;
-            }
+           
         }
 
         protected override void OnDestroy()
@@ -90,9 +95,9 @@ namespace Wanderer.TextCodeEditor.View
             node.Name = Path.GetFileName(path);
             if (Directory.Exists(path))
             {
-                node.Data = LuaPlugin.GetFolderIcon("default_folder");
+                //node.Data = LuaPlugin.GetFolderIcon("default_folder");
                 node.Children = new List<FolderTreeViewNode>();
-
+                
                 var dirs = Directory.GetDirectories(path);
                 foreach (var item in dirs)
                 {
@@ -106,7 +111,7 @@ namespace Wanderer.TextCodeEditor.View
             }
             else
             {
-                node.Data = LuaPlugin.GetFileIcon(path);
+                //node.Data = LuaPlugin.GetFileIcon(path);
             }
             return node;
         }
