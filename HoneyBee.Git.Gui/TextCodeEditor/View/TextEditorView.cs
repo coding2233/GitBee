@@ -68,9 +68,8 @@ namespace Wanderer.TextCodeEditor
                     m_fileName = "*";
                     m_filePath = Guid.NewGuid().ToString();
                     m_folderPath = filePath;
-
-                    m_folderView = new TextEditorFolderView(context, m_folderPath);
                 }
+                m_folderView = new TextEditorFolderView(context, m_folderPath);
             }
         }
 
