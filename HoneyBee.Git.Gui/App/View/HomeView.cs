@@ -22,6 +22,7 @@ namespace Wanderer.App.View
 
         private List<string> m_repositories;
         private List<string> m_repositoriesName;
+        private string m_repoSearchText="";
 
         private string m_selectGitPath;
         private string m_selectGitName;
@@ -96,10 +97,17 @@ namespace Wanderer.App.View
         private void OnRepositoriesDraw()
         {
             ImGui.Text(LuaPlugin.GetText("Repositories"));
+            ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
+            ImGui.InputText("",ref m_repoSearchText,100);
             if (m_repositories != null && m_repositories.Count > 0)
             {
                 for (int i = 0; i < m_repositories.Count; i++)
                 {
+                    if (!string.IsNullOrEmpty(m_repoSearchText) && !m_repositories[i].Contains(m_repoSearchText, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
                     bool repoExists = Directory.Exists(m_repositories[i]);
                     if (!repoExists)
                     {

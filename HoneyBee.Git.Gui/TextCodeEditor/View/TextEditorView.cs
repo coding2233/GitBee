@@ -15,7 +15,7 @@ using System.Xml.Linq;
 using Wanderer.App;
 using Wanderer.App.Service;
 using Wanderer.Common;
-
+using Wanderer.TextCodeEditor.View;
 
 namespace Wanderer.TextCodeEditor
 {
@@ -31,14 +31,21 @@ namespace Wanderer.TextCodeEditor
         private string m_filePath;
         private string m_fileName;
         private TextEditor m_textEditor;
+        private string m_folderPath;
+
 
         [Inject]
         public IPluginService plugin { get; set; }
 
-       
+
+        private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
+
+        private TextEditorFolderView m_folderView;
+
         public TextEditorView(IContext context, string filePath) : base(context)
         {
             m_textEditor = new TextEditor();
+
             if (string.IsNullOrEmpty(filePath))
             {
                 m_fileName = "*";
@@ -46,11 +53,23 @@ namespace Wanderer.TextCodeEditor
             }
             else
             {
-                m_filePath = filePath;
-                m_fileName = Path.GetFileName(m_filePath);
-                if (File.Exists(m_filePath))
+                if (File.Exists(filePath))
                 {
-                    m_textEditor.text = File.ReadAllText(m_filePath);
+                    m_filePath = filePath;
+                    m_fileName = Path.GetFileName(m_filePath);
+                    m_folderPath = Path.GetDirectoryName(m_filePath);
+                    if (File.Exists(m_filePath))
+                    {
+                        m_textEditor.text = File.ReadAllText(m_filePath);
+                    }
+                }
+                else
+                {
+                    m_fileName = "*";
+                    m_filePath = Guid.NewGuid().ToString();
+                    m_folderPath = filePath;
+
+                    m_folderView = new TextEditorFolderView(context, m_folderPath);
                 }
             }
         }
@@ -77,7 +96,28 @@ namespace Wanderer.TextCodeEditor
 
         public override void OnDraw()
         {
+            if (m_folderView == null)
+            {
+                OnDrawTextEditor();
+            }
+            else
+            {
+                m_splitView.Begin();
+                OnDrawFolder();
+                m_splitView.Separate();
+                OnDrawTextEditor();
+            }
+        }
+
+        private void OnDrawFolder()
+        {
+            m_folderView.OnDraw();
+        }
+
+        private void OnDrawTextEditor()
+        {
             m_textEditor.Render(m_fileName,ImGui.GetContentRegionAvail());
+
         }
 
         protected void OnToolbarDraw()

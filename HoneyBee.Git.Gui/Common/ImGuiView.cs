@@ -14,7 +14,7 @@ using Wanderer.App.View;
 
 namespace Wanderer.Common
 {
-    public abstract class ImGuiView : EventView
+    public abstract class ImGuiView : View
     {
         private static List<ImGuiView> s_imGuiViews=new List<ImGuiView>();
         private static List<ImGuiTabView> s_imGuiTabViews=new List<ImGuiTabView>();

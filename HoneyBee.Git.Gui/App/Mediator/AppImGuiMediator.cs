@@ -33,11 +33,15 @@ namespace Wanderer.App.Mediator
             appImGuiView.OnSearchRepository += OnSearchRepository;
             appImGuiView.OnSetStyleColors += OnSetStyleColors;
 
+            appImGuiView.OnOpenFolder.AddListener(OnOpenFolder);
+
             appImGuiView.SetStyleColors(database.GetCustomerData<int>("StyleColors",1));
         }
 
         public override void OnRemove()
         {
+            appImGuiView.OnOpenFolder.RemoveListener(OnOpenFolder);
+
             appImGuiView.OnOpenRepository -= OnOpenRepository;
             appImGuiView.OnSearchRepository -= OnSearchRepository;
             appImGuiView.OnSetStyleColors -= OnSetStyleColors;
@@ -75,6 +79,11 @@ namespace Wanderer.App.Mediator
             {
                 Log.Warn("OnSearchRepository Exception {0}",e);
             }
+        }
+
+        private void OnOpenFolder(string folder)
+        {
+            dispatcher.Dispatch(AppEvent.OpenFile, folder);
         }
 
         private void OnSetStyleColors(int style)

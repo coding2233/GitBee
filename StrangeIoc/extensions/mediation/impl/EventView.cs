@@ -34,12 +34,12 @@ namespace strange.extensions.mediation.impl
 	public class EventView : View
 	{
 		[Inject]
-		public IEventDispatcher dispatcher{ get; set;}
+		public IEventDispatcher dispatcher { get; set; }
 
 		public EventView(IContext context) : base(context)
 		{
-			
+
 		}
-    }
+	}
 }
 

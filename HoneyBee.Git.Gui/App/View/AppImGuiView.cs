@@ -3,6 +3,7 @@ using LibGit2Sharp;
 using SFB;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
+using strange.extensions.signal.impl;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -22,6 +23,9 @@ namespace Wanderer.App.View
     {
         internal Action<string> OnOpenRepository;
         internal Action<string> OnSearchRepository;
+
+        internal Signal<string> OnOpenFolder=new Signal<string>();
+
         internal Action<int> OnSetStyleColors;
         private int m_styleColors;
         //private string m_statusLog = Icon.Get(Icon.Material_open_with);
@@ -190,8 +194,16 @@ namespace Wanderer.App.View
                 {
                     if (ImGui.BeginMenu(LuaPlugin.GetText("New")))
                     {
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Open Folder")))
+                        {
+                           var folders= StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
+                            if (folders != null && folders.Length > 0)
+                            {
+                                OnOpenFolder.Dispatch(folders[0]);
+                            }
+                        }
 
-                        if (ImGui.MenuItem("Clone"))
+                        if (ImGui.MenuItem(LuaPlugin.GetText("Clone")))
                         {
                             GitCommandView.RunGitCommandView<CloneGitCommand>();
                         }
