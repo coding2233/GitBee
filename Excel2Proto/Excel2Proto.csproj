@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -10,4 +10,12 @@
     <Folder Include="Excel\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NPOI" Version="2.6.0" />
+  </ItemGroup>
+	
+    <ItemGroup>
+	    <Content Include="Excel/**" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+	
 </Project>

@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StandaloneFileBrowser", "St
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HoneyBee.Git", "HoneyBee.Git\HoneyBee.Git.csproj", "{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Excel2Proto", "Excel2Proto\Excel2Proto.csproj", "{72A96E98-4F83-4B68-8629-E141B2A6E1EB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -37,8 +39,8 @@ Global
 		{B5CC68D1-B1F3-4171-87AE-8ECE74424A8B}.Release|x64.Build.0 = Release|x64
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|x64.ActiveCfg = Debug|x64
-		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|x64.Build.0 = Debug|x64
+		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Debug|x64.Build.0 = Debug|Any CPU
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5171EB26-F16F-4A74-8A3A-3268ED0990EE}.Release|x64.ActiveCfg = Release|x64
@@ -51,6 +53,14 @@ Global
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Release|Any CPU.Build.0 = Release|Any CPU
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Release|x64.ActiveCfg = Release|Any CPU
 		{298C2BD4-4CD4-4498-93E2-03F9D81ADF69}.Release|x64.Build.0 = Release|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Debug|x64.Build.0 = Debug|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Release|x64.ActiveCfg = Release|Any CPU
+		{72A96E98-4F83-4B68-8629-E141B2A6E1EB}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
