@@ -34,17 +34,22 @@ public class ExcelToProtobuf
             {
                 var sheet = xssWorkbook.GetSheetAt(i);
                 var msgTemplates = ReadSheet(sheet);
-                if (msgTemplates.Count > 0)
+                if (msgTemplates!=null)
                 {
                     string protoPath = Path.Combine(m_protoOutPath, sheet.SheetName + ".proto");
+                    string jsonPath = Path.Combine(m_protoOutPath, sheet.SheetName + ".json");
 
-                    MessageToProto(msgTemplates, protoPath);
+                    var protoFile = MessageToProto(msgTemplates, sheet.SheetName);
+                    var protoData = MessageToData(msgTemplates, sheet.SheetName);
+
+                    File.WriteAllText(protoPath, protoFile);
+                    File.WriteAllText(jsonPath, protoData);
                 }
             }
         }
     }
 
-    public void MessageToProto(List<MessageTemplate> messages, string protoPath)
+    public string MessageToProto(MessageTemplate message, string sheetName)
     {
         if (m_stringBuilder == null)
         {
@@ -54,6 +59,15 @@ public class ExcelToProtobuf
         {
             m_stringBuilder.Clear();
         }
+
+        List<MessageTemplate> messages = new List<MessageTemplate>();
+        messages.Add(message);
+        //string sheetName = Path.GetFileNameWithoutExtension(protoPath);
+        MessageTemplate sheetMessage = new MessageTemplate(sheetName);
+        sheetMessage.Types = new List<string>() { $"repeated {message.Name}" };
+        sheetMessage.Vars = new List<string>() { message.Name.ToLower()+"_list" };
+        sheetMessage.Desc = new List<string>() { sheetName };
+        messages.Add(sheetMessage);
 
         m_stringBuilder.AppendLine(m_protoVersion);
         m_stringBuilder.AppendLine("");
@@ -77,12 +91,119 @@ public class ExcelToProtobuf
             m_stringBuilder.AppendLine("}\n");
         }
 
-        File.WriteAllText(protoPath, m_stringBuilder.ToString());
+        //File.WriteAllText(protoPath, m_stringBuilder.ToString());
+        return m_stringBuilder.ToString();
     }
 
-    private List<MessageTemplate> ReadSheet(ISheet sheet, int rowIndex = 0)
+
+    public string MessageToData(MessageTemplate msg, string sheetName)
     {
-        List<MessageTemplate> messageTemplates = new List<MessageTemplate>();
+        StringBuilder stringBuilder = new StringBuilder();
+        //stringBuilder.AppendLine("{");
+        //stringBuilder.Append("\"");
+        stringBuilder.Append(msg.Name.ToLower());
+        stringBuilder.Append("_list");
+        //stringBuilder.Append("\"");
+        stringBuilder.AppendLine(":[");
+
+        for (int d = 0; d < msg.Data.Count; d++)
+        {
+            var data = msg.Data[d];
+            stringBuilder.AppendLine("{");
+
+            for (int i = 0; i < msg.Vars.Count; i++)
+            {
+                //stringBuilder.Append("\"");
+                stringBuilder.Append(msg.Vars[i]);
+                //stringBuilder.Append("\"");
+                stringBuilder.Append(":");
+
+                string varType = msg.Types[i];
+                if (varType.Equals("repeated"))
+                {
+                    stringBuilder.Append("[");
+
+                    string dataValue = ICellToString(data[i]);
+                    string[] dataArgs = dataValue.Split('|');
+                    for (int j = 0; j < dataArgs.Length; j++)
+                    {
+                        if (varType.Contains("string"))
+                        {
+                            stringBuilder.Append("\"");
+                            stringBuilder.Append(dataArgs[j]);
+                            stringBuilder.Append("\"");
+                        }
+                        else
+                        {
+                            stringBuilder.Append(dataArgs[j]);
+                        }
+
+                        if (j < dataArgs.Length - 1)
+                        {
+                            stringBuilder.Append(",");
+                        }
+                    }
+
+                    stringBuilder.Append("]");
+                }
+                else
+                {
+                    if (varType.Contains("string"))
+                    {
+                        stringBuilder.Append("\"");
+                        stringBuilder.Append(ICellToString(data[i]));
+                        stringBuilder.Append("\"");
+                    }
+                    else
+                    {
+                        stringBuilder.Append(ICellToString(data[i]));
+                    }
+                }
+
+                
+
+                if (i < msg.Vars.Count - 1)
+                {
+                    stringBuilder.Append(",");
+                }
+            }
+
+            stringBuilder.AppendLine("}");
+            if (d < msg.Data.Count - 1)
+            {
+                stringBuilder.Append(",");
+            }
+        }
+
+        stringBuilder.AppendLine("]");
+
+        return stringBuilder.ToString();
+        //File.WriteAllText(dataPath, stringBuilder.ToString());
+    }
+
+
+    private string ICellToString(ICell cell)
+    {
+        switch (cell.CellType)
+        {
+            case CellType.Numeric:
+                return cell.NumericCellValue.ToString();
+            case CellType.String:
+                return cell.StringCellValue;
+            case CellType.Formula:
+                return cell.CellFormula.ToString();
+            case CellType.Blank:
+                return "";
+            case CellType.Boolean:
+                return cell.BooleanCellValue.ToString();
+            default:
+                return cell.ToString();
+        }
+        return null;
+    }
+
+    private MessageTemplate ReadSheet(ISheet sheet, int rowIndex = 0)
+    {
 
         for (int i = rowIndex; i < sheet.LastRowNum; i++)
         {
@@ -98,19 +219,19 @@ public class ExcelToProtobuf
                 if ("#message".Equals(cell.StringCellValue))
                 {
                     var msgTemplate = ParseMessage(sheet, i, 0);
-                    messageTemplates.Add(msgTemplate);
-                    i += 2;
+                    return msgTemplate;
                 }
             }
         }
 
-        return messageTemplates;
+        return null;
     }
 
     private MessageTemplate ParseMessage(ISheet sheet, int rowIndex, int cellIndex)
     {
         string msgName = sheet.GetRow(rowIndex).GetCell(cellIndex + 1).StringCellValue;
-        string msgId = sheet.GetRow(rowIndex).GetCell(cellIndex + 2).StringCellValue;
+        var msgIdCell = sheet.GetRow(rowIndex).GetCell(cellIndex + 2);
+        string msgId = msgIdCell==null? "": msgIdCell.StringCellValue;
         MessageTemplate msgTempalye = new MessageTemplate(msgName, msgId);
         //.proto
         var typeRow = sheet.GetRow(rowIndex + 1);
@@ -123,44 +244,24 @@ public class ExcelToProtobuf
             msgTempalye.Types.Add(typeCellValue);
             msgTempalye.Vars.Add(varCellValue);
             msgTempalye.Desc.Add(descRow.GetCell(j).StringCellValue);
-
-            StringBuilder stringBuilder = new StringBuilder();
-            stringBuilder.Append(msgTempalye.Vars[j]);
-            stringBuilder.Append(":");
-            if (typeCellValue.Contains("repeated"))
-            {
-                stringBuilder.Append("[");
-            }
-            msgTempalye.Data.Add(stringBuilder);
+           
+            //msgTempalye.Data.Add(new List<ICell>());
         }
 
         //data
         for (int i = rowIndex + 4; i < sheet.LastRowNum; i++)
         {
             var row = sheet.GetRow(i);
-            //if (row == null)
-            //{
-            //    if (typeCellValue.Contains("repeated"))
-            //    {
-            //        stringBuilder.AppendLine("]");
-            //    }
-            //}
+            if (row == null)
+            {
+                break;
+            }
+            List<ICell> cells = new List<ICell>();
             for (int j = 1; j < row.LastCellNum; j++)
             {
-                string typeCellValue = msgTempalye.Types[j-1];
-                string varCellValue = msgTempalye.Vars[j - 1];
-                var stringBuilder = msgTempalye.Data[j - 1];
-
+                cells.Add(row.GetCell(j));
             }
-
-
-           
-
-            ////再遍历
-            //if (row == null)
-            //{
-            //    ReadSheet(sheet, i+1);
-            //}
+            msgTempalye.Data.Add(cells);
         }
 
         return msgTempalye;
@@ -176,14 +277,14 @@ public class MessageTemplate
     public List<string> Types;
     public List<string> Vars;
     public List<string> Desc;
-    public List<StringBuilder> Data;
-    public MessageTemplate(string name, string id)
+    public List<List<ICell>> Data;
+    public MessageTemplate(string name, string id=null)
     {
         Name = name;
         Id = id;
         Types = new List<string>();
         Vars = new List<string>();
         Desc = new List<string>();
-        Data = new List<StringBuilder>();
+        Data = new List<List<ICell>>();
     }
 }
