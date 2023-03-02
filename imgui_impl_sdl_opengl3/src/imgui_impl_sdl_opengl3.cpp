@@ -177,7 +177,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                         clock_start = clock();
                         frame = 0;
                         //frame_rate_time = 1000;
-                        frame_rate_time = (1 / 5.0f) * 1000;
+                        frame_rate_time = (1 / 10.0f) * 1000;
                     }
                 }
             }

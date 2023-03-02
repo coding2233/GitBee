@@ -87,7 +87,7 @@ bool igIsTextChangedTextEditor(TextEditor* text_editor)
     return text_editor->IsTextChanged();
 }
 
-const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_editor,std::string lang_def_name, const std::string keywords[],int keywords_length, std::string identifiers[],int identifiers_length, TextEditor::LanguageDefinition::TokenizeCallback tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation)
+const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_editor,std::string lang_def_name, const std::string keywords[],int keywords_length, std::string identifiers[],int identifiers_length, TextTokenizeCallback text_tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation)
 {
 	if (lang_def_name.empty())
 	{
@@ -124,8 +124,65 @@ const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_e
 			langDef.mIdentifiers.insert(std::make_pair(identifiers[i], id));
 		}
 
+		static TextTokenizeCallback& text_tokenize_callback_ = text_tokenize_callback;
+		static TextTokenize text_tokenize_;
 
-		langDef.mTokenize = tokenize_callback;
+		langDef.mTokenize = [](const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, TextEditor::PaletteIndex & paletteIndex) -> bool
+		{
+			paletteIndex = TextEditor::PaletteIndex::Max;
+
+			while (in_begin < in_end && isascii(*in_begin) && isblank(*in_begin))
+				in_begin++;
+
+			if (in_begin == in_end)
+			{
+				out_begin = in_end;
+				out_end = in_end;
+				paletteIndex = TextEditor::PaletteIndex::Default;
+			}
+			else
+			{
+				bool result = false;
+
+				if (text_tokenize_callback_)
+				{
+					text_tokenize_.result=false;
+					text_tokenize_.begin = in_begin;
+					text_tokenize_.end = in_end;
+					text_tokenize_.paletteIndex = (int)paletteIndex;
+					TextTokenize* text_tokenize_result = text_tokenize_callback_(&text_tokenize_);
+					result = text_tokenize_result->result;
+					//调用成功
+					if (result)
+					{
+						out_begin = text_tokenize_result->begin;
+						out_end = text_tokenize_result->end;
+						paletteIndex = (TextEditor::PaletteIndex)text_tokenize_result->paletteIndex;
+					}
+					
+				}
+
+				// if(!result)
+				// {
+				// 	out_begin = in_end;
+				// 	out_end = in_end;
+				// 	paletteIndex = TextEditor::PaletteIndex::Default;
+				// }
+				
+			}
+			// else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
+			// 	paletteIndex = PaletteIndex::String;
+			// else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
+			// 	paletteIndex = PaletteIndex::CharLiteral;
+			// else if (TokenizeCStyleIdentifier(in_begin, in_end, out_begin, out_end))
+			// 	paletteIndex = PaletteIndex::Identifier;
+			// else if (TokenizeCStyleNumber(in_begin, in_end, out_begin, out_end))
+			// 	paletteIndex = PaletteIndex::Number;
+			// else if (TokenizeCStylePunctuation(in_begin, in_end, out_begin, out_end))
+			// 	paletteIndex = PaletteIndex::Punctuation;
+
+			return paletteIndex != TextEditor::PaletteIndex::Max;
+		};
 
 		langDef.mCommentStart = comment_start;
 		langDef.mCommentEnd = comment_end;

@@ -1,0 +1,21 @@
+[ 16%]: cache compiling.debug src\iiso3_export.cpp
+[ 33%]: cache compiling.debug src\imgui_impl_sdl_opengl3.cpp
+[ 41%]: cache compiling.debug test\main.cpp
+In file included from test\main.cpp:7:
+In file included from src\imgui_impl_sdl_opengl3.h:15:
+src/stb_image.h:3366:16: warning: equality comparison with extraneous parentheses [-Wparentheses-equality]
+      if (((m) == 0xda)) {
+           ~~~~^~~~~~~
+src/stb_image.h:3366:16: note: remove extraneous parentheses around the comparison to silence this warning
+      if (((m) == 0xda)) {
+          ~    ^      ~
+src/stb_image.h:3366:16: note: use '=' to turn this equality comparison into an assignment
+      if (((m) == 0xda)) {
+               ^~
+               =
+src/stb_image.h:3380:23: warning: equality comparison with extraneous parentheses [-Wparentheses-equality]
+      } else if (((m) == 0xdc)) {
+                  ~~~~^~~~~~~
+src/stb_image.h:3380:23: note: remove extraneous parentheses around the comparison to silence this warning
+error: cannot remove file build\.objs\iiso3\windows\x64\debug\src\__cpp_imgui_impl_sdl_opengl3.cpp.cpp Not access because it is busy
+  > in src\imgui_impl_sdl_opengl3.cpp
