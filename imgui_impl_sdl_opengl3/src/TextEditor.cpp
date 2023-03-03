@@ -51,7 +51,7 @@ TextEditor::TextEditor()
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 {
 	SetPalette(GetDarkPalette());
-	SetLanguageDefinition(LanguageDefinition::CPlusPlus());
+	// SetLanguageDefinition(LanguageDefinition::CPlusPlus());
 	mLines.push_back(Line());
 }
 

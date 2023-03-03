@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "TextEditor.h"
+#include "language_definition_ex.h"
 
 #if defined _WIN32 || defined __CYGWIN__
 #include "windows.h"
@@ -21,18 +22,16 @@
 
 #define EXPORT_API EXTERN API
 
-struct TextTokenize
-{
-    bool result;
-    const char* begin;
-    const char* end;
-    int paletteIndex;
-};
+// struct TextTokenize
+// {
+//     bool result;
+//     const char* begin;
+//     const char* end;
+//     int paletteIndex;
+// };
 
-typedef struct TextTokenize* (*TextTokenizeCallback)(struct TextTokenize* text_tokenize);
+// typedef struct TextTokenize* (*TextTokenizeCallback)(struct TextTokenize* text_tokenize);
 
-
-//TextEditor Export
 
 EXPORT_API TextEditor * igNewTextEditor();
 EXPORT_API void igDeleteTextEditor(TextEditor * textEditor);
@@ -48,7 +47,7 @@ EXPORT_API int igGetTotalLinesTextEditor(TextEditor * textEditor);
 EXPORT_API bool igIsOverwriteTextEditor(TextEditor * textEditor);
 EXPORT_API bool igCanUndoTextEditor(TextEditor * textEditor);
 EXPORT_API bool igIsTextChangedTextEditor(TextEditor * textEditor);
-EXPORT_API const TextEditor::LanguageDefinition& igGetLanguageDefinition(TextEditor* text_editor, std::string lang_def_name, const std::string keywords[], int keywords_length, std::string identifiers[], int identifiers_length, TextTokenizeCallback text_tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation);
-EXPORT_API void igSetLanguageDefinition(TextEditor* text_editor, const TextEditor::LanguageDefinition& aLanguageDef);
+// EXPORT_API const TextEditor::LanguageDefinition& igGetLanguageDefinition(std::string lang_def_name, std::string keywords[], int keywords_length, std::string identifiers[], int identifiers_length, TextTokenizeCallback text_tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation);
+EXPORT_API void igSetLanguageDefinition(TextEditor* text_editor, const char* lang_def_name);
 
 #endif
