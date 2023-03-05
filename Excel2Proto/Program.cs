@@ -3,6 +3,7 @@
 
 using NPOI.SS.UserModel;
 using NPOI.XSSF.UserModel;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
@@ -11,9 +12,41 @@ using System.Text;
 
 class Program
 {
+    const string Version = "0.1.0";
     static void Main(string[] args)
     {
-        new ExcelToProtobuf("Excel/Test.xlsx");
+        if (args == null || args.Length < 1)
+        {
+            Console.WriteLine("参数错误,请输入xlsx文件夹以及输出文件夹");
+        }
+        else
+        {
+            string excelPath= args[0];
+            if (!Directory.Exists(excelPath))
+            {
+                Console.WriteLine("没有找到对应的excel文件夹路径");
+                return;
+            }
+            string outPath = args[1];
+            if (!Directory.Exists(outPath))
+            {
+                Directory.CreateDirectory(outPath);
+            }
+
+            var files = Directory.GetFiles(excelPath);
+            if (files == null)
+            {
+                Console.WriteLine("文件夹中没有到任何相关文件");
+                return;
+            }
+            foreach (var item in files)
+            {
+                if (item.EndsWith(".xlsx"))
+                {
+                    new ExcelToProtobuf(item, outPath);
+                }
+            }
+        }
     }
 }
 
@@ -21,10 +54,12 @@ public class ExcelToProtobuf
 {
     string m_protoOutPath;
     string m_protoVersion = "syntax = \"proto3\";";
-    StringBuilder m_stringBuilder;
-    public ExcelToProtobuf(string excelPath)
+    StringBuilder m_stringBuilder = null;
+    public ExcelToProtobuf(string excelPath,string outPath)
     {
-        m_protoOutPath = Path.GetDirectoryName(excelPath);
+        Console.WriteLine($"{excelPath} -> {outPath}");
+
+        m_protoOutPath = outPath;
 
         using (var stream = new FileStream(excelPath, FileMode.Open))
         {
@@ -37,13 +72,16 @@ public class ExcelToProtobuf
                 if (msgTemplates!=null)
                 {
                     string protoPath = Path.Combine(m_protoOutPath, sheet.SheetName + ".proto");
-                    string jsonPath = Path.Combine(m_protoOutPath, sheet.SheetName + ".json");
+                    string dataPath = Path.Combine(m_protoOutPath, sheet.SheetName + ".data");
 
                     var protoFile = MessageToProto(msgTemplates, sheet.SheetName);
                     var protoData = MessageToData(msgTemplates, sheet.SheetName);
 
                     File.WriteAllText(protoPath, protoFile);
-                    File.WriteAllText(jsonPath, protoData);
+                    File.WriteAllText(dataPath, protoData);
+
+                    Console.WriteLine($"{excelPath} -> {protoPath} -> {dataPath}");
+
                 }
             }
         }
@@ -113,6 +151,8 @@ public class ExcelToProtobuf
 
             for (int i = 0; i < msg.Vars.Count; i++)
             {
+                ICell cellData = i < data.Count? data[i]:null;
+
                 //stringBuilder.Append("\"");
                 stringBuilder.Append(msg.Vars[i]);
                 //stringBuilder.Append("\"");
@@ -123,7 +163,7 @@ public class ExcelToProtobuf
                 {
                     stringBuilder.Append("[");
 
-                    string dataValue = ICellToString(data[i]);
+                    string dataValue = ICellToString(cellData);
                     string[] dataArgs = dataValue.Split('|');
                     for (int j = 0; j < dataArgs.Length; j++)
                     {
@@ -151,12 +191,12 @@ public class ExcelToProtobuf
                     if (varType.Contains("string"))
                     {
                         stringBuilder.Append("\"");
-                        stringBuilder.Append(ICellToString(data[i]));
+                        stringBuilder.Append(ICellToString(cellData));
                         stringBuilder.Append("\"");
                     }
                     else
                     {
-                        stringBuilder.Append(ICellToString(data[i]));
+                        stringBuilder.Append(ICellToString(cellData));
                     }
                 }
 
@@ -184,6 +224,9 @@ public class ExcelToProtobuf
 
     private string ICellToString(ICell cell)
     {
+        if (cell == null)
+            return "";
+
         switch (cell.CellType)
         {
             case CellType.Numeric:
@@ -199,7 +242,8 @@ public class ExcelToProtobuf
             default:
                 return cell.ToString();
         }
-        return null;
+
+        return "";
     }
 
     private MessageTemplate ReadSheet(ISheet sheet, int rowIndex = 0)
