@@ -182,15 +182,21 @@ namespace Wanderer.GitRepository.Common
 
     public class ShowDiffText: IShowDiff
     {
+        private struct LineIndex
+        {
+            public int Index;
+            public string Line;
+        }
+
         private struct DiffText
         {
             public string Text;
-            public int Status;
-            public string RemoveText;
-            public string AddText;
+            public Dictionary<int,string> AddLines;
+            public Dictionary<int, string> RemoveLines;
+            public Dictionary<int, string[]> NormalLines;
         }
 
-        List<DiffText> m_diffTexts = new List<DiffText>();
+        DiffText m_diffTexts;
         //private string m_diffContext;
         private float m_diffNumberWidth;
 
@@ -207,14 +213,16 @@ namespace Wanderer.GitRepository.Common
 
         public void Clear()
         {
-            m_diffTexts.Clear();
+            m_diffTexts.Text = null;
+            m_diffTexts.AddLines = null;
+            m_diffTexts.RemoveLines = null;
+            m_diffTexts.NormalLines = null;
         }
 
         private void BuildDiffTexts(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
             string content = patchEntryChanges.Patch;
             m_diffNumberWidth = 0;
-            m_diffTexts.Clear();
             if (string.IsNullOrEmpty(content))
                 return;
 
@@ -230,6 +238,12 @@ namespace Wanderer.GitRepository.Common
             ////windows换行符 替换为linux换行符
             //content = content.Replace("\r\n", "\n");
 
+            m_diffTexts = new DiffText();
+            m_diffTexts.AddLines = new Dictionary<int, string>();
+            m_diffTexts.RemoveLines = new Dictionary<int, string>();
+            m_diffTexts.NormalLines = new Dictionary<int, string[]>();
+            m_diffTexts.Text = content;
+
             int removeIndex = -1;
             int addIndex = -1;
 
@@ -237,34 +251,26 @@ namespace Wanderer.GitRepository.Common
             for (int i = 0; i < lines.Length; i++)
             {
                 var line = lines[i];
-
-                DiffText diffText = new DiffText();
-                diffText.Text = line;
-                diffText.RemoveText = " ";
-                diffText.AddText = " ";
                 if (line.StartsWith("+++") || line.StartsWith("---"))
                 { }
                 else if (line.StartsWith("+"))
                 {
                     if (addIndex >= 0)
                     {
-                        diffText.Status = 1;
+                        string addIndexStr = addIndex.ToString();
+                        m_diffTexts.AddLines.Add(i, addIndexStr);
+                        GetNumberItemWidth(addIndexStr);
                         addIndex++;
-                        //diffText.RemoveText = " ";
-                        diffText.AddText = $"{(addIndex - 1)} ";
-                        GetNumberItemWidth(diffText.AddText);
                     }
                 }
                 else if (line.StartsWith("-"))
                 {
                     if (removeIndex >= 0)
                     {
-                        diffText.Status = 2;
+                        string removeIndexStr = removeIndex.ToString();
+                        m_diffTexts.RemoveLines.Add(i, removeIndexStr);
+                        GetNumberItemWidth(removeIndexStr);
                         removeIndex++;
-
-                        //diffText.AddText = " ";
-                        diffText.RemoveText = $"{(removeIndex - 1)} ";
-                        GetNumberItemWidth(diffText.RemoveText);
                     }
                 }
                 else if (line.StartsWith("@@"))
@@ -277,26 +283,6 @@ namespace Wanderer.GitRepository.Common
                     addIndex = int.Parse(addArgs[0]);
                 }
 
-                if (diffText.Status == 0)
-                {
-                    if (!line.StartsWith("@@") && addIndex >= 0 && removeIndex >= 0)
-                    {
-                        addIndex++;
-                        removeIndex++;
-                        diffText.AddText = (addIndex - 1).ToString();
-                        GetNumberItemWidth(diffText.AddText);
-                        diffText.RemoveText = (removeIndex - 1).ToString();
-                        GetNumberItemWidth(diffText.RemoveText);
-                    }
-                    else
-                    {
-                        //diffText.AddText = " ";
-                        //diffText.RemoveText = " ";
-                    }
-                }
-
-
-                m_diffTexts.Add(diffText);
             }
         }
 
@@ -305,51 +291,79 @@ namespace Wanderer.GitRepository.Common
         /// </summary>
         private void DrawDiffStatus()
         {
-            if (m_diffTexts != null && m_diffTexts.Count > 0)
+            if (!string.IsNullOrEmpty(m_diffTexts.Text))
             {
-                foreach (var item in m_diffTexts)
+                var startPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+                float textHeight = ImGui.GetTextLineHeight();
+
+                foreach (var item in m_diffTexts.AddLines)
                 {
-                    RenderDiffTextLine(item);
+                    var bgMin = startPos + new Vector2(0, textHeight * item.Key);
+                    var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
+                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("NewTextBg"));
+                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(1, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
                 }
+
+                foreach (var item in m_diffTexts.RemoveLines)
+                {
+                    var bgMin = startPos + new Vector2(0, textHeight * item.Key);
+                    var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
+                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("DeleteTextBg"));
+                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(m_diffNumberWidth, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
+                }
+
+                ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
+                ImGui.TextUnformatted(m_diffTexts.Text);
 
                 var min = ImGui.GetWindowPos() + new Vector2(m_diffNumberWidth * 2, 0);
                 var max = min + new Vector2(2, ImGui.GetWindowHeight());
                 ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.Border));
             }
+            //if (m_diffTexts != null && m_diffTexts.Count > 0)
+            //{
+            //    foreach (var item in m_diffTexts)
+            //    {
+            //        RenderDiffTextLine(item);
+            //    }
+
+            //    var min = ImGui.GetWindowPos() + new Vector2(m_diffNumberWidth * 2, 0);
+            //    var max = min + new Vector2(2, ImGui.GetWindowHeight());
+            //    ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.Border));
+            //}
         }
 
-        private void RenderDiffTextLine(DiffText line)
-        {
-            uint col = 0;
-            if (line.Status == 1)
-            {
-                col = LuaPlugin.GetColorU32("NewTextBg");
-            }
-            else if (line.Status == 2)
-            {
-                col = LuaPlugin.GetColorU32("DeleteTextBg");
-            }
-            if (col != 0)
-            {
-                //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
-                //var min = ImGui.GetItemRectMin();
-                //var max = ImGui.GetItemRectMax();
-                var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
-                var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
-                ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
-            }
+        //private void RenderDiffTextLine(DiffText line)
+        //{
+        //    uint col = 0;
+        //    if (line.Status == 1)
+        //    {
+        //        col = LuaPlugin.GetColorU32("NewTextBg");
+        //    }
+        //    else if (line.Status == 2)
+        //    {
+        //        col = LuaPlugin.GetColorU32("DeleteTextBg");
+        //    }
+        //    if (col != 0)
+        //    {
+        //        //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
+        //        //var min = ImGui.GetItemRectMin();
+        //        //var max = ImGui.GetItemRectMax();
+        //        var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
+        //        var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
+        //        ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
+        //    }
 
-            ImGui.SetCursorPosX(0);
-            //ImGui.SetNextItemWidth(50);
-            ImGui.Text(line.RemoveText);
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(m_diffNumberWidth);
-            //ImGui.SetNextItemWidth(50);
-            ImGui.Text(line.AddText);
-            ImGui.SameLine();
-            ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
-            ImGui.TextUnformatted(line.Text);
-        }
+        //    ImGui.SetCursorPosX(0);
+        //    //ImGui.SetNextItemWidth(50);
+        //    ImGui.Text(line.RemoveText);
+        //    ImGui.SameLine();
+        //    ImGui.SetCursorPosX(m_diffNumberWidth);
+        //    //ImGui.SetNextItemWidth(50);
+        //    ImGui.Text(line.AddText);
+        //    ImGui.SameLine();
+        //    ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
+        //    ImGui.TextUnformatted(line.Text);
+        //}
 
         private void GetNumberItemWidth(string text)
         {
