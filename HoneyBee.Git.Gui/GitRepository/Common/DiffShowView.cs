@@ -22,6 +22,7 @@ namespace Wanderer.GitRepository.Common
         public DiffShowView()
         {
             m_showDiffs = new List<IShowDiff>();
+            //m_showDiffs.Add(new ShowDiffConflicted());
             m_showDiffs.Add(new ShowDiffTexture());
             m_showDiffs.Add(new ShowDiffText());
         }
@@ -340,51 +341,7 @@ namespace Wanderer.GitRepository.Common
                 var max = min + new Vector2(2, ImGui.GetWindowHeight());
                 ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.Border));
             }
-            //if (m_diffTexts != null && m_diffTexts.Count > 0)
-            //{
-            //    foreach (var item in m_diffTexts)
-            //    {
-            //        RenderDiffTextLine(item);
-            //    }
-
-            //    var min = ImGui.GetWindowPos() + new Vector2(m_diffNumberWidth * 2, 0);
-            //    var max = min + new Vector2(2, ImGui.GetWindowHeight());
-            //    ImGui.GetWindowDrawList().AddRectFilled(min, max, ImGui.GetColorU32(ImGuiCol.Border));
-            //}
         }
-
-        //private void RenderDiffTextLine(DiffText line)
-        //{
-        //    uint col = 0;
-        //    if (line.Status == 1)
-        //    {
-        //        col = LuaPlugin.GetColorU32("NewTextBg");
-        //    }
-        //    else if (line.Status == 2)
-        //    {
-        //        col = LuaPlugin.GetColorU32("DeleteTextBg");
-        //    }
-        //    if (col != 0)
-        //    {
-        //        //ImGui.GetBackgroundDrawList().AddRectFilled(ImGui.GetItemRectMin(), ImGui.GetItemRectMax(), col);
-        //        //var min = ImGui.GetItemRectMin();
-        //        //var max = ImGui.GetItemRectMax();
-        //        var min = ImGui.GetWindowPos() + ImGui.GetCursorPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY());
-        //        var max = min + new Vector2(ImGui.GetWindowWidth(), ImGui.GetTextLineHeightWithSpacing());
-        //        ImGui.GetWindowDrawList().AddRectFilled(min, max, col);
-        //    }
-
-        //    ImGui.SetCursorPosX(0);
-        //    //ImGui.SetNextItemWidth(50);
-        //    ImGui.Text(line.RemoveText);
-        //    ImGui.SameLine();
-        //    ImGui.SetCursorPosX(m_diffNumberWidth);
-        //    //ImGui.SetNextItemWidth(50);
-        //    ImGui.Text(line.AddText);
-        //    ImGui.SameLine();
-        //    ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
-        //    ImGui.TextUnformatted(line.Text);
-        //}
 
         private void GetNumberItemWidth(string text)
         {
@@ -399,4 +356,45 @@ namespace Wanderer.GitRepository.Common
         {
         }
     }
+
+
+    public class ShowDiffConflicted : IShowDiff
+    {
+        private string m_content;
+        public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
+        {
+            if (patchEntryChanges.Status == ChangeKind.Conflicted)
+            {
+                m_content = patchEntryChanges.Patch;
+                if (!patchEntryChanges.IsBinaryComparison)
+                {
+                    string textPath = Path.Combine(gitRepo.RootPath, patchEntryChanges.Path);
+                    if (File.Exists(textPath))
+                    {
+                        m_content += File.ReadAllText(textPath);
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+
+        public void Clear()
+        {
+        }
+
+        public void Dispose()
+        {
+        }
+
+        public void OnDraw()
+        {
+            if (!string.IsNullOrEmpty(m_content))
+            {
+                ImGui.TextUnformatted(m_content);
+            }
+        }
+    }
+
 }
+
