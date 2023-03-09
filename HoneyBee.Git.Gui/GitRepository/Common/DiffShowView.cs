@@ -282,7 +282,21 @@ namespace Wanderer.GitRepository.Common
                     removeIndex = int.Parse(removeArgs[0]) * -1;
                     addIndex = int.Parse(addArgs[0]);
                 }
-
+                else
+                {
+                    if (addIndex >= 0|| removeIndex>=0)
+                    {
+                        m_diffTexts.NormalLines.Add(i, new string[] { addIndex.ToString(), removeIndex.ToString() });
+                        if (addIndex >= 0)
+                        {
+                            addIndex++;
+                        }
+                        if (removeIndex >= 0)
+                        {
+                            removeIndex++;
+                        }
+                    }
+                }
             }
         }
 
@@ -301,7 +315,7 @@ namespace Wanderer.GitRepository.Common
                     var bgMin = startPos + new Vector2(0, textHeight * item.Key);
                     var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
                     ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("NewTextBg"));
-                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(1, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
+                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(0, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
                 }
 
                 foreach (var item in m_diffTexts.RemoveLines)
@@ -310,6 +324,13 @@ namespace Wanderer.GitRepository.Common
                     var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
                     ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("DeleteTextBg"));
                     ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(m_diffNumberWidth, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
+                }
+
+                foreach (var item in m_diffTexts.NormalLines)
+                {
+                    var bgMin = startPos + new Vector2(0, textHeight * item.Key);
+                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(0, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value[0].ToString());
+                    ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(m_diffNumberWidth, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value[1].ToString());
                 }
 
                 ImGui.SetCursorPosX(m_diffNumberWidth * 2 + 5);
@@ -367,7 +388,7 @@ namespace Wanderer.GitRepository.Common
 
         private void GetNumberItemWidth(string text)
         {
-            var textSize = ImGui.CalcTextSize(text);
+            var textSize = ImGui.CalcTextSize(text+" ");
             if (textSize.X > m_diffNumberWidth)
             {
                 m_diffNumberWidth = textSize.X;
