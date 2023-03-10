@@ -304,7 +304,7 @@ namespace Wanderer.GitRepository.View
 
         private void DrawTreeNodeHead(string name, Action onDraw)
         {
-            string key = $"TreeNode_{name}";
+            string key = $"TreeNode_{name}_{m_gitRepo.RootPath}";
             bool oldTreeNodeOpen = m_gitRepoMediator.GetUserData<bool>(key);
             ImGui.SetNextItemOpen(oldTreeNodeOpen);
             bool treeNodeOpen = ImGui.TreeNode(name);

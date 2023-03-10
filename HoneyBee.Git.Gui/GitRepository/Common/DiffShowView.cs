@@ -22,7 +22,7 @@ namespace Wanderer.GitRepository.Common
         public DiffShowView()
         {
             m_showDiffs = new List<IShowDiff>();
-            //m_showDiffs.Add(new ShowDiffConflicted());
+            m_showDiffs.Add(new ShowDiffConflicted());
             m_showDiffs.Add(new ShowDiffTexture());
             m_showDiffs.Add(new ShowDiffText());
         }
@@ -361,6 +361,11 @@ namespace Wanderer.GitRepository.Common
     public class ShowDiffConflicted : IShowDiff
     {
         private string m_content;
+        private bool m_useSelf=true;
+        private bool m_useOther=true;
+
+        SplitView m_splitView = new SplitView(SplitView.SplitType.Vertical,0.7f);
+
         public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
             if (patchEntryChanges.Status == ChangeKind.Conflicted)
@@ -389,10 +394,36 @@ namespace Wanderer.GitRepository.Common
 
         public void OnDraw()
         {
+            m_splitView.Begin();
             if (!string.IsNullOrEmpty(m_content))
             {
                 ImGui.TextUnformatted(m_content);
             }
+
+            m_splitView.Separate();
+            ImGui.Checkbox("User Self", ref m_useSelf);
+            ImGui.SameLine();
+            ImGui.Checkbox("User Other", ref m_useOther);
+
+            string showMergeText = "Accept Both Changes";
+            if (m_useSelf && !m_useOther)
+            {
+                showMergeText = "Cureent Change";
+            }
+            else if (!m_useSelf && m_useOther)
+            {
+                showMergeText = "Incoming Change";
+            }
+
+            if (ImGui.Button(showMergeText))
+            {
+
+            }
+
+            m_splitView.End();
+
+          
+            //ImGui.Separator();
         }
     }
 
