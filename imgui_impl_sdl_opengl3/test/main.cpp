@@ -7,24 +7,24 @@
 #include "imgui_impl_sdl_opengl3.h"
 #include "iiso3_export.h"
 
-static TextEditor *text_editor_;
+// static TextEditor *text_editor_;
 
 
 ImGuiContext* OnImGuiInit()
 {
    return ImGui::CreateContext();
 
-   text_editor_ = igNewTextEditor();
-   text_editor_->SetText("asdasdgfdsfds5116231sdgf234fd56g456fdg416fd");
+  //  text_editor_ = igNewTextEditor();
+  //  text_editor_->SetText("asdasdgfdsfds5116231sdgf234fd56g456fdg416fd");
 }
 
 void OnImGuiDraw()
 {
   ImGui::ShowDemoWindow();
 
-  ImGui::Begin("Text editor");
-  igRenderTextEditor(text_editor_,"aaaa",ImGui::GetContentRegionAvail(),true);
-  ImGui::End();
+  // ImGui::Begin("Text editor");
+  // igRenderTextEditor(text_editor_,"aaaa",ImGui::GetContentRegionAvail(),true);
+  // ImGui::End();
 }
 
 int main(int argc,char *args[])
