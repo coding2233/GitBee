@@ -32,6 +32,7 @@ namespace Wanderer.App
 
             mediationBinder.Bind<AppImGuiView>().To<AppImGuiMediator>();
             mediationBinder.Bind<HomeView>().To<HomeMediator>();
+            mediationBinder.Bind<SSHView>().To<SSHMediator>();
 
             commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once();
         }
