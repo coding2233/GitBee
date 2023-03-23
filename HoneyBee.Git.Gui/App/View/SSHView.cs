@@ -9,6 +9,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
+using Wanderer.GitRepository.Common;
 
 namespace Wanderer.App.View
 {
@@ -23,15 +24,24 @@ namespace Wanderer.App.View
 
         private SshClient m_sshClient;
         private StringBuilder m_stringBuilder = new StringBuilder();
+        private bool m_resetScrollToDown;
+
         public SSHView(IContext context) : base(context)
         {
-            m_sshClient = new SshClient("localhost","root","root");
-            m_sshClient.HostKeyReceived += (sender, e) =>
+            try
             {
-                e.CanTrust = true;
-            };
+                m_sshClient = new SshClient("192.168.31.11", "root", "coding2580");
+                m_sshClient.HostKeyReceived += (sender, e) =>
+                {
+                    e.CanTrust = true;
+                };
 
-            m_sshClient.Connect();
+                m_sshClient.Connect();
+            }
+            catch (Exception e)
+            {
+                Log.Info(e);
+            }
             //using (var cmd = m_sshClient.RunCommand("ls"))
             //{
             //    Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
@@ -58,62 +68,38 @@ namespace Wanderer.App.View
 
         private unsafe void OnSShTerminalDraw()
         {
-            //ImGui.Text(m_logText);
-
-            //ImGui.PushStyleColor(ImGuiCol.FrameBg, Vector4.Zero);
-            //if (ImGui.InputTextWithHint("","sss", ref m_inputText, m_textMaxLength, ImGuiInputTextFlags.EnterReturnsTrue))
-            //{
-            //    if (!string.IsNullOrEmpty(m_inputText))
-            //    {
-            //        if (m_sshClient != null && m_sshClient.IsConnected)
-            //        {
-            //            using (var cmd = m_sshClient.RunCommand(m_inputText))
-            //            {
-            //                Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
-            //                if (!string.IsNullOrEmpty(cmd.Result))
-            //                {
-            //                    m_logText += cmd.Result;
-            //                }
-            //                m_inputText = "";
-            //            }
-            //        }
-            //    }
-            //}
-
-            //ImGui.PopStyleColor(); 
-            //ImGuiInputTextFlags.CallbackEdit |
-            m_inputText = m_stringBuilder.ToString();
-
-            if (ImGui.InputTextMultiline("#OnSShTerminalDraw-InputTextMultiline", ref m_inputText, m_textMaxLength, ImGui.GetWindowSize()))
+            ImGui.BeginChild("OnSShTerminalDraw-Log", ImGui.GetWindowSize() - new Vector2(0, ImGui.GetTextLineHeightWithSpacing()*2),false);
+            ImGui.Text(m_logText);
+            float maxY = ImGui.GetScrollMaxY();
+            if (m_resetScrollToDown)
             {
-            
-                if (ImGui.IsKeyDown(ImGuiKey.Enter))
+                ImGui.SetScrollY(maxY);
+                m_resetScrollToDown = false;
+            }
+            ImGui.EndChild();
+
+            ImGui.BeginChild("OnSShTerminalDraw-Input");
+            ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
+            if (ImGui.InputTextWithHint("","command", ref m_inputText, m_textMaxLength, ImGuiInputTextFlags.EnterReturnsTrue))
+            {
+                if (!string.IsNullOrEmpty(m_inputText))
                 {
-                    Log.Info(m_inputText);
-                    int index = m_inputText.LastIndexOf("\n",1) + 1;
-                    if (index >= 0& index< m_inputText.Length)
+                    if (m_sshClient != null && m_sshClient.IsConnected)
                     {
-                        string command = m_inputText.Substring(index, m_inputText.Length - index - 1);
-                        if (!string.IsNullOrEmpty(command))
+                        using (var cmd = m_sshClient.RunCommand(m_inputText))
                         {
-                            m_stringBuilder.AppendLine(command);
-
-                            if (m_sshClient != null && m_sshClient.IsConnected)
+                            Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
+                            if (!string.IsNullOrEmpty(cmd.Result))
                             {
-                                using (var cmd = m_sshClient.RunCommand(command))
-                                {
-                                    Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
-                                    if (!string.IsNullOrEmpty(cmd.Result))
-                                    {
-                                        m_stringBuilder.AppendLine(cmd.Result);
-                                    }
-                                }
+                                m_logText += cmd.Result;
+                                m_resetScrollToDown = true;
                             }
-
+                            m_inputText = "";
                         }
                     }
                 }
             }
+            ImGui.EndChild();
         }
 
 
