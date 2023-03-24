@@ -20,6 +20,7 @@ namespace Wanderer.App.Service
         void SetCustomerData<T>(string key, T value);
         T GetCustomerData<T>(string key, T defaultValue = default(T));
         //List<T> GetCustomerData<T>(string key);
+        List<T> GetCustomerData<T>();
 
         string[] GetRepositories();
         void AddRepository(string gitPath);
@@ -114,6 +115,22 @@ namespace Wanderer.App.Service
                 }
 
                 return defaultValue;
+            }
+        }
+
+        public List<T> GetCustomerData<T>()
+        {
+            using (var db = new LiteDatabase(m_userDbPath))
+            {
+                var col = db.GetCollection<CustomerData<T>>(GetCustomerTableName<T>());
+                var all = col.FindAll();
+                List<T> allT = new List<T>();
+                foreach (var item in all)
+                {
+                    allT.Add(item.Data);
+                }
+
+                return allT;
             }
         }
 
