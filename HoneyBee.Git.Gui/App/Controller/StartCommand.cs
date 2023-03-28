@@ -39,8 +39,8 @@ namespace Wanderer.App.Controller
             //内容主窗口
             ImGuiView.Create<HomeView>(context,0);
 
-            //ssh 窗口
-            ImGuiView.Create<SSHView>(context,0);
+            ////ssh 窗口
+            //ImGuiView.Create<SSHView>(context,0);
 
             ////运行插件
             //pluginService.Reload();

@@ -17,7 +17,6 @@ namespace Wanderer.App
 {
     internal unsafe class Program
     {
-
         static void Main(string[] args)
         {
             bool showLaunch = false;
@@ -87,6 +86,7 @@ namespace Wanderer.App
                 }
                 catch (System.Exception e)
                 {
+                    var eType = e.GetType();
                     Log.Error("Program throw system exception: {0}", e);
                 }
                 finally
@@ -95,6 +95,8 @@ namespace Wanderer.App
                 }
             }
         }
+
+       
 
         #region native
 

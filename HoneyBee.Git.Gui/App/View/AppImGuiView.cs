@@ -312,6 +312,11 @@ namespace Wanderer.App.View
                     {
                         GitCommandView.ShowTerminal(null);
                     }
+
+                    if (ImGui.MenuItem("SSH Client"))
+                    {
+                        ImGuiView.Create<SSHView>(context, 0);
+                    }
                     ImGui.EndMenu();
                 }
 

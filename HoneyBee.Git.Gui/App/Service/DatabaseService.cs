@@ -18,6 +18,8 @@ namespace Wanderer.App.Service
         void ReleaseDb(string name);
 
         void SetCustomerData<T>(string key, T value);
+
+        void RemoveCustomerData<T>(string key);
         T GetCustomerData<T>(string key, T defaultValue = default(T));
         //List<T> GetCustomerData<T>(string key);
         List<T> GetCustomerData<T>();
@@ -103,6 +105,24 @@ namespace Wanderer.App.Service
                 }
             }
         }
+
+        public void RemoveCustomerData<T>(string key)
+        {
+            using (var db = new LiteDatabase(m_userDbPath))
+            {
+                var col = db.GetCollection<CustomerData<T>>(GetCustomerTableName<T>());
+                CustomerData<T> customerData;
+                var query = col.Query().Where(x => x.Key.Equals(key));
+                if (query.Count() > 0)
+                {
+                    customerData = query.First();
+                    col.Delete(customerData.Id);
+                }
+               
+            }
+        }
+        
+
         public T GetCustomerData<T>(string key, T defaultValue = default(T))
         {
             using (var db = new LiteDatabase(m_userDbPath))
