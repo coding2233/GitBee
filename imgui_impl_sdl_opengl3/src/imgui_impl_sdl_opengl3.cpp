@@ -188,37 +188,35 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                     sdl_event_cb(SDL_DROPFILE, &event.drop);
                 }
             }
-
-            // Start the Dear ImGui frame
-            ImGui_ImplOpenGL3_NewFrame();
-            ImGui_ImplSDL2_NewFrame(window);
-
-            ImGui::NewFrame();
-            imgui_draw_cb();
-            ImGui::Render();
-            // ImGui::ShowDemoWindow(&show_demo);
-            // ImGui::Render();
-            
-            // int window_width=0;
-            // int window_height=0;
-            // SDL_GetWindowSize(window,&window_width,&window_height);
-            // glViewport(0, 0, window_width, window_height);
-            ImGuiIO &io = ImGui::GetIO();
-            glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
-            glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            // if(imgui_draw_render_cb)
-            // {
-            //     //RenderDrawData
-            //     imgui_draw_render_cb();
-            // }
-            ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-            SDL_GL_SwapWindow(window);
-
         }
         
+         // Start the Dear ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+
+        ImGui::NewFrame();
+        imgui_draw_cb();
+        ImGui::Render();
+        // ImGui::ShowDemoWindow(&show_demo);
+        // ImGui::Render();
+        
+        // int window_width=0;
+        // int window_height=0;
+        // SDL_GetWindowSize(window,&window_width,&window_height);
+        // glViewport(0, 0, window_width, window_height);
+        ImGuiIO &io = ImGui::GetIO();
+        glViewport(0, 0, (int)io.DisplaySize.x, (int)io.DisplaySize.y);
+        glClearColor(clear_color_.x, clear_color_.y, clear_color_.z, clear_color_.w);
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        // if(imgui_draw_render_cb)
+        // {
+        //     //RenderDrawData
+        //     imgui_draw_render_cb();
+        // }
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+        SDL_GL_SwapWindow(window);
      }
     
      return 0;
