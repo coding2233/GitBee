@@ -6,10 +6,13 @@ using strange.extensions.mediation.impl;
 using strange.extensions.signal.impl;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
 using Wanderer.Common;
@@ -149,33 +152,41 @@ namespace Wanderer.App.View
                 {
                     string sshItemName = item.sshClient==null || !item.sshClient.IsConnected ? item.name: $"{Icon.Get(Icon.Material_cast_connected)}{item.name}";
                     bool select = m_selectSssHost == item && item.sshClient!=null && item.sshClient.IsConnected;
+
+                    //读取信息
+                    if (item.Read())
+                    {
+                        if (select && m_texteditor!=null)
+                        {
+                            m_texteditor.text = item.stringBuilder.ToString();
+                        }
+                    }
+
                     if (ImGui.Checkbox(sshItemName,ref select))
                     {
                         if (select)
                         {
-                            if (item.sshClient == null)
-                            {
-                                item.sshClient = new SshClient(item.host, item.username, item.password);
+                           
+                            //if (item.sshClient == null)
+                            //{
+                            //    item.sshClient = new SshClient(item.host, item.username, item.password);
+                            //    //var shellStream = sshClient.CreateShellStream("myShell", 100, 200, 1000, 1000, 2048);
+                            //    //var writer = new StreamWriter(shellStream) { AutoFlush = true };
+                            //    item.sshClient.HostKeyReceived += (sender, e) =>
+                            //    {
+                            //        e.CanTrust = true;
+                            //    };
+                            //    item.sshClient.ErrorOccurred += (sender, e) =>
+                            //    {
+                            //        Log.Info("ErrorOccurred  ssh connect fail. {e}", e);
+                            //    };
 
-                                item.sshClient.HostKeyReceived += (sender, e) =>
-                                {
-                                    e.CanTrust = true;
-                                };
-                                item.sshClient.ErrorOccurred += (sender, e) =>
-                                {
-                                    Log.Info("ErrorOccurred  ssh connect fail. {e}", e);
-                                };
-
-                                item.stringBuilder = new StringBuilder();
-                            }
+                            //    item.stringBuilder = new StringBuilder();
+                            //}
 
                             try
                             {
-                                if (!item.sshClient.IsConnected)
-                                {
-                                    item.sshClient.Connect();
-                                    RunCommand(item, "pwd");
-                                }
+                                item.CreateShellStream();
                             }
                             catch (System.Exception e)
                             {
@@ -214,9 +225,11 @@ namespace Wanderer.App.View
                         }
                         ImGui.EndPopup();
                     }
+
+                   
                 }
             }
-        
+            
         }
 
       
@@ -245,11 +258,12 @@ namespace Wanderer.App.View
                 {
                     if (m_selectSssHost != null)
                     {
-                        if (RunCommand(m_selectSssHost, m_inputText))
-                        {
-                            m_inputText = "";
-                        }
-                        
+                        m_selectSssHost.Write(m_inputText);
+                        //if (RunCommand(m_selectSssHost, m_inputText))
+                        //{
+                        //    m_inputText = "";
+                        //}
+                        m_inputText = "";
                     }
                     
                 }
@@ -279,15 +293,18 @@ namespace Wanderer.App.View
                     }
                     else
                     {
-                        using (var cmd = sshClient.RunCommand(command))
-                        {
-                            Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
-                            if (!string.IsNullOrEmpty(cmd.Result))
-                            {
-                                strBuilder.AppendLine(cmd.Result);
-                            }
-                            result = true;
-                        }
+                        hostInfo.Write(command);
+                        //using (var cmd = sshClient.RunCommand(command))
+                        //{
+                        //    Log.Info("cmd:{0} ExitStatus:{1} Result:{2}", cmd.CommandText, cmd.ExitStatus, cmd.Result);
+                        //    if (!string.IsNullOrEmpty(cmd.Result))
+                        //    {
+                        //        strBuilder.AppendLine(cmd.Result);
+                        //    }
+                        //    result = true;
+                        //}
+
+                        result = true;
                     }
 
                     ReBuildLogText(strBuilder);
@@ -374,6 +391,10 @@ namespace Wanderer.App.View
 
         public StringBuilder stringBuilder;
 
+        public ShellStream shellStream;
+
+        private StreamReader reader;
+        private StreamWriter writer;
         public SSHHostInfo()
         {
             name = "";
@@ -382,6 +403,71 @@ namespace Wanderer.App.View
             username = "";
             password = "";
         }
+
+        public void CreateShellStream()
+        {
+            if (sshClient == null)
+            {
+                sshClient = new SshClient(host, username, password);
+                //var shellStream = sshClient.CreateShellStream("myShell", 100, 200, 1000, 1000, 2048);
+                //var writer = new StreamWriter(shellStream) { AutoFlush = true };
+                sshClient.HostKeyReceived += (sender, e) =>
+                {
+                    e.CanTrust = true;
+                };
+                sshClient.ErrorOccurred += (sender, e) =>
+                {
+                    Log.Info("ErrorOccurred  ssh connect fail. {e}", e);
+                };
+
+                stringBuilder = new StringBuilder();
+            }
+
+
+            if (!sshClient.IsConnected)
+            {
+                sshClient.Connect();
+                
+                if (shellStream != null)
+                {
+                    shellStream.Close();
+                    shellStream.Dispose();
+                }
+
+                shellStream = sshClient.CreateShellStream(name, 100, 200, 1000, 1000, 2048);
+
+                reader = new StreamReader(shellStream);
+                writer = new StreamWriter(shellStream) { AutoFlush = true };
+            }
+        }
+
+
+        public bool Read()
+        {
+            if (sshClient != null && sshClient.IsConnected)
+            {
+                if (shellStream.CanRead && shellStream.DataAvailable)
+                {
+                    var r = reader.ReadToEnd();
+                    stringBuilder.Append(r);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Write(string line)
+        {
+            if (!string.IsNullOrEmpty(line))
+            {
+                if (sshClient != null && sshClient.IsConnected)
+                {
+
+                    writer.WriteLine(line);
+                }
+            }
+        }
+
     }
 
 
