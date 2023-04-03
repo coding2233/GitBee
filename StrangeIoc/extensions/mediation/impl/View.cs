@@ -70,13 +70,13 @@ namespace strange.extensions.mediation.impl
                 OnDestroy();
             }
 
-            public virtual void OnAwake()
+            internal virtual void OnAwake()
             {
                 registeredWithContext = true;
             }
             public virtual void OnEnable() { }
             public virtual void OnDisable() { }
-            public virtual void OnDestroy() { }
+            protected virtual void OnDestroy() { }
         }
     }
 

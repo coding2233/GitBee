@@ -71,7 +71,7 @@ namespace Wanderer.Common
 
         public virtual string IconName { get; } = Icon.Get(Icon.Material_tab);
 
-        public ImGuiView(IContext context) : base(context)
+        public ImGuiView() 
         {
             
         }

@@ -35,7 +35,7 @@ namespace Wanderer.App
         //    m_graphicsWindow?.SetWindowState(windowState);
         //}
 
-        internal void OnImGuiDraw()
+        internal void OnImGuiRender()
         {
         }
 

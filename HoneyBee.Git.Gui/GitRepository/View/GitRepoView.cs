@@ -49,7 +49,7 @@ namespace Wanderer.GitRepository.View
 
         public Action<string> OnTextEditor;
 
-        public GitRepoView(IContext context, string repoPath) : base(context)
+        public GitRepoView(string repoPath) 
         {
       
             m_workSpaceRadio = WorkSpaceRadio.CommitHistory;

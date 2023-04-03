@@ -34,7 +34,7 @@ namespace Wanderer.App.View
         [Inject]
         public IAppModel appModel { get; set; }
 
-        public HomeView(IContext context) : base(context)
+        public HomeView() 
         {
         }
 

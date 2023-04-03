@@ -13,7 +13,7 @@ namespace Wanderer.Common
 
         public virtual string UniqueKey { get; }
 
-        public ImGuiTabView(IContext context) : base(context)
+        public ImGuiTabView()
         {
         }
 

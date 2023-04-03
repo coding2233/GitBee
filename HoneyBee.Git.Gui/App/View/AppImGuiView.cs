@@ -34,7 +34,7 @@ namespace Wanderer.App.View
         private SplitView m_commandsSplit01 = new SplitView(SplitView.SplitType.Horizontal,0.3f);
         private SplitView m_commandsSplit02 = new SplitView();
         private int m_commandSeleted;
-        public AppImGuiView(IContext context) : base(context)
+        public AppImGuiView() 
         {
             Log.LogMessageReceiver += (logger) =>
             {
@@ -293,30 +293,30 @@ namespace Wanderer.App.View
 
                 if (ImGui.BeginMenu(LuaPlugin.GetText("Window")))
                 {
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Home")))
-                    {
-                        ImGuiView.Create<HomeView>(context, 0);
-                    }
+                    //if (ImGui.MenuItem(LuaPlugin.GetText("Home")))
+                    //{
+                    //    ImGuiView.Create<HomeView>(context, 0);
+                    //}
 
-                    if (ImGui.BeginMenu("Debug"))
-                    {
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Material Icons")))
-                        {
-                            ImGuiView.Create<MaterialIconsView>(context, 0);
-                        }
+                    //if (ImGui.BeginMenu("Debug"))
+                    //{
+                    //    if (ImGui.MenuItem(LuaPlugin.GetText("Material Icons")))
+                    //    {
+                    //        ImGuiView.Create<MaterialIconsView>(context, 0);
+                    //    }
 
-                        ImGui.EndMenu();
-                    }
+                    //    ImGui.EndMenu();
+                    //}
 
-                    if (ImGui.MenuItem("Terminal"))
-                    {
-                        GitCommandView.ShowTerminal(null);
-                    }
+                    //if (ImGui.MenuItem("Terminal"))
+                    //{
+                    //    GitCommandView.ShowTerminal(null);
+                    //}
 
-                    if (ImGui.MenuItem("SSH Client"))
-                    {
-                        ImGuiView.Create<SSHView>(context, 0);
-                    }
+                    //if (ImGui.MenuItem("SSH Client"))
+                    //{
+                    //    ImGuiView.Create<SSHView>(context, 0);
+                    //}
                     ImGui.EndMenu();
                 }
 

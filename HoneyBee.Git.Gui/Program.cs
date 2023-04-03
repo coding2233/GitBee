@@ -306,7 +306,11 @@ namespace Wanderer.App
 
         public void OnImGuiDraw()
         {
-            ImGuiView.Render();
+            if (m_appContextView != null)
+            {
+                m_appContextView.OnImGuiRender();
+            }
+            //ImGuiView.Render();
         }
 
      

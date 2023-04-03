@@ -16,7 +16,7 @@ namespace Wanderer.App.View
         public override string Name => "Demo";
 
 
-        public DemoView(IContext context) : base(context)
+        public DemoView()
         {
         }
 
