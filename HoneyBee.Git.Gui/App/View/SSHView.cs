@@ -62,7 +62,7 @@ namespace Wanderer.App.View
             }
         }
 
-        public SSHView(IContext context) : base(context)
+        public SSHView()
         {
             m_texteditor = new TextEditor();
         }

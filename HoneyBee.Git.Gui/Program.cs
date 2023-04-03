@@ -53,7 +53,6 @@ namespace Wanderer.App
                     return;
                 }
 
-
                 try
                 {
                     Process launchProcess = null;

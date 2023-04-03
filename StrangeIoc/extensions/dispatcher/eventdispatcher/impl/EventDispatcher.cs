@@ -98,13 +98,19 @@ namespace strange.extensions.dispatcher.eventdispatcher.impl
 				isTriggeringClients = true;
                 for (int i = 0; i < triggerClients.Count; i++)
                 {
-					ITriggerable trigger = triggerClients[i];
-					if (!trigger.Trigger(eventType, evt))
+					try
 					{
-						continueDispatch = false;
-						break;
+						ITriggerable trigger = triggerClients[i];
+						if (!trigger.Trigger(eventType, evt))
+						{
+							continueDispatch = false;
+							break;
+						}
 					}
-
+					catch (Exception e)
+					{
+						Console.WriteLine(e);
+					}
 				}
 				//foreach (ITriggerable trigger in triggerClients)
 				//{

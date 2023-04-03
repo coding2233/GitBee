@@ -248,7 +248,7 @@ namespace strange.extensions.context.impl
 			{
 				throw new ContextException("MVCSContext requires a ContextView of type MonoBehaviour", ContextExceptionType.NO_CONTEXT_VIEW);
 			}
-			injectionBinder.Bind<MonoBehaviour>().ToValue(contextView).ToName(ContextKeys.CONTEXT_VIEW);
+			injectionBinder.Bind<ContextView>().ToValue(contextView).ToName(ContextKeys.CONTEXT_VIEW);
 			commandBinder = injectionBinder.GetInstance<ICommandBinder>() as ICommandBinder;
 			
 			dispatcher = injectionBinder.GetInstance<IEventDispatcher>(ContextKeys.CONTEXT_DISPATCHER) as IEventDispatcher;

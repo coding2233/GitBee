@@ -22,8 +22,8 @@ namespace Wanderer.App.Controller
 {
     public class StartCommand:EventCommand
     {
-        [Inject(ContextKeys.CONTEXT_VIEW)]
-        public MonoBehaviour contextView { get; set; }
+        //[Inject(ContextKeys.CONTEXT_VIEW)]
+        //public MonoBehaviour contextView { get; set; }
 
         [Inject(ContextKeys.CONTEXT)]
         public IContext context { get; set; }
@@ -33,11 +33,11 @@ namespace Wanderer.App.Controller
 
         public override void Execute()
         {
-            //主窗口
-            ImGuiView.Create<AppImGuiView>(context,0);
+            ////主窗口
+            //ImGuiView.Create<AppImGuiView>(context,0);
             
-            //内容主窗口
-            ImGuiView.Create<HomeView>(context,0);
+            ////内容主窗口
+            //ImGuiView.Create<HomeView>(context,0);
 
             ////ssh 窗口
             //ImGuiView.Create<SSHView>(context,0);
@@ -46,7 +46,7 @@ namespace Wanderer.App.Controller
             //pluginService.Reload();
 
             //检查更新
-            CheckUpdate();
+            //CheckUpdate();
         }
 
         private async void CheckUpdate()

@@ -21,7 +21,7 @@ namespace Wanderer.TextCodeEditor.View
         private ImGuiTreeNodeFlags m_nodeDefaultFlags;
         private FolderTreeViewNode m_nodeSelected;
 
-        public TextEditorFolderView(IContext context,string folderPath) : base(context)
+        public TextEditorFolderView(string folderPath)
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.FramePadding;
             m_folderPath = folderPath;

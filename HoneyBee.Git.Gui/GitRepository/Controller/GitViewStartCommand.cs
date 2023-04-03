@@ -16,7 +16,7 @@ namespace Wanderer.GitRepository.Controller
         public IContext context { get; set; }
         public override void Execute()
         {
-            ImGuiView.Create<GitCommandView>(context,0);
+            //ImGuiView.Create<GitCommandView>(context,0);
         }
     }
 }

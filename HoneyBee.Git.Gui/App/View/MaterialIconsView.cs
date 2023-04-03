@@ -22,7 +22,7 @@ namespace Wanderer.App.View
         private float m_fontScale = 1.5f;
         private string m_searchText = "";
 
-        public MaterialIconsView(IContext context) : base(context)
+        public MaterialIconsView()
         {
             m_iconMaps=new Dictionary<string, int>();
             var iconType = typeof(Icon);

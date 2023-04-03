@@ -43,7 +43,7 @@ namespace Wanderer.TextCodeEditor
 
         private TextEditorFolderView m_folderView;
 
-        public TextEditorView(IContext context, string filePath) : base(context)
+        public TextEditorView(string filePath) 
         {
             m_textEditor = new TextEditor();
 
@@ -71,7 +71,7 @@ namespace Wanderer.TextCodeEditor
                     m_folderPath = filePath;
                 }
 
-                m_folderView = new TextEditorFolderView(context, m_folderPath);
+                m_folderView = new TextEditorFolderView(m_folderPath);
                 m_folderView.dispatcher.AddListener("OpenFile",OnOpenFile);
             }
         }
