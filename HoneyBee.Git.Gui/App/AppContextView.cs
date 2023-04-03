@@ -1,6 +1,8 @@
 ﻿using LibGit2Sharp;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
+using strange.extensions.mediation.api;
+using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +17,7 @@ namespace Wanderer.App
 {
     public class AppContextView : ContextView
     {
-        AppContext m_appContext;
+        private AppContext m_appContext;
         public AppContextView()
         {
             m_appContext = new AppContext(this, ContextStartupFlags.MANUAL_LAUNCH);
@@ -24,13 +26,25 @@ namespace Wanderer.App
             AddChildContext();
             //启动
             context.Launch();
+           
         }
 
-      
+
         //public void SetWindowState(WindowState windowState)
         //{
         //    m_graphicsWindow?.SetWindowState(windowState);
         //}
+
+        internal void OnImGuiDraw()
+        {
+        }
+
+        protected override void OnViewAdd(IView view)
+        { }
+
+        protected override void OnViewRemove(IView view)
+        { }
+
 
         protected override void OnDestroy()
         {

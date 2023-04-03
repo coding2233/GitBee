@@ -27,155 +27,58 @@ using UnityEngine;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using strange.extensions.mediation.api;
+using System;
 
 namespace strange.extensions.mediation.impl
 {
-	public class View : MonoBehaviour, IView
+    public class View : IView,IDisposable
 	{
-		/// Leave this value true most of the time. If for some reason you want
-		/// a view to exist outside a context you can set it to false. The only
-		/// difference is whether an error gets generated.
-		private bool _requiresContext = true;
-		public bool requiresContext
-		{
-			get
-			{
-				return _requiresContext;
-			}
-			set
-			{
-				_requiresContext = value;
-			}
-		}
-
-		/// A flag for allowing the View to register with the Context
-		/// In general you can ignore this. But some developers have asked for a way of disabling
-		///  View registration with a checkbox from Unity, so here it is.
-		/// If you want to expose this capability either
-		/// (1) uncomment the commented-out line immediately below, or
-		/// (2) subclass View and override the autoRegisterWithContext method using your own custom (public) field.
-		//[SerializeField]
-		protected bool registerWithContext = true;
-		virtual public bool autoRegisterWithContext
-		{
-			get { return registerWithContext;  }
-			set { registerWithContext = value; }
-		}
-
-		public bool registeredWithContext{get; set;}
-
-		protected IContext context { get; set; }
-
-		public View(IContext context)
-		{
-			this.context = context;
-
-            Awake();
-            Start();
-        }
-
-        /// A MonoBehaviour Awake handler.
-        /// The View will attempt to connect to the Context at this moment.
-        protected override void Awake ()
-		{
-			if (autoRegisterWithContext && !registeredWithContext)
- 				bubbleToContext(this, true, false);
-		}
-
-		/// A MonoBehaviour Start handler
-		/// If the View is not yet registered with the Context, it will 
-		/// attempt to connect again at this moment.
-		protected override void Start ()
-		{
-			if (autoRegisterWithContext && !registeredWithContext)
-				bubbleToContext(this, true, true);
-		}
-
-		/// A MonoBehaviour OnDestroy handler
-		/// The View will inform the Context that it is about to be
-		/// destroyed.
-		protected override void OnDestroy ()
-		{
-			bubbleToContext(this, false, false);
-		}
-
-        public override void OnEnable()
-        {
-            base.OnEnable();
-        }
-
-        public override void OnDisable()
-        {
-            base.OnDisable();
-        }
-
-        /// Recurses through Transform.parent to find the GameObject to which ContextView is attached
-        /// Has a loop limit of 100 levels.
-        /// By default, raises an Exception if no Context is found.
-        virtual protected void bubbleToContext(MonoBehaviour view, bool toAdd, bool finalTry)
-		{
-			IContext bubbleContext = this.context == null ? Context.firstContext : context;
-			if (bubbleContext != null)
-			{
-                if (toAdd)
+            /// Leave this value true most of the time. If for some reason you want
+            /// a view to exist outside a context you can set it to false. The only
+            /// difference is whether an error gets generated.
+            private bool _requiresContext = true;
+            public bool requiresContext
+            {
+                get
                 {
-                    bubbleContext.AddView(view);
-                    registeredWithContext = true;
-                    return;
+                    return _requiresContext;
                 }
-                else
+                set
                 {
-                    bubbleContext.RemoveView(view);
-                    return;
+                    _requiresContext = value;
                 }
             }
 
-            //const int LOOP_MAX = 100;
-            //int loopLimiter = 0;
-            //Transform trans = view.gameObject.transform;
-            //while(trans.parent != null && loopLimiter < LOOP_MAX)
-            //{
-            //	loopLimiter ++;
-            //	trans = trans.parent;
-            //	if (trans.gameObject.GetComponent<ContextView>() != null)
-            //	{
-            //		ContextView contextView = trans.gameObject.GetComponent<ContextView>() as ContextView;
-            //		if (contextView.context != null)
-            //		{
-            //			IContext context = contextView.context;
-            //			if (toAdd)
-            //			{
-            //				context.AddView(view);
-            //				registeredWithContext = true;
-            //				return;
-            //			}
-            //			else
-            //			{
-            //				context.RemoveView(view);
-            //				return;
-            //			}
-            //		}
-            //	}
-            //}
-            //if (requiresContext && finalTry)
-            //{
-            //	//last ditch. If there's a Context anywhere, we'll use it!
-            //	if (Context.firstContext != null)
-            //	{
-            //		Context.firstContext.AddView (view);
-            //		registeredWithContext = true;
-            //		return;
-            //	}
+            /// A flag for allowing the View to register with the Context
+            /// In general you can ignore this. But some developers have asked for a way of disabling
+            ///  View registration with a checkbox from Unity, so here it is.
+            /// If you want to expose this capability either
+            /// (1) uncomment the commented-out line immediately below, or
+            /// (2) subclass View and override the autoRegisterWithContext method using your own custom (public) field.
+            //[SerializeField]
+            protected bool registerWithContext = true;
+            virtual public bool autoRegisterWithContext
+            {
+                get { return registerWithContext; }
+                set { registerWithContext = value; }
+            }
 
+            public bool registeredWithContext { get; set; }
 
-            //	string msg = (loopLimiter == LOOP_MAX) ?
-            //		msg = "A view couldn't find a context. Loop limit reached." :
-            //			msg = "A view was added with no context. Views must be added into the hierarchy of their ContextView lest all hell break loose.";
-            //	msg += "\nView: " + view.ToString();
-            //	throw new MediationException(msg,
-            //		MediationExceptionType.NO_CONTEXT);
-            //}
+            public void Dispose()
+            {
+                OnDestroy();
+            }
+
+            public virtual void OnAwake()
+            {
+                registeredWithContext = true;
+            }
+            public virtual void OnEnable() { }
+            public virtual void OnDisable() { }
+            public virtual void OnDestroy() { }
         }
-	}
-}
+    }
+
+    
 

@@ -1,10 +1,12 @@
 ﻿using strange.extensions.context.api;
 using strange.extensions.context.impl;
+using strange.extensions.mediation.api;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using Wanderer.App.Controller;
 using Wanderer.App.Mediator;
 using Wanderer.App.Model;
@@ -35,6 +37,23 @@ namespace Wanderer.App
             mediationBinder.Bind<SSHView>().To<SSHMediator>();
 
             commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once();
+        }
+
+        override public void AddView(object view)
+        {
+            if (mediationBinder != null)
+            {
+                mediationBinder.Trigger(MediationEvent.AWAKE, view as IView);
+            }
+            else
+            {
+                cacheView(view as MonoBehaviour);
+            }
+        }
+
+        public override void RemoveView(object view)
+        {
+            base.RemoveView(view);
         }
     }
 }

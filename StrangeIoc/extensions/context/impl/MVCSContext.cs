@@ -201,15 +201,15 @@ namespace strange.extensions.context.impl
 		/// The recommended Constructor
 		/// Just pass in the instance of your ContextView. Everything will begin automatically.
 		/// Other constructors offer the option of interrupting startup at useful moments.
-		public MVCSContext(MonoBehaviour view) : base(view)
+		public MVCSContext(ContextView view) : base(view)
 		{
 		}
 
-		public MVCSContext(MonoBehaviour view, ContextStartupFlags flags) : base(view, flags)
+		public MVCSContext(ContextView view, ContextStartupFlags flags) : base(view, flags)
 		{
 		}
 
-		public MVCSContext(MonoBehaviour view, bool autoMapping) : base(view, autoMapping)
+		public MVCSContext(ContextView view, bool autoMapping) : base(view, autoMapping)
 		{
 		}
 		

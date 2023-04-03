@@ -36,30 +36,70 @@
 using UnityEngine;
 using System;
 using strange.extensions.context.api;
+using strange.extensions.mediation.api;
+using strange.extensions.mediation.impl;
 
 namespace strange.extensions.context.impl
 {
-	public class ContextView : MonoBehaviour, IContextView
-	{
-		public IContext context{get;set;}
-		
-		public ContextView ()
+	public class ContextView : IContextView, IDisposable
+    {
+		public IContext context {get;set;}
+        private static ContextView s_self;
+
+
+        public ContextView ()
 		{
-		}
+            s_self = this;
+        }
 
         /// <summary>
         /// When a ContextView is Destroyed, automatically removes the associated Context.
         /// </summary>
-        protected override void OnDestroy()
+        protected virtual void OnDestroy()
 		{
-			base.OnDestroy();
             if (context != null && Context.firstContext != null)
                 Context.firstContext.RemoveContext(context);
         }
 
-		#region IView implementation
+        public void Dispose()
+        {
+			OnDestroy();
+        }
 
-		public bool requiresContext {get;set;}
+        public static void AddView<T>() where T : View
+        {
+            if (s_self != null)
+            {
+                var context = s_self.context;
+                var view = Activator.CreateInstance<T>();
+                context.AddView(view);
+                view.OnAwake();
+
+                s_self.OnViewAdd(view);
+            }
+        }
+
+        public static void RemoveView<T>(T view) where T : View
+        {
+            if (s_self != null)
+            {
+                var context = s_self.context;
+                context.RemoveView(view);
+                s_self.OnViewRemove(view);
+                view.Dispose();
+            }
+        }
+
+
+        protected virtual void OnViewAdd(IView view)
+        { }
+
+        protected virtual void OnViewRemove(IView view)
+        { }
+
+        #region IView implementation
+
+        public bool requiresContext {get;set;}
 
 		public bool registeredWithContext {get;set;}
 
