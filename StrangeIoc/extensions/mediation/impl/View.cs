@@ -63,7 +63,6 @@ namespace strange.extensions.mediation.impl
 		}
 
 		public bool registeredWithContext{get; set;}
-        public IMediator mediator { get; set; }
 
 		protected IContext context { get; set; }
 
@@ -102,19 +101,11 @@ namespace strange.extensions.mediation.impl
 
         public override void OnEnable()
         {
-            if (mediator is Mediator mediator02)
-            {
-                mediator02.OnEnable();
-            }
             base.OnEnable();
         }
 
         public override void OnDisable()
         {
-            if (mediator is Mediator mediator02)
-            {
-                mediator02.OnDisable();
-            }
             base.OnDisable();
         }
 

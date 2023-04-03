@@ -582,6 +582,7 @@ namespace Wanderer.GitRepository.View
                     foreach (var itemParent in commit.Parents)
                     {
                         var diffPatch = m_gitRepo.Diff.Compare<Patch>(itemParent.Tree, commit.Tree);
+                        
                         if (commitPatch == null)
                         {
                             commitPatch = diffPatch;

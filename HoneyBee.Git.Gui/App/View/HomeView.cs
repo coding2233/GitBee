@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App.Model;
 using Wanderer.Common;
 
 namespace Wanderer.App.View
@@ -29,6 +30,9 @@ namespace Wanderer.App.View
 
         internal Action<string> OnOpenRepository;
         internal Action<string> OnRemoveRepository;
+
+        [Inject]
+        public IAppModel appModel { get; set; }
 
         public HomeView(IContext context) : base(context)
         {

@@ -9,6 +9,8 @@
 |![](images/001.jpg)|![](images/002.jpg)|
 |:---:|:---:|
 
+### 体验下载
+[itch.io](https://wanderer-x.itch.io/gitbee)
 
 ### 中文输入跟随支持
 ImGui.NET SDL对输入法的支持压根没有，极其难用，这里用通过C++的底层交互，实现了输入法的跟随  

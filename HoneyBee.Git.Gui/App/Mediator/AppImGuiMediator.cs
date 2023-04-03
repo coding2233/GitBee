@@ -100,18 +100,25 @@ namespace Wanderer.App.Mediator
             List<string> paths = new List<string>();
             if (index < 5 && Directory.Exists(dir))
             {
-                var dirs = Directory.GetDirectories(dir);
-                foreach (var itemDir in dirs)
+                try
                 {
-                    if (itemDir.EndsWith(".git"))
+                    var dirs = Directory.GetDirectories(dir);
+                    foreach (var itemDir in dirs)
                     {
-                        Log.Info("Search git repo, get -> {0}", itemDir);
-                        paths.Add(itemDir);
+                        if (itemDir.EndsWith(".git"))
+                        {
+                            Log.Info("Search git repo, get -> {0}", itemDir);
+                            paths.Add(itemDir);
+                        }
+                        else
+                        {
+                            paths.AddRange(GetGitRepoPaths(itemDir, index));
+                        }
                     }
-                    else
-                    {
-                        paths.AddRange(GetGitRepoPaths(itemDir, index));
-                    }
+                }
+                catch (System.Exception e)
+                {
+                    Log.Warn("GetGitRepoPaths dir:{0} exception:{1}",dir,e);
                 }
             }
             else

@@ -16,7 +16,6 @@ using Wanderer.App;
 using Wanderer.App.Service;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
-using Wanderer.GitRepository.Mediator;
 
 namespace Wanderer.GitRepository.View
 {
@@ -31,7 +30,7 @@ namespace Wanderer.GitRepository.View
 
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
 
-        private GitRepoMediator m_gitRepoMediator;
+        //private GitRepoMediator m_gitRepoMediator;
         private string m_repoPath;
         private Dictionary<string, int> _toolItems = new Dictionary<string, int>();
         private string m_syncDataTip;
@@ -39,6 +38,9 @@ namespace Wanderer.GitRepository.View
 
         [Inject]
         public IPluginService plugin { get; set; }
+
+        [Inject]
+        public IDatabaseService database { get; set; }
 
         #region 子模块
         private DrawWorkTreeView m_workTreeView;
@@ -53,7 +55,7 @@ namespace Wanderer.GitRepository.View
             m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
             
             m_repoPath = repoPath;
-            m_gitRepoMediator = mediator as GitRepoMediator;
+            //m_gitRepoMediator = mediator as GitRepoMediator;
 
             _toolItems = new Dictionary<string, int>();
             //_toolItems.Add("Commit", Icon.Material_add);
@@ -316,7 +318,8 @@ namespace Wanderer.GitRepository.View
         private void DrawTreeNodeHead(string name, Action onDraw)
         {
             string key = $"TreeNode_{name}_{m_gitRepo.RootPath}";
-            bool oldTreeNodeOpen = m_gitRepoMediator.GetUserData<bool>(key);
+            //bool oldTreeNodeOpen = m_gitRepoMediator.GetUserData<bool>(key);
+            bool oldTreeNodeOpen = database ==null ?false: database.GetCustomerData<bool>(key);
             ImGui.SetNextItemOpen(oldTreeNodeOpen);
             bool treeNodeOpen = ImGui.TreeNode(name);
             if (treeNodeOpen)
@@ -324,9 +327,13 @@ namespace Wanderer.GitRepository.View
                 onDraw();
                 ImGui.TreePop();
             }
+
             if (treeNodeOpen != oldTreeNodeOpen)
             {
-                m_gitRepoMediator.SetUserData<bool>(key, treeNodeOpen);
+                if (database != null)
+                {
+                    database.SetCustomerData<bool>(key, treeNodeOpen);
+                }
             }
         }
 
