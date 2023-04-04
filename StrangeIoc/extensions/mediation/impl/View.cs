@@ -23,7 +23,6 @@
  * critical moments occur in the View lifecycle.
  */
 
-using UnityEngine;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using strange.extensions.mediation.api;

@@ -25,7 +25,6 @@
 
 using System;
 using System.Collections;
-using UnityEngine;
 using strange.extensions.injector.api;
 using strange.extensions.mediation.api;
 using strange.framework.api;
@@ -109,7 +108,7 @@ namespace strange.extensions.mediation.impl
 			return base.Bind<T> ();
 		}
 
-		public IMediationBinding BindView<T>() where T : MonoBehaviour
+		public IMediationBinding BindView<T>() where T : View
 		{
 			return base.Bind<T> () as IMediationBinding;
 		}

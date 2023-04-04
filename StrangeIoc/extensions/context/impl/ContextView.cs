@@ -33,7 +33,6 @@
 
  */
 
-using UnityEngine;
 using System;
 using strange.extensions.context.api;
 using strange.extensions.mediation.api;

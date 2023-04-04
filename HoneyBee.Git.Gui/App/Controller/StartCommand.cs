@@ -11,7 +11,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;

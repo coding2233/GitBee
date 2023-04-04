@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 using Wanderer.App.Controller;
 using Wanderer.App.Mediator;
 using Wanderer.App.Model;
@@ -47,7 +46,7 @@ namespace Wanderer.App
             }
             else
             {
-                cacheView(view as MonoBehaviour);
+                cacheView(view as IView);
             }
         }
 

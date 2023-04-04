@@ -157,7 +157,6 @@
 
 using strange.extensions.implicitBind.api;
 using strange.extensions.implicitBind.impl;
-using UnityEngine;
 using strange.extensions.command.api;
 using strange.extensions.command.impl;
 using strange.extensions.context.api;
@@ -307,7 +306,7 @@ namespace strange.extensions.context.impl
 			}
 			else
 			{
-				cacheView(view as MonoBehaviour);
+				cacheView(view as IView);
 			}
 		}
 		
@@ -322,7 +321,7 @@ namespace strange.extensions.context.impl
 		/// View to be Awake before this Context has finished initing.
 		/// `cacheView()` maintains a list of such 'early-risers'
 		/// until the Context is ready to mediate them.
-		virtual protected void cacheView(MonoBehaviour view)
+		virtual protected void cacheView(IView view)
 		{
 			if (viewCache.constraint.Equals(BindingConstraintType.ONE))
 			{

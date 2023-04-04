@@ -23,16 +23,16 @@
  */
 
 using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using strange.extensions.mediation.api;
-using UnityEngine;
 
 namespace strange.extensions.mediation.impl
 {
-	public class Mediator : MonoBehaviour, IMediator
+	public class Mediator : IMediator
 	{
 
 		[Inject(ContextKeys.CONTEXT_VIEW)]
-		public MonoBehaviour contextView { get; set; }
+		public ContextView contextView { get; set; }
 
 		public Mediator ()
 		{

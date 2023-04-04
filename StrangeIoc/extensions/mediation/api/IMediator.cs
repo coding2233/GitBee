@@ -24,15 +24,15 @@
  */
 
 using strange.extensions.context.api;
+using strange.extensions.context.impl;
 using System;
-using UnityEngine;
 
 namespace strange.extensions.mediation.api
 {
 	public interface IMediator
 	{
 		/// Get/set the GameObject that represents the top-most item in this Context
-		MonoBehaviour contextView { get; set; }
+		ContextView contextView { get; set; }
 
 		/// This method fires immediately after instantiation, but before injection.
 		/// Override to handle anything that needs to happen prior to injection.

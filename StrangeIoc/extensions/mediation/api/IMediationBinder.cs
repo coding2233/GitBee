@@ -63,8 +63,8 @@
  */
 
 using System;
+using strange.extensions.mediation.impl;
 using strange.framework.api;
-using UnityEngine;
 
 namespace strange.extensions.mediation.api
 {
@@ -75,7 +75,7 @@ namespace strange.extensions.mediation.api
 		void Trigger (MediationEvent evt, IView view);
 
 		/// Porcelain for Bind<T> providing a little extra clarity and security.
-		IMediationBinding BindView<T> () where T : MonoBehaviour;
+		IMediationBinding BindView<T> () where T : View;
 	}
 }
 
