@@ -322,11 +322,13 @@ namespace Wanderer.App
                 SDL_WindowEventID eventID = (SDL_WindowEventID)windowEvent->window_event;
                 if (eventID == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED)
                 {
-                    ImGuiView.Focus(false);
+                    m_appContextView?.OnWindowFocus(false);
+                    //ImGuiView.Focus(false);
                 }
                 else if (eventID == SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_LOST)
                 {
-                    ImGuiView.Focus(true);
+                    m_appContextView?.OnWindowFocus(true);
+                    //ImGuiView.Focus(true);
                 }
             }
             else if (sdlType == SDL_EventType.SDL_DROPFILE)

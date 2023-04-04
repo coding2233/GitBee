@@ -227,7 +227,7 @@ namespace Wanderer.GitRepository.View
                                 ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax, ImGui.GetColorU32(ImGuiCol.TextSelectedBg));
 
                                 //int colorIndex = branchIndex % ImGuiView.Colors.Count;
-                                var textColor = ImGuiView.Colors[0];
+                                //var textColor = ImGuiView.Colors[0];
 
                                 ImGui.Text(itemNote);
                                 //ImGui.TextColored(textColor, itemNote);

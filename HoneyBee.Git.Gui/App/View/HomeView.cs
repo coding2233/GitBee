@@ -1,5 +1,6 @@
 ﻿using ImGuiNET;
 using strange.extensions.context.api;
+using strange.extensions.dispatcher.eventdispatcher.api;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -9,6 +10,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Model;
+using Wanderer.App.Service;
 using Wanderer.Common;
 
 namespace Wanderer.App.View
@@ -28,16 +30,33 @@ namespace Wanderer.App.View
         private string m_selectGitPath;
         private string m_selectGitName;
 
-        internal Action<string> OnOpenRepository;
-        internal Action<string> OnRemoveRepository;
-
         [Inject]
         public IAppModel appModel { get; set; }
+
+        [Inject]
+        public IDatabaseService database { get; set; }
 
         public HomeView() 
         {
         }
 
+        public override void OnAwake()
+        {
+            base.OnAwake();
+            dispatcher.AddListener(AppEvent.RefreshGitRepo, OnRefreshGitRepo);
+            OnRefreshGitRepo(null);
+        }
+        protected override void OnDestroy()
+        {
+            dispatcher.RemoveListener(AppEvent.RefreshGitRepo, OnRefreshGitRepo);
+            base.OnDestroy();
+        }
+
+        private void OnRefreshGitRepo(IEvent e)
+        {
+            var repos = database.GetRepositories();
+            SetRepositories(repos);
+        }
 
         public override void OnDraw()
         {
@@ -48,7 +67,7 @@ namespace Wanderer.App.View
             m_splitView.End();
         }
 
-        public void SetRepositories(string[] repositories)
+        private void SetRepositories(string[] repositories)
         {
             m_repositories = new List<string>();
             m_repositoriesName = new List<string>();
@@ -138,7 +157,7 @@ namespace Wanderer.App.View
                         ImGui.SameLine();
                         if (ImGui.Button("Remove"))
                         {
-                            OnRemoveRepository?.Invoke(m_repositories[i]);
+                            RemoveRepoPath(m_repositories[i]);
                         }
                     }
                 }
@@ -154,12 +173,12 @@ namespace Wanderer.App.View
                 ImGui.SameLine();
                 if (ImGui.Button("Remove"))
                 {
-                    OnRemoveRepository?.Invoke(m_selectGitPath);
+                    RemoveRepoPath(m_selectGitPath);
                 }
                 ImGui.SameLine();
                 if (ImGui.Button("Open"))
                 {
-                    OnOpenRepository?.Invoke(m_selectGitPath);
+                    dispatcher.Dispatch(AppEvent.ShowGitRepo, m_selectGitPath);
                 }
                 ImGui.Text(m_selectGitPath);
 
@@ -178,5 +197,11 @@ namespace Wanderer.App.View
             }
         }
 
+
+        private void RemoveRepoPath(string path)
+        {
+            database.RemoveRepository(path);
+            OnRefreshGitRepo(null);
+        }
     }
 }

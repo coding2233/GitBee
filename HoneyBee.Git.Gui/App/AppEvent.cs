@@ -12,5 +12,7 @@ namespace Wanderer.App
         SearchGitRepo,
         OpenFile,
         OpenFolder,
+        //刷新主页的仓库展示
+        RefreshGitRepo,
     }
 }

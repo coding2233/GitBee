@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.Common;
 using Wanderer.GitRepository.View;
 
@@ -20,7 +21,7 @@ namespace Wanderer.TextCodeEditor.Controller
             var path = (string)evt.data;
             Log.Info(path);
 
-            ImGuiView.Create<TextEditorView>(context, 0, path);
+            AppContextView.AddView<TextEditorView>(path);
         }
     }
 }

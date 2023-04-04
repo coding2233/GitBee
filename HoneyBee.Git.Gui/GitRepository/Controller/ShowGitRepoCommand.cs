@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.App.Service;
 using Wanderer.Common;
 using Wanderer.GitRepository.View;
@@ -32,8 +33,7 @@ namespace Wanderer.GitRepository.Controller
                     //保存到数据库
                     database.AddRepository(gitPath);
 
-                    var gitRepoView = ImGuiView.Create<GitRepoView>(context,0, gitPath);
-                    //gitRepoView.SetGitRepoPath(gitPath);
+                    AppContextView.AddView<GitRepoView>(gitPath);
                 }
                 else
                 {

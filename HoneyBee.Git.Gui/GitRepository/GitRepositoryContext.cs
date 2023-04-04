@@ -27,6 +27,7 @@ namespace Wanderer.GitRepository
 
             injectionBinder.Bind<IGitRepoService>().To<GitRepoService>().ToSingleton();
 
+            commandBinder.Bind(AppEvent.SearchGitRepo).To<SearchGitRepoCommand>();
             commandBinder.Bind(AppEvent.ShowGitRepo).To<ShowGitRepoCommand>();
             commandBinder.Bind(ContextEvent.START).To<GitViewStartCommand>().Once();
 

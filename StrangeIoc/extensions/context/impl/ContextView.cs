@@ -65,12 +65,12 @@ namespace strange.extensions.context.impl
 			OnDestroy();
         }
 
-        public static void AddView<T>() where T : View
+        public static void AddView<T>(params object[] args) where T : View
         {
             if (s_self != null)
             {
                 var context = s_self.context;
-                var view = Activator.CreateInstance<T>();
+                var view = Activator.CreateInstance(typeof(T), args) as T;
                 context.AddView(view);
                 view.OnAwake();
 

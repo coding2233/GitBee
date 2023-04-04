@@ -1,347 +1,53 @@
-﻿using ImGuiNET;
-using SFB;
-using strange.extensions.context.api;
-using strange.extensions.context.impl;
-using strange.extensions.mediation.impl;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Numerics;
-using System.Text;
-using System.Threading.Tasks;
-using Wanderer.App.View;
+﻿using strange.extensions.mediation.impl;
 
 namespace Wanderer.Common
 {
-    public abstract class ImGuiView : View
+    public abstract class ImGuiView : EventView
     {
-        private static List<ImGuiView> s_imGuiViews=new List<ImGuiView>();
-        private static List<ImGuiTabView> s_imGuiTabViews=new List<ImGuiTabView>();
-        private static HashSet<ImGuiTabView> s_imGuiTabViewsWaitClose=new HashSet<ImGuiTabView>();
-        private static ImGuiTabView s_lastActiveImGuiTabView;
+        //public static List<Vector4> Colors { get; } = new List<Vector4>() { new Vector4(0.9803921568627451f, 0.8274509803921569f, 0.5647058823529412f,1.0f),
+        //                                        new Vector4(0.9725490196078431f, 0.7607843137254902f, 0.5686274509803922f,1.0f),
+        //                                        new Vector4(0.4156862745098039f, 0.5372549019607843f, 0.8f,1.0f),
+        //                                        new Vector4(0.5098039215686275f, 0.8f, 0.8274509803921569f,1.0f),
+        //                                        new Vector4(0.7215686274509804f, 0.9137254901960784f, 0.5647058823529412f,1.0f),
+        //                                        new Vector4(0.9647058823529412f, 0.7254901960784314f, 0.2313725490196078f,1.0f),
+        //                                        new Vector4(0.8980392156862745f, 0.3137254901960784f, 0.2235294117647059f,1.0f),
+        //                                        new Vector4(0.2901960784313725f, 0.4117647058823529f, 0.7411764705882353f,1.0f),
+        //                                        new Vector4(0.3764705882352941f, 0.6392156862745098f, 0.7372549019607843f,1.0f),
+        //                                        new Vector4(0.4705882352941176f, 0.8784313725490196f, 0.5607843137254902f,1.0f),
+        //                                        new Vector4(0.9803921568627451f, 0.596078431372549f, 0.2274509803921569f,1.0f),
+        //                                        new Vector4(0.9215686274509804f, 0.1843137254901961f, 0.0235294117647059f,1.0f),
+        //                                        new Vector4(0.1176470588235294f, 0.2156862745098039f, 0.6f,1.0f),
+        //                                        new Vector4(0.2352941176470588f, 0.3882352941176471f, 0.5098039215686275f,1.0f),
+        //                                        new Vector4(0.2196078431372549f, 0.6784313725490196f, 0.6627450980392157f,1.0f),
+        //                                        new Vector4(0.8980392156862745f, 0.5568627450980392f, 0.1490196078431373f,1.0f),
+        //                                        new Vector4(0.7176470588235294f, 0.0823529411764706f, 0.2509803921568627f,1.0f),
+        //                                        new Vector4(0.0470588235294118f, 0.1411764705882353f, 0.3803921568627451f,1.0f),
+        //                                        new Vector4(0.0392156862745098f, 0.2392156862745098f, 0.3843137254901961f,1.0f),
+        //                                        new Vector4(0.0274509803921569f, 0.6f, 0.5725490196078431f,1.0f)};
 
-        protected static ImGuiWindowFlags s_defaultWindowFlag = ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize
-                | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-
-        public static int StyleColors { get; set; }
-
-        public static List<Vector4> Colors { get; } = new List<Vector4>() { new Vector4(0.9803921568627451f, 0.8274509803921569f, 0.5647058823529412f,1.0f),
-                                        new Vector4(0.9725490196078431f, 0.7607843137254902f, 0.5686274509803922f,1.0f),
-                                        new Vector4(0.4156862745098039f, 0.5372549019607843f, 0.8f,1.0f),
-                                        new Vector4(0.5098039215686275f, 0.8f, 0.8274509803921569f,1.0f),
-                                        new Vector4(0.7215686274509804f, 0.9137254901960784f, 0.5647058823529412f,1.0f),
-                                        new Vector4(0.9647058823529412f, 0.7254901960784314f, 0.2313725490196078f,1.0f),
-                                        new Vector4(0.8980392156862745f, 0.3137254901960784f, 0.2235294117647059f,1.0f),
-                                        new Vector4(0.2901960784313725f, 0.4117647058823529f, 0.7411764705882353f,1.0f),
-                                        new Vector4(0.3764705882352941f, 0.6392156862745098f, 0.7372549019607843f,1.0f),
-                                        new Vector4(0.4705882352941176f, 0.8784313725490196f, 0.5607843137254902f,1.0f),
-                                        new Vector4(0.9803921568627451f, 0.596078431372549f, 0.2274509803921569f,1.0f),
-                                        new Vector4(0.9215686274509804f, 0.1843137254901961f, 0.0235294117647059f,1.0f),
-                                        new Vector4(0.1176470588235294f, 0.2156862745098039f, 0.6f,1.0f),
-                                        new Vector4(0.2352941176470588f, 0.3882352941176471f, 0.5098039215686275f,1.0f),
-                                        new Vector4(0.2196078431372549f, 0.6784313725490196f, 0.6627450980392157f,1.0f),
-                                        new Vector4(0.8980392156862745f, 0.5568627450980392f, 0.1490196078431373f,1.0f),
-                                        new Vector4(0.7176470588235294f, 0.0823529411764706f, 0.2509803921568627f,1.0f),
-                                        new Vector4(0.0470588235294118f, 0.1411764705882353f, 0.3803921568627451f,1.0f),
-                                        new Vector4(0.0392156862745098f, 0.2392156862745098f, 0.3843137254901961f,1.0f),
-                                        new Vector4(0.0274509803921569f, 0.6f, 0.5725490196078431f,1.0f)};
-
-        protected int m_priority;
-        public int priority
-        {
-            get
-            {
-                return m_priority;
-            }
-            set
-            {
-                m_priority = value;
-                //排序
-                s_imGuiViews.Sort((x, y) => { 
-                    return x.priority - y.priority;
-                });
-            }
-        }
-
-        private static AppImGuiView s_appImGuiView;
-        private static Vector2 s_statusBarSize;
+        //protected int m_priority;
+        //public int priority
+        //{
+        //    get
+        //    {
+        //        return m_priority;
+        //    }
+        //    set
+        //    {
+        //        m_priority = value;
+        //        //排序
+        //        s_imGuiViews.Sort((x, y) =>
+        //        {
+        //            return x.priority - y.priority;
+        //        });
+        //    }
+        //}
 
         public virtual string Name { get; } = "None";
 
         public virtual string IconName { get; } = Icon.Get(Icon.Material_tab);
 
-        public ImGuiView() 
-        {
-            
-        }
-
         public virtual void OnDraw()
         { }
-
-        public static void Render()
-        {
-            ////这里可设置背景图片
-            //var bgImage = Application.LoadTextureFromFile(@"C:\Users\EDY\Pictures\WallPaper\wallhaven-rddgwm.jpg");
-            ////ImGui.Image(bgImage.Image, bgImage.Size);
-            //ImGui.GetBackgroundDrawList().AddImage(bgImage.Image, Vector2.Zero, Vector2.One * 2000);
-            //var bgColor = ImGui.ColorConvertU32ToFloat4(ImGui.GetColorU32(ImGuiCol.WindowBg));
-            //bgColor.W = 0.6f;
-            //ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.ColorConvertFloat4ToU32(bgColor));
-
-            //主窗口
-            if (s_appImGuiView != null)
-            {
-                s_appImGuiView.DrawMainMenuBar();
-                s_appImGuiView.OnDraw();
-            }
-
-
-            //tabview
-            var viewport = ImGui.GetMainViewport();
-            float lineHight = ImGui.GetTextLineHeight() * 2f;
-            s_statusBarSize = new Vector2(viewport.WorkSize.X, lineHight);
-
-            //mainview
-            ImGui.SetNextWindowPos(viewport.WorkPos);
-            ImGui.SetNextWindowSize(viewport.WorkSize - new Vector2(0, s_statusBarSize.Y));
-            ImGui.SetNextWindowViewport(viewport.ID);
-
-            if (ImGui.Begin("Main_Tab_Window",s_defaultWindowFlag))
-            {
-                if (ImGui.BeginTabBar("Git window tabs", ImGuiTabBarFlags.FittingPolicyDefault | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.AutoSelectNewTabs))
-                {
-                    for (int i = 0; i < s_imGuiTabViews.Count; i++)
-                    {
-                        var tabWindow = s_imGuiTabViews[i];
-                        bool showTab = true;
-                        ImGuiTabItemFlags tabItemFlag = ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoCloseWithMiddleMouseButton;
-                        if (tabWindow.Unsave)
-                        {
-                            tabItemFlag |= ImGuiTabItemFlags.UnsavedDocument;
-                        }
-                        bool visible = ImGui.BeginTabItem(tabWindow.IconName + tabWindow.Name+$"##tab_{tabWindow.Name}_{i}", ref showTab, tabItemFlag);
-                        if (visible)
-                        {
-                            if (s_lastActiveImGuiTabView != tabWindow)
-                            {
-                                if (s_lastActiveImGuiTabView != null)
-                                {
-                                    s_lastActiveImGuiTabView.OnDisable();
-                                }
-                                tabWindow.OnEnable();
-                                s_lastActiveImGuiTabView = tabWindow;
-                            }
-                            tabWindow.OnDraw();
-                            ImGui.EndTabItem();
-                        }
-                        
-                        if(!showTab)
-                        {
-                            Log.Info("Close table window:{0}", tabWindow.Name);
-                            s_imGuiTabViewsWaitClose.Add(tabWindow);
-                        }
-                    }
-                    ImGui.EndTabBar();
-                }
-
-                //关闭tabview
-                if (s_imGuiTabViewsWaitClose.Count > 0)
-                {
-                    bool unsaveAsk = false;
-                    foreach (var item in s_imGuiTabViewsWaitClose)
-                    {
-                        if (item.Unsave)
-                        {
-                            unsaveAsk = true;
-                            break;
-                        }
-                    }
-                    if (unsaveAsk)
-                    {
-                        ImGui.OpenPopup("TabView close popup modal");
-                        ImGui.SetNextWindowSize(new Vector2(384, 200));
-                        if (ImGui.BeginPopupModal("TabView close popup modal"))
-                        {
-                            ImGui.Text("Make sure to close the tabview:");
-                            foreach (var item in s_imGuiTabViewsWaitClose)
-                            {
-                                ImGui.Text($"<{item.Name}>");
-                            }
-
-                            if (ImGui.Button("OK"))
-                            {
-                                foreach (var item in s_imGuiTabViewsWaitClose)
-                                {
-                                    s_imGuiTabViews.Remove(item);
-                                    item.Dispose();
-                                }
-                                s_imGuiTabViewsWaitClose.Clear();
-                                ImGui.CloseCurrentPopup();
-                            }
-                            ImGui.SameLine();
-                            if (ImGui.Button("Cancel"))
-                            {
-                                s_imGuiTabViewsWaitClose.Clear();
-                                ImGui.CloseCurrentPopup();
-                            }
-                            ImGui.EndPopup();
-                        }
-                    }
-                    else
-                    {
-                        foreach (var item in s_imGuiTabViewsWaitClose)
-                        {
-                            s_imGuiTabViews.Remove(item);
-                            item.Dispose();
-                        }
-                        s_imGuiTabViewsWaitClose.Clear();
-                    }
-                }
-            }
-
-            ImGui.End();
-
-
-            ImGui.SetNextWindowPos(viewport.WorkPos+new Vector2(0, viewport.WorkSize.Y - s_statusBarSize.Y));
-            ImGui.SetNextWindowSize(s_statusBarSize);
-            ImGui.SetNextWindowViewport(viewport.ID);
-            if (ImGui.Begin("Main_Status_Window", s_defaultWindowFlag))
-            {
-                //主窗口
-                if (s_appImGuiView != null)
-                {
-                    s_appImGuiView.DrawStatusBar();
-                }
-            }
-            ImGui.End();
-
-            //其他界面
-            for (int i = 0; i < s_imGuiViews.Count; i++)
-            {
-                s_imGuiViews[i].OnDraw();
-            }
-        }
-
-        internal static void Focus(bool lost)
-        {
-            if (s_lastActiveImGuiTabView != null)
-            {
-                if (lost)
-                {
-                    s_lastActiveImGuiTabView.OnDisable();
-                }
-                else
-                {
-                    s_lastActiveImGuiTabView.OnEnable();
-                }
-
-                //Log.Info("ImGuiTabView {0} Set Active {1}", s_lastActiveImGuiTabView.Name, !lost);
-            }
-        }
-
-        public static T Create<T>(IContext context,int defaultPriority, params object[] pArgs) where T: ImGuiView
-        {
-            object[] args = null;
-            if (context != null || pArgs != null)
-            {
-                List<object> argsList = new List<object>();
-                if (context != null)
-                {
-                    argsList.Add(context);
-                }
-                if (pArgs != null)
-                {
-                    argsList.AddRange(pArgs);
-                }
-                args = argsList.ToArray();
-            }
-
-            T view = Activator.CreateInstance(typeof(T), args) as T;
-
-            if (view is AppImGuiView mainImGuiView)
-            {
-                s_appImGuiView = mainImGuiView;
-            }
-            else if (view is ImGuiTabView tabView)
-            {
-                bool hasSameTableView = false;
-                if (!string.IsNullOrEmpty(tabView.UniqueKey))
-                {
-                    for (int i = 0; i < s_imGuiTabViews.Count; i++)
-                    {
-                        if (tabView.UniqueKey.Equals(s_imGuiTabViews[i].UniqueKey))
-                        {
-                            hasSameTableView = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!hasSameTableView)
-                {
-                    s_imGuiTabViews.Add(tabView);
-                }
-                else
-                {
-                    view?.Dispose();
-                    view = null;
-                }
-            }
-            else
-            {
-                s_imGuiViews.Add(view);
-            }
-
-            if (view != null && defaultPriority > 0)
-            {
-                view.priority = defaultPriority;
-            }
-
-            return view;
-        }
-
-        public static void Destory(ImGuiView view)
-        {
-            if (view != null)
-            {
-                if (s_imGuiViews.Contains(view))
-                {
-                    s_imGuiViews.Remove(view);
-                }
-
-                if (view is ImGuiTabView tabView)
-                {
-                    if (s_imGuiTabViews.Contains(tabView))
-                    {
-                        s_imGuiTabViews.Remove(tabView);
-                    }
-                }
-
-                view.Dispose();
-                view = null;
-            }
-        }
-
-        public static void DestoryAll()
-        {
-            while (s_imGuiTabViews.Count > 0)
-            {
-                var view = s_imGuiTabViews[0];
-                s_imGuiTabViews.RemoveAt(0);
-                view?.Dispose();
-                view = null;
-            }
-
-            while (s_imGuiViews.Count > 0)
-            {
-                var view = s_imGuiViews[0];
-                s_imGuiViews.RemoveAt(0);
-                view?.Dispose();
-                view = null;
-            }
-        }
-
-
     }
 }

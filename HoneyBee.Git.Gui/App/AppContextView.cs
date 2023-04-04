@@ -1,28 +1,21 @@
 ﻿using ImGuiNET;
-using LibGit2Sharp;
 using SFB;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
-using strange.extensions.dispatcher.api;
-using strange.extensions.dispatcher.eventdispatcher.api;
-using strange.extensions.mediation.api;
 using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;
 using Wanderer.GitRepository;
-using Wanderer.GitRepository.Common;
 using Wanderer.GitRepository.View;
 using Wanderer.TextCodeEditor;
-using static Wanderer.Common.TextEditor;
 
 namespace Wanderer.App
 {
@@ -58,13 +51,16 @@ namespace Wanderer.App
         }
 
 
-        //public void SetWindowState(WindowState windowState)
-        //{
-        //    m_graphicsWindow?.SetWindowState(windowState);
-        //}
-
         internal void OnImGuiRender()
         {
+            ////这里可设置背景图片
+            //var bgImage = Application.LoadTextureFromFile(@"C:\Users\EDY\Pictures\WallPaper\wallhaven-rddgwm.jpg");
+            ////ImGui.Image(bgImage.Image, bgImage.Size);
+            //ImGui.GetBackgroundDrawList().AddImage(bgImage.Image, Vector2.Zero, Vector2.One * 2000);
+            //var bgColor = ImGui.ColorConvertU32ToFloat4(ImGui.GetColorU32(ImGuiCol.WindowBg));
+            //bgColor.W = 0.6f;
+            //ImGui.PushStyleColor(ImGuiCol.WindowBg, ImGui.ColorConvertFloat4ToU32(bgColor));
+
             //主菜单
             m_appMainImGuiView?.DrawMainMenuBar();
 
@@ -195,6 +191,22 @@ namespace Wanderer.App
                 s_imGuiViews[i].OnDraw();
             }
 
+        }
+
+        internal void OnWindowFocus(bool lost)
+        {
+            if (s_lastActiveImGuiTabView != null)
+            {
+                if (lost)
+                {
+                    s_lastActiveImGuiTabView.OnDisable();
+                }
+                else
+                {
+                    s_lastActiveImGuiTabView.OnEnable();
+                }
+                //Log.Info("ImGuiTabView {0} Set Active {1}", s_lastActiveImGuiTabView.Name, !lost);
+            }
         }
 
         protected override void OnViewAdd(strange.extensions.mediation.impl.View view)
@@ -343,14 +355,14 @@ namespace Wanderer.App
                             StandaloneFileBrowser.OpenFolderPanelAsync("Open Repository", "", false, (folders) => {
                                 if (folders != null && folders.Length > 0)
                                 {
-                                    //string gitPath = Path.Combine(folders[0], ".git");
-                                    //Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", gitPath);
-                                    //if (Directory.Exists(gitPath))
-                                    //{
-                                    //    OnOpenRepository?.Invoke(gitPath);
-                                    //}
+                                    string gitPath = Path.Combine(folders[0], ".git");
+                                    Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", gitPath);
+                                    if (Directory.Exists(gitPath))
+                                    {
+                                        //OnOpenRepository?.Invoke(gitPath);
+                                        dispatcher.Dispatch(AppEvent.ShowGitRepo, gitPath);
+                                    }
                                 }
-
                             });
 
                         }
@@ -363,14 +375,12 @@ namespace Wanderer.App
                                 {
                                     string searchDirPath = folders[0];
                                     Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", searchDirPath);
-                                    //if (Directory.Exists(searchDirPath))
-                                    //{
-                                    //    OnSearchRepository?.Invoke(searchDirPath);
-                                    //}
+                                    if (Directory.Exists(searchDirPath))
+                                    {
+                                        OnSearchRepository(searchDirPath);
+                                    }
                                 }
-
                             });
-
                         }
                         ImGui.EndMenu();
                     }
@@ -432,6 +442,7 @@ namespace Wanderer.App
                     {
                         if (ImGui.MenuItem(LuaPlugin.GetText("Material Icons")))
                         {
+                            AppContextView.AddView<MaterialIconsView>();
                             //AddView<MaterialIconsView>();
                         }
 
@@ -513,6 +524,68 @@ namespace Wanderer.App
                 ImGui.EndMainMenuBar();
             }
 
+        }
+
+        private async void OnSearchRepository(string path)
+        {
+            try
+            {
+                List<string> dirLists = null;
+                await Task.Run(() =>
+                {
+                    dirLists = GetGitRepoPaths(path, 0);
+                });
+
+                if (dirLists != null && dirLists.Count > 0)
+                {
+                    foreach (var item in dirLists)
+                    {
+                        dispatcher.Dispatch(AppEvent.SearchGitRepo, item);
+                    }
+                }
+
+                Log.Info("Search complete: {0}", path);
+            }
+            catch (Exception e)
+            {
+                Log.Warn("OnSearchRepository Exception {0}", e);
+            }
+        }
+
+        private List<string> GetGitRepoPaths(string dir, int index)
+        {
+            index++;
+            Log.Info("Search git repo in {0}", dir);
+            List<string> paths = new List<string>();
+            if (index < 5 && Directory.Exists(dir))
+            {
+                try
+                {
+                    var dirs = Directory.GetDirectories(dir);
+                    foreach (var itemDir in dirs)
+                    {
+                        if (itemDir.EndsWith(".git"))
+                        {
+                            Log.Info("Search git repo, get -> {0}", itemDir);
+                            paths.Add(itemDir);
+                        }
+                        else
+                        {
+                            paths.AddRange(GetGitRepoPaths(itemDir, index));
+                        }
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Log.Warn("GetGitRepoPaths dir:{0} exception:{1}", dir, e);
+                }
+            }
+            else
+            {
+                Log.Info("藏得太深,拒绝擦查找 {0} {1}", dir, index);
+            }
+
+            return paths;
         }
 
         //设置

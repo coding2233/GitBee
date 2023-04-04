@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.App.Controller;
-using Wanderer.App.Mediator;
 using Wanderer.App.Model;
 using Wanderer.App.Service;
 using Wanderer.App.View;
@@ -23,7 +22,9 @@ namespace Wanderer.App
 
         protected override void mapBindings()
         {
+            crossContextBridge.Bind(AppEvent.SearchGitRepo);
             crossContextBridge.Bind(AppEvent.ShowGitRepo);
+            crossContextBridge.Bind(AppEvent.RefreshGitRepo);
             crossContextBridge.Bind(AppEvent.OpenFile);
             crossContextBridge.Bind(AppEvent.OpenFolder);
 
@@ -31,8 +32,7 @@ namespace Wanderer.App
             injectionBinder.Bind<IPluginService>().To<PluginService>().ToSingleton().CrossContext();
             injectionBinder.Bind<IAppModel>().To<AppModel>().ToSingleton().CrossContext();
 
-            mediationBinder.Bind<AppImGuiView>().To<AppImGuiMediator>();
-            mediationBinder.Bind<HomeView>().To<HomeMediator>();
+            //mediationBinder.Bind<AppImGuiView>().To<AppImGuiMediator>();
             mediationBinder.Bind<SSHView>().To<SSHMediator>();
 
             commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once();
