@@ -43,12 +43,12 @@ namespace Wanderer.App.Mediator
             base.OnRemove();
         }
 
-        public override void OnEnable()
-        {
-            base.OnEnable();
+        //public override void OnEnable()
+        //{
+        //    base.OnEnable();
 
-            homeView.SetRepositories(database.GetRepositories());
-        }
+        //    homeView.SetRepositories(database.GetRepositories());
+        //}
 
         private void OnOpenRepositoryCallback(string gitPath)
         {

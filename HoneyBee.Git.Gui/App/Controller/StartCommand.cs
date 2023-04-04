@@ -34,9 +34,11 @@ namespace Wanderer.App.Controller
         {
             ////主窗口
             //ImGuiView.Create<AppImGuiView>(context,0);
-            
+
             ////内容主窗口
             //ImGuiView.Create<HomeView>(context,0);
+
+            AppContextView.AddView<HomeView>();
 
             ////ssh 窗口
             //ImGuiView.Create<SSHView>(context,0);

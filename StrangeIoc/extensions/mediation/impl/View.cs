@@ -69,7 +69,7 @@ namespace strange.extensions.mediation.impl
                 OnDestroy();
             }
 
-            internal virtual void OnAwake()
+            public virtual void OnAwake()
             {
                 registeredWithContext = true;
             }

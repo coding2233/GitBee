@@ -33,7 +33,7 @@ namespace strange.extensions.mediation.impl
 {
 	public class EventView : View
 	{
-		[Inject]
+		[Inject(ContextKeys.CONTEXT_DISPATCHER)]
 		public IEventDispatcher dispatcher { get; set; }
 
 		public EventView() 

@@ -90,10 +90,10 @@ namespace strange.extensions.context.impl
         }
 
 
-        protected virtual void OnViewAdd(IView view)
+        protected virtual void OnViewAdd(View view)
         { }
 
-        protected virtual void OnViewRemove(IView view)
+        protected virtual void OnViewRemove(View view)
         { }
 
         #region IView implementation
