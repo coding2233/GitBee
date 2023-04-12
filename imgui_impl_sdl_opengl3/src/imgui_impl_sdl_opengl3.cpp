@@ -168,16 +168,16 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                     }
                     if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                     {
-                        clock_start = clock();
-                        frame = 0;
-                        frame_rate_time = (1 / default_fps) * 1000;
+//                        clock_start = clock();
+//                        frame = 0;
+//                        frame_rate_time = (1 / default_fps) * 1000;
                     }
                     else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
                     {
-                        clock_start = clock();
-                        frame = 0;
-                        //frame_rate_time = 1000;
-                        frame_rate_time = (1 / 10.0f) * 1000;
+//                        clock_start = clock();
+//                        frame = 0;
+//                        //frame_rate_time = 1000;
+//                        frame_rate_time = (1 / 10.0f) * 1000;
                     }
                 }
             }

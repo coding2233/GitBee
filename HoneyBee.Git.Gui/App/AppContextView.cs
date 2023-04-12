@@ -305,6 +305,8 @@ namespace Wanderer.App
         //状态栏
         private void DrawStatusBar()
         {
+            ImGui.Text($"FPS:{((int)ImGui.GetIO().Framerate).ToString("D2")} ");
+            ImGui.SameLine();
             ImGui.Text(m_fullLog);
         }
     }

@@ -68,6 +68,11 @@ namespace Wanderer.GitRepository.Common
             });
         }
 
+        public void SetSelectCommit(string sha)
+        {
+            SelectCommit = m_repository.Commits.Where(x => x.Sha.Equals(sha)).First();
+        }
+
         //public string FormatCommandAction(ViewCommand command)
         //{
         //    string action = command.Action;
@@ -139,12 +144,16 @@ namespace Wanderer.GitRepository.Common
             //git fetch --all
         }
 
-
+        private int m_oldCommintMax = 0;
         public int GetCommitCount()
         {
             try
             {
-                return m_repository.Commits.Count();
+                if (m_oldCommintMax == 0)
+                {
+                    m_oldCommintMax = m_repository.Commits.Count();
+                }
+                return m_oldCommintMax;
             }
             catch (Exception e)
             {

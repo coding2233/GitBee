@@ -39,4 +39,5 @@ language["Icon"]="图标"
 language["Issues"]="工单"
 language["Report a bug"]="反馈Bug"
 language["Clone"]="克隆"
+language["Plugin"]="插件"
 return language
