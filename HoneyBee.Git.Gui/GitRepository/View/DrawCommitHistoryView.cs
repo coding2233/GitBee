@@ -23,9 +23,9 @@ namespace Wanderer.GitRepository.View
     internal class DrawCommitHistoryView
     {
         private GitRepo m_gitRepo;
-        private int m_commitAddInterval = 5;
+        private int m_commitAddInterval = 20;
         private int m_commitViewIndex = 0;
-        private int m_commitViewMax = 100;
+        private int m_commitViewMax = 200;
         private float m_lastCommitScrollY = 0.0f;
         private Commit m_selectCommit;
         private Patch m_selectCommitPatch;
@@ -71,7 +71,7 @@ namespace Wanderer.GitRepository.View
 
         private void DrawHistoryCommits()
         {
-            int commitMax = m_gitRepo.GetCommitCount();
+            int commitMax = m_gitRepo.CommitCount;
 
             var itemWidth = ImGui.GetWindowWidth() * 0.2f;
             ImGui.SetNextItemWidth(itemWidth);
@@ -615,7 +615,7 @@ namespace Wanderer.GitRepository.View
 
         IEnumerable<Commit> GetHistoryCommits(bool force=false)
         {
-            if (m_cacheCommits == null)
+            if (m_cacheCommits == null && m_gitRepo!=null && m_gitRepo.Repo!=null)
             {
                 //这里可以增加更多的条件，方便操作更多的信息
                 var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);

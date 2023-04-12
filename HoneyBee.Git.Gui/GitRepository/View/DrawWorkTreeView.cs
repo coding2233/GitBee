@@ -381,7 +381,11 @@ namespace Wanderer
         {
             try
             {
-                var statuses = m_gitRepo.Repo.RetrieveStatus();
+                RepositoryStatus statuses = null;
+                if (m_gitRepo != null && m_gitRepo.Repo != null)
+                {
+                    statuses = m_gitRepo.Repo.RetrieveStatus();
+                }
 
                 m_stageTreeView.Clear();
                 m_unstageTreeView.Clear();
@@ -390,6 +394,10 @@ namespace Wanderer
                 m_stageMultipleSelectionNodes.Clear();
                 m_unstageMultipleSelectionNodes.Clear();
 
+                if (statuses == null)
+                {
+                    return;
+                }
         
                 foreach (var item in statuses)
                 {

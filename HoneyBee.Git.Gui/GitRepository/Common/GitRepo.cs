@@ -46,6 +46,9 @@ namespace Wanderer.GitRepository.Common
 
         public LibGit2Sharp.Diff Diff => m_repository.Diff;
 
+        private int m_commitCount;
+        public int CommitCount => m_commitCount;
+
 
         private bool m_runTask;
         private Action<float> m_taskProgress;
@@ -53,7 +56,6 @@ namespace Wanderer.GitRepository.Common
         {
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
-            m_repository = new Repository(RootPath);
             ////同步仓库信息
             //SyncGitRepoTask();
         }
@@ -62,9 +64,16 @@ namespace Wanderer.GitRepository.Common
         public void ReBuildUIData()
         {
             Task.Run(() => {
+                if (m_repository == null)
+                {
+                    m_repository = new Repository(RootPath);
+                }
+
                 SetBranchNodes();
                 SetTags();
                 SetSubmodules();
+
+                m_commitCount = m_repository.Commits.Count();
             });
         }
 
@@ -144,24 +153,24 @@ namespace Wanderer.GitRepository.Common
             //git fetch --all
         }
 
-        private int m_oldCommintMax = 0;
-        public int GetCommitCount()
-        {
-            try
-            {
-                if (m_oldCommintMax == 0)
-                {
-                    m_oldCommintMax = m_repository.Commits.Count();
-                }
-                return m_oldCommintMax;
-            }
-            catch (Exception e)
-            {
-                Log.Warn("提交的总数获取失败: {0}", e);
-            }
+        //private int m_oldCommintMax = 0;
+        //public int GetCommitCount()
+        //{
+        //    try
+        //    {
+        //        if (m_oldCommintMax == 0)
+        //        {
+        //            m_oldCommintMax = m_repository.Commits.Count();
+        //        }
+        //        return m_oldCommintMax;
+        //    }
+        //    catch (Exception e)
+        //    {
+        //        Log.Warn("提交的总数获取失败: {0}", e);
+        //    }
           
-            return 0;
-        }
+        //    return 0;
+        //}
 
 
         public void Commit(string commitMessage)
