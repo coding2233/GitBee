@@ -73,10 +73,12 @@ namespace Wanderer.App
             ImGui.SetNextWindowSize(viewport.WorkSize - new Vector2(0, s_statusBarSize.Y));
 
             ImGuiWindowFlags imGuiWindowFlags = s_defaultWindowFlag;
-            if (s_imGuiViews.Count > 0)
-            {
-                imGuiWindowFlags |= ImGuiWindowFlags.NoInputs;
-            }
+
+            //没啥用
+            //if (s_imGuiViews.Count > 0)
+            //{
+            //    imGuiWindowFlags |= ImGuiWindowFlags.NoInputs;
+            //}
 
             if (ImGui.Begin("ImGui_AppContextView_Window", imGuiWindowFlags))
             {

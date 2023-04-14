@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Wanderer.App;
 using Wanderer.App.Controller;
 using Wanderer.GitRepository.Controller;
-using Wanderer.GitRepository.Mediator;
 using Wanderer.GitRepository.Service;
 using Wanderer.GitRepository.View;
 
@@ -31,7 +30,7 @@ namespace Wanderer.GitRepository
             commandBinder.Bind(AppEvent.ShowGitRepo).To<ShowGitRepoCommand>();
             commandBinder.Bind(ContextEvent.START).To<GitViewStartCommand>().Once();
 
-            mediationBinder.Bind<GitRepoView>().To<GitRepoMediator>();
+            //mediationBinder.Bind<GitRepoView>().To<GitRepoMediator>();
         }
     }
 }

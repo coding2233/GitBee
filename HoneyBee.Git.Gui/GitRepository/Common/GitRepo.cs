@@ -49,9 +49,6 @@ namespace Wanderer.GitRepository.Common
         private int m_commitCount;
         public int CommitCount => m_commitCount;
 
-
-        private bool m_runTask;
-        private Action<float> m_taskProgress;
         internal GitRepo(string repoPath)
         {
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
@@ -81,97 +78,6 @@ namespace Wanderer.GitRepository.Common
         {
             SelectCommit = m_repository.Commits.Where(x => x.Sha.Equals(sha)).First();
         }
-
-        //public string FormatCommandAction(ViewCommand command)
-        //{
-        //    string action = command.Action;
-        //    if (string.IsNullOrEmpty(action))
-        //    {
-        //        action = "git --help";
-        //    }
-        //    else
-        //    {
-        //        switch (command.Target)
-        //        {
-        //            case ViewCommandTarget.Head:
-        //            case ViewCommandTarget.Branch:
-        //                break;
-        //            case ViewCommandTarget.Remote:
-        //                break;
-        //            case ViewCommandTarget.Commit:
-        //                break;
-        //            case ViewCommandTarget.Tag:
-        //                break;
-        //            default:
-        //                break;
-        //        }
-        //    }
-
-        //    return action;
-        //}
-
-
-        public void Pull(Func<string,bool> onProgress, Func<TransferProgress, bool> onTransferProgressHandler)
-        {
-            // Credential information to fetch
-            LibGit2Sharp.PullOptions options = new LibGit2Sharp.PullOptions();
-            options.FetchOptions = new FetchOptions();
-            if (onProgress != null)
-            {
-                options.FetchOptions.OnProgress = new ProgressHandler(onProgress);
-            }
-
-            if (onTransferProgressHandler!=null)
-            {
-                options.FetchOptions.OnTransferProgress = new TransferProgressHandler(onTransferProgressHandler);
-            }
-
-            //这里需要用户验证信息
-            //options.FetchOptions.CredentialsProvider = new CredentialsHandler(
-            //    (url, usernameFromUrl, types) =>
-            //        new UsernamePasswordCredentials()
-            //        {
-            //            Username = USERNAME,
-            //            Password = PASSWORD
-            //        });
-
-            // User information to create a merge commit
-            var signature = BuildSignature();
-
-            // Pull
-            Commands.Pull(m_repository, signature, options);
-        }
-
-        public void Fetch(string remoteName)
-        {
-            string logMessage="";
-            var remote = m_repository.Network.Remotes[remoteName];
-            IEnumerable<string> refSpecs = remote.FetchRefSpecs.Select(x => x.Specification);
-            Commands.Fetch(m_repository, remote.Name, refSpecs, null, logMessage);
-
-            //next
-            //git fetch --all
-        }
-
-        //private int m_oldCommintMax = 0;
-        //public int GetCommitCount()
-        //{
-        //    try
-        //    {
-        //        if (m_oldCommintMax == 0)
-        //        {
-        //            m_oldCommintMax = m_repository.Commits.Count();
-        //        }
-        //        return m_oldCommintMax;
-        //    }
-        //    catch (Exception e)
-        //    {
-        //        Log.Warn("提交的总数获取失败: {0}", e);
-        //    }
-          
-        //    return 0;
-        //}
-
 
         public void Commit(string commitMessage)
         {
@@ -205,19 +111,6 @@ namespace Wanderer.GitRepository.Common
             //Status();
         }
 
-        //public void AddFile(IEnumerable<string> files)
-        //{
-        //    //IEnumerable<StatusEntry> Added
-        //    if (files != null && files.Count() > 0)
-        //    {
-        //        foreach (var item in files)
-        //        {
-        //            m_repository.Index.Add(item);
-        //        }
-        //        m_repository.Index.Write();
-        //    }
-        //}
-
         public void Stage(IEnumerable<string> files = null)
         {
             if (files == null)
@@ -250,8 +143,6 @@ namespace Wanderer.GitRepository.Common
         {
             return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).FirstOrDefault();
         }
-
-  
 
         public void Dispose()
         {
