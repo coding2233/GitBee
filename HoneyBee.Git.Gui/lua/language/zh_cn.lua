@@ -43,4 +43,8 @@ language["Plugin"]="插件"
 language["custom..."]="自定义..."
 language["Git Command - Pull"]="Git命令 - 拉取(Pull)"
 language["Execute"]="运行"
+language["New Branch"]="新分支"
+language["OK"]="确定"
+language["Add"]="添加"
+language["Cancel"]="取消"
 return language
