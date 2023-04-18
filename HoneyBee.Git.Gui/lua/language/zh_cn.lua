@@ -40,4 +40,7 @@ language["Issues"]="工单"
 language["Report a bug"]="反馈Bug"
 language["Clone"]="克隆"
 language["Plugin"]="插件"
+language["custom..."]="自定义..."
+language["Git Command - Pull"]="Git命令 - 拉取(Pull)"
+language["Execute"]="运行"
 return language

@@ -288,169 +288,169 @@ namespace Wanderer.GitRepository.View
             {
                 string newBranchName = "";
                 bool checkout = false;
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    ImGui.InputText("New Branch Name", ref newBranchName, 200);
-                    ImGui.Checkbox("Check Out", ref checkout);
-                    if (ImGui.Button("OK"))
-                    {
-                        if (!string.IsNullOrEmpty(newBranchName))
-                        {
-                            string cmd = checkout ? $"checkout -b {newBranchName} {item.Sha}" : $"branch {newBranchName} {item.Sha}";
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
-                        }
-                        return false;
-                    }
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    ImGui.InputText("New Branch Name", ref newBranchName, 200);
+                //    ImGui.Checkbox("Check Out", ref checkout);
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        if (!string.IsNullOrEmpty(newBranchName))
+                //        {
+                //            string cmd = checkout ? $"checkout -b {newBranchName} {item.Sha}" : $"branch {newBranchName} {item.Sha}";
+                //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
+                //        }
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
 
-                });
+                //});
             }
             if (ImGui.MenuItem("New Tag..."))
             {
                 string newTagName = "";
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    ImGui.InputText("New Tag", ref newTagName, 200);
-                    if (ImGui.Button("OK"))
-                    {
-                        if (!string.IsNullOrEmpty(newTagName))
-                        {
-                            string cmd = $"tag {newTagName} {item.Sha}";
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
-                        }
-                        return false;
-                    }
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    ImGui.InputText("New Tag", ref newTagName, 200);
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        if (!string.IsNullOrEmpty(newTagName))
+                //        {
+                //            string cmd = $"tag {newTagName} {item.Sha}";
+                //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
+                //        }
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
 
-                });
+                //});
             }
             ImGui.Separator();
             if (ImGui.MenuItem("CheckOut Commit..."))
             {
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    string checkoutCmd = $"checkout {item.Sha}";
-                    ImGui.Text("Confirm whether to checkout the selected commit？");
-                    ImGui.Text(checkoutCmd);
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    string checkoutCmd = $"checkout {item.Sha}";
+                //    ImGui.Text("Confirm whether to checkout the selected commit？");
+                //    ImGui.Text(checkoutCmd);
 
-                    if (ImGui.Button("OK"))
-                    {
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, checkoutCmd);
-                        return false;
-                    }
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, checkoutCmd);
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
-                });
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //});
             }
             if (ImGui.MenuItem($"Reset {headBranchwName} on this commit..."))
             {
-                GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                {
-                    string resetCmd = $"reset --hard {item.Sha}";
-                    ImGui.Text("Confirm whether to reset the selected commit？");
-                    ImGui.Text(resetCmd);
+                //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                //{
+                //    string resetCmd = $"reset --hard {item.Sha}";
+                //    ImGui.Text("Confirm whether to reset the selected commit？");
+                //    ImGui.Text(resetCmd);
 
-                    if (ImGui.Button("OK"))
-                    {
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, resetCmd);
-                        return false;
-                    }
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, resetCmd);
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
-                });
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //});
             }
 
             if (ImGui.MenuItem($"Rebase {headBranchwName} on this commit..."))
             {
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    string rebaseCmd = $"rebase {item.Sha}";
-                    ImGui.Text("Confirm whether to rebase the selected commit？");
-                    ImGui.Text(rebaseCmd);
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    string rebaseCmd = $"rebase {item.Sha}";
+                //    ImGui.Text("Confirm whether to rebase the selected commit？");
+                //    ImGui.Text(rebaseCmd);
 
-                    if (ImGui.Button("OK"))
-                    {
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, rebaseCmd);
-                        return false;
-                    }
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, rebaseCmd);
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
-                });
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //});
             }
             if (ImGui.MenuItem("Revert Commit..."))
             {
                 bool commitChange = true;
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    ImGui.Text("Confirm whether to Revert the selected commit？");
-                    ImGui.Checkbox("Commit this change", ref commitChange);
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    ImGui.Text("Confirm whether to Revert the selected commit？");
+                //    ImGui.Checkbox("Commit this change", ref commitChange);
 
-                    if (ImGui.Button("OK"))
-                    {
-                        string revertCmd = commitChange ? $"revert {item.Sha}" : $"revert --no-commit {item.Sha}";
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, revertCmd);
-                        return false;
-                    }
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        string revertCmd = commitChange ? $"revert {item.Sha}" : $"revert --no-commit {item.Sha}";
+                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, revertCmd);
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
-                });
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //});
 
             }
             if (ImGui.MenuItem("Cherry-Pick Commit..."))
             {
                 //git cherry-pick <commmit>
                 bool commitChange = true;
-                GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                {
-                    ImGui.Text("Confirm whether to cherry-pick the selected commit？");
-                    ImGui.Checkbox("Commit this change", ref commitChange);
+                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                //{
+                //    ImGui.Text("Confirm whether to cherry-pick the selected commit？");
+                //    ImGui.Checkbox("Commit this change", ref commitChange);
 
-                    if (ImGui.Button("OK"))
-                    {
-                        string cherrypickCmd = commitChange ? $"cherry-pick {item.Sha}" : $"cherry-pick --no-commit {item.Sha}";
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cherrypickCmd);
-                        return false;
-                    }
+                //    if (ImGui.Button("OK"))
+                //    {
+                //        string cherrypickCmd = commitChange ? $"cherry-pick {item.Sha}" : $"cherry-pick --no-commit {item.Sha}";
+                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cherrypickCmd);
+                //        return false;
+                //    }
 
-                    ImGui.SameLine();
-                    if (ImGui.Button("Cancel"))
-                    {
-                        return false;
-                    }
-                    return true;
-                });
+                //    ImGui.SameLine();
+                //    if (ImGui.Button("Cancel"))
+                //    {
+                //        return false;
+                //    }
+                //    return true;
+                //});
             }
             if (ImGui.MenuItem("Save As Patch"))
             {

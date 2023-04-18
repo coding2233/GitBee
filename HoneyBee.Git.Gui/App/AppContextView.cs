@@ -350,7 +350,7 @@ namespace Wanderer.App
 
                         if (ImGui.MenuItem(LuaPlugin.GetText("Clone")))
                         {
-                            GitCommandView.RunGitCommandView<CloneGitCommand>();
+                            //GitCommandView.RunGitCommandView<CloneGitCommand>();
                         }
 
                         if (ImGui.MenuItem(LuaPlugin.GetText("Open Repository")))

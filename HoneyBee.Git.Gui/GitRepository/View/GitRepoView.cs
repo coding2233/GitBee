@@ -195,24 +195,27 @@ namespace Wanderer.GitRepository.View
                     GitCommandView.ShowTerminal(m_repoPath);
                     break;
                 case "Pull":
-                    GitCommandView.RunGitCommand("git pull",m_gitRepo,null);
+                    AppContextView.AddView<GitPullCommandView>(m_gitRepo);
+                    //GitCommandView.RunGitCommand("git pull",m_gitRepo,null);
+                    //GitCommandView.RunGitCommandView(m_gitRepo);
+                    //AppContextView.AddView<>
                     break;
                 case "Fetch":
                     //GitCommandView.RunGitCommandView<FetchGitCommand>(m_gitRepo);
-                    List<GitCommandViewInfo> infos = new List<GitCommandViewInfo>();
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
-                    GitCommandView.RunGitCommand("git fetch $remote $2 $0:$1", m_gitRepo, infos);
+                    //List<GitCommandViewInfo> infos = new List<GitCommandViewInfo>();
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
+                    //GitCommandView.RunGitCommand("git fetch $remote $2 $0:$1", m_gitRepo, infos);
                     break;
                 case "Push":
                     //GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo);
-                    infos = new List<GitCommandViewInfo>();
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
-                    infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Push all tags", OptionValue = "--tags" });
-                    GitCommandView.RunGitCommand("git push $remote $2 $3 $0:$1", m_gitRepo, infos);
+                    //infos = new List<GitCommandViewInfo>();
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
+                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Push all tags", OptionValue = "--tags" });
+                    //GitCommandView.RunGitCommand("git push $remote $2 $3 $0:$1", m_gitRepo, infos);
                     break;
                 case "Explorer":
                     Process.Start("Explorer", m_gitRepo.RootPath.Replace("/","\\"));
@@ -418,54 +421,54 @@ namespace Wanderer.GitRepository.View
             {
                 if (ImGui.MenuItem("Fetch..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                    {
-                        int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/")+1;
-                        string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length- friendlyIndex);
-                        string fetchCmd = $"fetch {branchNode.Data.RemoteName} {friendlyName}:{friendlyName}";
-                        ImGui.Text("Confirm whether to fetch the selected branch？");
-                        ImGui.Text(fetchCmd);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                    //{
+                    //    int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/")+1;
+                    //    string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length- friendlyIndex);
+                    //    string fetchCmd = $"fetch {branchNode.Data.RemoteName} {friendlyName}:{friendlyName}";
+                    //    ImGui.Text("Confirm whether to fetch the selected branch？");
+                    //    ImGui.Text(fetchCmd);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Delete..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                    {
-                        int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/") + 1;
-                        string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length - friendlyIndex);
-                        string deleteCmd = $"push {branchNode.Data.RemoteName} --delete {friendlyName}";
-                        ImGui.Text("Confirm whether to delete the selected branch？");
-                        ImGui.Text(deleteCmd);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
+                    //{
+                    //    int friendlyIndex = branchNode.Data.FriendlyName.IndexOf("/") + 1;
+                    //    string friendlyName = branchNode.Data.FriendlyName.Substring(friendlyIndex, branchNode.Data.FriendlyName.Length - friendlyIndex);
+                    //    string deleteCmd = $"push {branchNode.Data.RemoteName} --delete {friendlyName}";
+                    //    ImGui.Text("Confirm whether to delete the selected branch？");
+                    //    ImGui.Text(deleteCmd);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, deleteCmd);
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, deleteCmd);
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 ImGui.Separator();
@@ -481,85 +484,85 @@ namespace Wanderer.GitRepository.View
             {
                 if (ImGui.MenuItem("Check Out"))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"checkout {branchNode.Data.FriendlyName}");
-                        return false;
-                    });
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"checkout {branchNode.Data.FriendlyName}");
+                    //    return false;
+                    //});
                 }
 
                 ImGui.Separator();
 
                 if (ImGui.MenuItem("Pull..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        string pullCmd = $"pull {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
-                        ImGui.Text("Confirm whether to pull the selected branch？");
-                        ImGui.Text(pullCmd);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    string pullCmd = $"pull {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
+                    //    ImGui.Text("Confirm whether to pull the selected branch？");
+                    //    ImGui.Text(pullCmd);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, pullCmd);
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, pullCmd);
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Push..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        string pushCmd = $"push {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
-                        ImGui.Text("Confirm whether to push the selected branch？");
-                        ImGui.Text(pushCmd);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    string pushCmd = $"push {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
+                    //    ImGui.Text("Confirm whether to push the selected branch？");
+                    //    ImGui.Text(pushCmd);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, pushCmd);
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, pushCmd);
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Fetch..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
-                        ImGui.Text("Confirm whether to fetch the selected branch？");
-                        ImGui.Text(fetchCmd);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    string fetchCmd = $"fetch {branchNode.Data.RemoteName} {branchNode.Data.FriendlyName}:{branchNode.Data.FriendlyName}";
+                    //    ImGui.Text("Confirm whether to fetch the selected branch？");
+                    //    ImGui.Text(fetchCmd);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, fetchCmd);
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Tracking..."))
@@ -598,123 +601,123 @@ namespace Wanderer.GitRepository.View
                     var headBranch = m_gitRepo.Repo.Head;
                     if (ImGui.MenuItem($"Merge into '{headBranch.FriendlyName}'..."))
                     {
-                        GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                        {
-                            string mergeCmd = $"merge {branchNode.Data.FriendlyName}";
-                            ImGui.Text("Confirm whether to merge the selected branch？");
-                            ImGui.Text(mergeCmd);
+                        //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                        //{
+                        //    string mergeCmd = $"merge {branchNode.Data.FriendlyName}";
+                        //    ImGui.Text("Confirm whether to merge the selected branch？");
+                        //    ImGui.Text(mergeCmd);
 
-                            if (ImGui.Button("OK"))
-                            {
-                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, mergeCmd);
-                                return false;
-                            }
+                        //    if (ImGui.Button("OK"))
+                        //    {
+                        //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, mergeCmd);
+                        //        return false;
+                        //    }
 
-                            ImGui.SameLine();
-                            if (ImGui.Button("Cancel"))
-                            {
-                                return false;
-                            }
-                            return true;
-                        });
+                        //    ImGui.SameLine();
+                        //    if (ImGui.Button("Cancel"))
+                        //    {
+                        //        return false;
+                        //    }
+                        //    return true;
+                        //});
                     }
 
                     if (ImGui.MenuItem($"Rebase '{headBranch.FriendlyName}' on '{branchNode.FullName}'..."))
                     {
-                        GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                        {
-                            string rebaseCmd = $"rebase {branchNode.Data.FriendlyName}";
-                            ImGui.Text("Confirm whether to rebase the selected branch？");
-                            ImGui.Text(rebaseCmd);
+                        //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                        //{
+                        //    string rebaseCmd = $"rebase {branchNode.Data.FriendlyName}";
+                        //    ImGui.Text("Confirm whether to rebase the selected branch？");
+                        //    ImGui.Text(rebaseCmd);
 
-                            if (ImGui.Button("OK"))
-                            {
-                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, rebaseCmd);
-                                return false;
-                            }
+                        //    if (ImGui.Button("OK"))
+                        //    {
+                        //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, rebaseCmd);
+                        //        return false;
+                        //    }
 
-                            ImGui.SameLine();
-                            if (ImGui.Button("Cancel"))
-                            {
-                                return false;
-                            }
-                            return true;
-                        });
+                        //    ImGui.SameLine();
+                        //    if (ImGui.Button("Cancel"))
+                        //    {
+                        //        return false;
+                        //    }
+                        //    return true;
+                        //});
                     }
                 }
 
                 if (ImGui.MenuItem("New Branch..."))
                 {
                     string newBranchName = "";
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        ImGui.InputText("New Branch Name", ref newBranchName, 200);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    ImGui.InputText("New Branch Name", ref newBranchName, 200);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            if (!string.IsNullOrEmpty(newBranchName))
-                            {
-                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -c {branchNode.Data.FriendlyName} {newBranchName}");
-                            }
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        if (!string.IsNullOrEmpty(newBranchName))
+                    //        {
+                    //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -c {branchNode.Data.FriendlyName} {newBranchName}");
+                    //        }
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Rename..."))
                 {
                     string newBranchName = "";
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        ImGui.InputText("New Branch Name", ref newBranchName, 200);
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    ImGui.InputText("New Branch Name", ref newBranchName, 200);
 
-                        if (ImGui.Button("OK"))
-                        {
-                            if (!string.IsNullOrEmpty(newBranchName))
-                            {
-                                GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -m {branchNode.Data.FriendlyName} {newBranchName}");
-                            }
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        if (!string.IsNullOrEmpty(newBranchName))
+                    //        {
+                    //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -m {branchNode.Data.FriendlyName} {newBranchName}");
+                    //        }
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 if (ImGui.MenuItem("Delete..."))
                 {
-                    GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
-                    {
-                        ImGui.Text("Confirm whether to delete the selected branch？");
+                    //GitCommandView.RunGitCommandView<HandleGitCommand>( () =>
+                    //{
+                    //    ImGui.Text("Confirm whether to delete the selected branch？");
 
-                        if (ImGui.Button("OK"))
-                        {
-                            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -d {branchNode.Data.FriendlyName}");
-                            return false;
-                        }
+                    //    if (ImGui.Button("OK"))
+                    //    {
+                    //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, $"branch -d {branchNode.Data.FriendlyName}");
+                    //        return false;
+                    //    }
 
-                        ImGui.SameLine();
-                        if (ImGui.Button("Cancel"))
-                        {
-                            return false;
-                        }
-                        return true;
+                    //    ImGui.SameLine();
+                    //    if (ImGui.Button("Cancel"))
+                    //    {
+                    //        return false;
+                    //    }
+                    //    return true;
 
-                    });
+                    //});
                 }
 
                 ImGui.Separator();
