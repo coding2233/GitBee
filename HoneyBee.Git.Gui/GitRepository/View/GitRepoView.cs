@@ -196,9 +196,6 @@ namespace Wanderer.GitRepository.View
                     break;
                 case "Pull":
                     AppContextView.AddView<GitPullCommandView>(m_gitRepo);
-                    //GitCommandView.RunGitCommand("git pull",m_gitRepo,null);
-                    //GitCommandView.RunGitCommandView(m_gitRepo);
-                    //AppContextView.AddView<>
                     break;
                 case "Fetch":
                     //GitCommandView.RunGitCommandView<FetchGitCommand>(m_gitRepo);
@@ -209,13 +206,7 @@ namespace Wanderer.GitRepository.View
                     //GitCommandView.RunGitCommand("git fetch $remote $2 $0:$1", m_gitRepo, infos);
                     break;
                 case "Push":
-                    //GitCommandView.RunGitCommandView<PushGitCommand>(m_gitRepo);
-                    //infos = new List<GitCommandViewInfo>();
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Push all tags", OptionValue = "--tags" });
-                    //GitCommandView.RunGitCommand("git push $remote $2 $3 $0:$1", m_gitRepo, infos);
+                    AppContextView.AddView<GitPushCommandView>(m_gitRepo);
                     break;
                 case "Explorer":
                     Process.Start("Explorer", m_gitRepo.RootPath.Replace("/","\\"));
