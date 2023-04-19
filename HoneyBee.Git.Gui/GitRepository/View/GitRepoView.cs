@@ -198,12 +198,7 @@ namespace Wanderer.GitRepository.View
                     AppContextView.AddView<GitPullCommandView>(m_gitRepo);
                     break;
                 case "Fetch":
-                    //GitCommandView.RunGitCommandView<FetchGitCommand>(m_gitRepo);
-                    //List<GitCommandViewInfo> infos = new List<GitCommandViewInfo>();
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.REMOTE, Desc = "Remote", Amend = true });
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.BRANCH, Desc = "Branch", Amend = true });
-                    //infos.Add(new GitCommandViewInfo() { ViewType = GitCommandViewType.OPTION, Desc = "Force", OptionValue = "--force" });
-                    //GitCommandView.RunGitCommand("git fetch $remote $2 $0:$1", m_gitRepo, infos);
+                    AppContextView.AddView<GitFetchCommandView>(m_gitRepo);
                     break;
                 case "Push":
                     AppContextView.AddView<GitPushCommandView>(m_gitRepo);
