@@ -2,6 +2,7 @@
 using LibGit2Sharp;
 using SFB;
 using strange.extensions.dispatcher.eventdispatcher.api;
+using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -12,6 +13,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.App.Service;
 using Wanderer.App.View;
 using Wanderer.Common;
@@ -20,7 +22,7 @@ using Wanderer.GitRepository.Common;
 
 namespace Wanderer.GitRepository.View
 {
-    internal class DrawCommitHistoryView
+    internal class DrawCommitHistoryView: strange.extensions.mediation.impl.View
     {
         private GitRepo m_gitRepo;
         private int m_commitAddInterval = 20;
@@ -41,13 +43,14 @@ namespace Wanderer.GitRepository.View
         private IEnumerable<Commit> m_cacheCommits;
         private List<CommitTabInfo> m_tabShowCommits;
 
-        private IPluginService m_plugin;
+        [Inject]
+        public IPluginService m_plugin { get; set; }
 
         private string[] m_localBranchs=new string[0];
         private int m_selectLocalBranch;
         private string m_searchCommit = "";
 
-        public DrawCommitHistoryView(GitRepo gitRepo, IPluginService plugin)
+        public DrawCommitHistoryView(GitRepo gitRepo)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
             m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);
@@ -56,7 +59,6 @@ namespace Wanderer.GitRepository.View
             m_diffShowView = new DiffShowView();
 
             m_gitRepo = gitRepo;
-            m_plugin = plugin;
         }
 
         public void Draw()
@@ -258,7 +260,7 @@ namespace Wanderer.GitRepository.View
                             ImGui.SameLine();
                             ImGui.Text(item.Message);
                             ImGui.Separator();
-                            //OnCommitPopupContextItem(item);
+                            OnCommitPopupContextItem(item);
                         }
                         ImGui.EndPopup();
                     }
@@ -280,61 +282,17 @@ namespace Wanderer.GitRepository.View
         }
 
 
-        private void OnCommitPopupContextItem(Commit item)
+        private void OnCommitPopupContextItem(CommitTabInfo item)
         {
             var headBranch = m_gitRepo.Repo.Head;
             string headBranchwName = $"'{headBranch}'";
-            if (ImGui.MenuItem("New Branch..."))
+            if (ImGui.MenuItem(LuaPlugin.GetText("New Branch")+"..."))
             {
-                string newBranchName = "";
-                bool checkout = false;
-                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                //{
-                //    ImGui.InputText("New Branch Name", ref newBranchName, 200);
-                //    ImGui.Checkbox("Check Out", ref checkout);
-                //    if (ImGui.Button("OK"))
-                //    {
-                //        if (!string.IsNullOrEmpty(newBranchName))
-                //        {
-                //            string cmd = checkout ? $"checkout -b {newBranchName} {item.Sha}" : $"branch {newBranchName} {item.Sha}";
-                //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
-                //        }
-                //        return false;
-                //    }
-
-                //    ImGui.SameLine();
-                //    if (ImGui.Button("Cancel"))
-                //    {
-                //        return false;
-                //    }
-                //    return true;
-
-                //});
+                AppContextView.AddView<GitNewBranchCommandView>(m_gitRepo,item.Sha);
             }
-            if (ImGui.MenuItem("New Tag..."))
+            if (ImGui.MenuItem(LuaPlugin.GetText("New Tag") +"..."))
             {
-                string newTagName = "";
-                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                //{
-                //    ImGui.InputText("New Tag", ref newTagName, 200);
-                //    if (ImGui.Button("OK"))
-                //    {
-                //        if (!string.IsNullOrEmpty(newTagName))
-                //        {
-                //            string cmd = $"tag {newTagName} {item.Sha}";
-                //            GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, cmd);
-                //        }
-                //        return false;
-                //    }
-
-                //    ImGui.SameLine();
-                //    if (ImGui.Button("Cancel"))
-                //    {
-                //        return false;
-                //    }
-                //    return true;
-
-                //});
+                AppContextView.AddView<GitNewTagCommandView>(m_gitRepo, item.Sha);
             }
             ImGui.Separator();
             if (ImGui.MenuItem("CheckOut Commit..."))
@@ -463,15 +421,14 @@ namespace Wanderer.GitRepository.View
                 //});
             }
             ImGui.Separator();
-            if (ImGui.MenuItem("Copy Info"))
+            if (ImGui.MenuItem(LuaPlugin.GetText("Copy Commit Info")))
             {
-                Application.SetClipboard($"{item.Sha} {item.Author.Name} {item.Author.When.DateTime} {item.MessageShort}");
+                Application.SetClipboard($"{item.Sha} {item.Author} {item.DateTime} {item.Message}");
             }
-            if (ImGui.MenuItem("Copy Hash"))
+            if (ImGui.MenuItem(LuaPlugin.GetText("Copy Commit Hash")))
             {
                 Application.SetClipboard(item.Sha);
             }
-            //m_plugin.CallPopupContextItem("OnCommitPopupItem");
             ImGui.Separator();
             ImGui.Text("More...");
         }

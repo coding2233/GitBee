@@ -65,7 +65,7 @@ namespace strange.extensions.context.impl
 			OnDestroy();
         }
 
-        public static void AddView<T>(params object[] args) where T : View
+        public static T AddView<T>(params object[] args) where T : View
         {
             if (s_self != null)
             {
@@ -75,7 +75,11 @@ namespace strange.extensions.context.impl
                 view.OnAwake();
 
                 s_self.OnViewAdd(view);
+
+                return view;
             }
+
+            return default;
         }
 
         public static void RemoveView<T>(T view) where T : View

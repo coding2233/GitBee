@@ -15,7 +15,7 @@ using static System.Net.WebRequestMethods;
 
 namespace Wanderer
 {
-    public class DrawWorkTreeView
+    public class DrawWorkTreeView:View
     {
         private SplitView m_horizontalSplitView = new SplitView(SplitView.SplitType.Horizontal);
         private SplitView m_verticalSplitView = new SplitView(SplitView.SplitType.Vertical);

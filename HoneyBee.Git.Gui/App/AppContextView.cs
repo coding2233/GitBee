@@ -82,40 +82,50 @@ namespace Wanderer.App
 
             if (ImGui.Begin("ImGui_AppContextView_Window", imGuiWindowFlags))
             {
-                if (ImGui.BeginTabBar("ImGui_AppContextView_Window_Tabs", ImGuiTabBarFlags.FittingPolicyDefault | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.AutoSelectNewTabs))
+                if (s_imGuiTabViews.Count > 0)
                 {
-                    for (int i = 0; i < s_imGuiTabViews.Count; i++)
+                    if (ImGui.BeginTabBar("ImGui_AppContextView_Window_Tabs", ImGuiTabBarFlags.FittingPolicyDefault | ImGuiTabBarFlags.TabListPopupButton | ImGuiTabBarFlags.AutoSelectNewTabs))
                     {
-                        var tabWindow = s_imGuiTabViews[i];
-                        bool showTab = true;
-                        ImGuiTabItemFlags tabItemFlag = ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoCloseWithMiddleMouseButton;
-                        if (tabWindow.Unsave)
+                        for (int i = 0; i < s_imGuiTabViews.Count; i++)
                         {
-                            tabItemFlag |= ImGuiTabItemFlags.UnsavedDocument;
-                        }
-                        bool visible = ImGui.BeginTabItem(tabWindow.IconName + tabWindow.Name + $"##tab_{tabWindow.Name}_{i}", ref showTab, tabItemFlag);
-                        if (visible)
-                        {
-                            if (s_lastActiveImGuiTabView != tabWindow)
+                            var tabWindow = s_imGuiTabViews[i];
+                            bool showTab = true;
+                            ImGuiTabItemFlags tabItemFlag = ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoCloseWithMiddleMouseButton;
+                            if (tabWindow.Unsave)
                             {
-                                if (s_lastActiveImGuiTabView != null)
-                                {
-                                    s_lastActiveImGuiTabView.OnDisable();
-                                }
-                                tabWindow.OnEnable();
-                                s_lastActiveImGuiTabView = tabWindow;
+                                tabItemFlag |= ImGuiTabItemFlags.UnsavedDocument;
                             }
-                            tabWindow.OnDraw();
-                            ImGui.EndTabItem();
-                        }
+                            bool visible = ImGui.BeginTabItem(tabWindow.IconName + tabWindow.Name + $"##tab_{tabWindow.Name}_{i}", ref showTab, tabItemFlag);
+                            if (visible)
+                            {
+                                if (s_lastActiveImGuiTabView != tabWindow)
+                                {
+                                    if (s_lastActiveImGuiTabView != null)
+                                    {
+                                        s_lastActiveImGuiTabView.OnDisable();
+                                    }
+                                    tabWindow.OnEnable();
+                                    s_lastActiveImGuiTabView = tabWindow;
+                                }
+                                tabWindow.OnDraw();
+                                ImGui.EndTabItem();
+                            }
 
-                        if (!showTab)
-                        {
-                            Log.Info("Close table window:{0}", tabWindow.Name);
-                            s_imGuiTabViewsWaitClose.Add(tabWindow);
+                            if (!showTab)
+                            {
+                                Log.Info("Close table window:{0}", tabWindow.Name);
+                                s_imGuiTabViewsWaitClose.Add(tabWindow);
+                            }
                         }
+                        ImGui.EndTabBar();
                     }
-                    ImGui.EndTabBar();
+                }
+                else
+                {
+                    string adText = "广告位招租";
+                    Vector2 adPos = viewport.WorkSize * 0.5f - ImGui.CalcTextSize(adText) * 0.5f;
+                    ImGui.SetCursorPos(adPos);
+                    ImGui.Text(adText);
                 }
 
                 //关闭tabview

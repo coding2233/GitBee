@@ -66,6 +66,10 @@ namespace Wanderer.GitRepository.View
             //_toolItems.Add("Settings", Icon.Material_settings);
             _toolItems.Add("Terminal", Icon.Material_terminal);
             _toolItems.Add("Explorer", Icon.Material_folder_open);
+
+            m_gitRepo = new GitRepo(m_repoPath);
+            m_workTreeView = AppContextView.AddView<DrawWorkTreeView>(m_gitRepo);
+            m_commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
         }
 
         //public void SetGitRepoPath(string repoPath)
@@ -75,17 +79,6 @@ namespace Wanderer.GitRepository.View
 
         private void CreateGitRepo()
         {
-            if (m_gitRepo == null)
-            {
-                m_gitRepo = new GitRepo(m_repoPath);
-                if (m_gitRepo != null)
-                {
-                    m_workTreeView = new DrawWorkTreeView(m_gitRepo);
-                    m_workTreeView.OnEditorText = OnTextEditor;
-                    m_commitHistoryView = new DrawCommitHistoryView(m_gitRepo,plugin);
-                }
-            }
-
             m_gitRepo.ReBuildUIData();
             
             //m_syncDataTip = "正在同步数据";
@@ -98,6 +91,12 @@ namespace Wanderer.GitRepository.View
 
         protected override void OnDestroy()
         {
+            AppContextView.RemoveView(m_commitHistoryView);
+            AppContextView.RemoveView(m_workTreeView);
+
+            m_commitHistoryView = null;
+            m_workTreeView = null;
+
             m_gitRepo?.Dispose();
             m_gitRepo = null;
             base.OnDestroy();
@@ -217,6 +216,10 @@ namespace Wanderer.GitRepository.View
                 if (ImGui.RadioButton("Work Tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
                 {
                     m_workSpaceRadio = WorkSpaceRadio.WorkTree;
+                    if (m_workTreeView != null)
+                    {
+                        m_workTreeView.UpdateStatus();
+                    }
                     //_git.Status();
                 }
 
