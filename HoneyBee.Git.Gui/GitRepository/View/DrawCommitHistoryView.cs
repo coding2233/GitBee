@@ -131,8 +131,8 @@ namespace Wanderer.GitRepository.View
             }
             m_lastCommitScrollY = ImGui.GetScrollY();
 
-            IEnumerable<Commit> historyCommits = GetHistoryCommits(gethistoryCommitsForce);
-            if (historyCommits == null || m_tabShowCommits==null)
+            GetHistoryCommits(gethistoryCommitsForce);
+            if (m_tabShowCommits==null)
                 return;
 
             if (ImGui.BeginTable("GitRepo-Commits", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
@@ -570,108 +570,112 @@ namespace Wanderer.GitRepository.View
             return ImGui.GetScrollMaxY() * (size / m_commitViewMax);
         }
 
-        IEnumerable<Commit> GetHistoryCommits(bool force=false)
+        void GetHistoryCommits(bool force=false)
         {
-            if (m_cacheCommits == null && m_gitRepo!=null && m_gitRepo.Repo!=null)
+            if (m_cacheCommits == null && m_gitRepo!=null)
             {
                 //这里可以增加更多的条件，方便操作更多的信息
                 var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
-                if (!range.Equals(m_cacheRange) || m_cacheCommits == null)
+                if (!range.Equals(m_cacheRange))
                 {
-                    List<string> localBranch = new List<string>();
-                    localBranch.Add("Default-All-Branch");
-                    foreach (var item in m_gitRepo.Repo.Branches)
-                    {
-                        if (!item.IsRemote)
+                    m_gitRepo.RunTask(() => {
+
+                        List<string> localBranch = new List<string>();
+                        localBranch.Add("Default-All-Branch");
+                        foreach (var item in m_gitRepo.Repo.Branches)
                         {
-                            localBranch.Add(item.FriendlyName);
+                            if (!item.IsRemote)
+                            {
+                                localBranch.Add(item.FriendlyName);
+                            }
                         }
-                    }
-                    m_localBranchs = localBranch.ToArray();
+                        m_localBranchs = localBranch.ToArray();
 
-                    if (m_selectLocalBranch <= 0)
-                    {
-                        m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
-                    }
-                    else
-                    {
-                        var filter = new CommitFilter
+                        if (m_selectLocalBranch <= 0)
                         {
-                            //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-                            IncludeReachableFrom = m_localBranchs[m_selectLocalBranch],  // formerly "Until"
-                        };
-                        m_cacheCommits = m_gitRepo.Repo.Commits.QueryBy(filter).Take(range);
-                    }
-
-                    if (!string.IsNullOrEmpty(m_searchCommit))
-                    {
-                        m_cacheCommits = m_cacheCommits.Where((commitInfo) =>
-                        {
-                            if (commitInfo.Message.Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.MessageShort.Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.Sha.Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.Author.Name.Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.Committer.Name.Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
-                            {
-                                return true;
-                            }
-                            return false;
-                        });
-                    }
-
-                    m_cacheRange = range;
-
-                    //更新tab显示数据
-                    List<CommitTabInfo> tabShowCommits = new List<CommitTabInfo>();
-                    foreach (var item in m_cacheCommits)
-                    {
-                        CommitTabInfo commitInfo = null;
-                        if (m_tabShowCommits != null)
-                        {
-                            commitInfo = m_tabShowCommits.Find(x => x.Sha.Equals(item.Sha));
-                        }
-
-                        if (commitInfo != null)
-                        {
-                            m_tabShowCommits.Remove(commitInfo);
+                            m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
                         }
                         else
                         {
-                            commitInfo = Pool<CommitTabInfo>.Get().SetCommit(item);
+                            var filter = new CommitFilter
+                            {
+                                //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+                                IncludeReachableFrom = m_localBranchs[m_selectLocalBranch],  // formerly "Until"
+                            };
+                            m_cacheCommits = m_gitRepo.Repo.Commits.QueryBy(filter).Take(range);
                         }
 
-                        tabShowCommits.Add(commitInfo);
-                    }
+                        if (!string.IsNullOrEmpty(m_searchCommit))
+                        {
+                            m_cacheCommits = m_cacheCommits.Where((commitInfo) =>
+                            {
+                                if (commitInfo.Message.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.MessageShort.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Sha.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Author.Name.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Committer.Name.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                return false;
+                            });
+                        }
 
-                    if (m_tabShowCommits != null)
-                    {
-                        Pool<CommitTabInfo>.Release(m_tabShowCommits);
-                    }
-                    m_tabShowCommits = tabShowCommits;
+
+                        //更新tab显示数据
+                        List<CommitTabInfo> tabShowCommits = new List<CommitTabInfo>();
+                        foreach (var item in m_cacheCommits)
+                        {
+                            CommitTabInfo commitInfo = null;
+                            if (m_tabShowCommits != null)
+                            {
+                                commitInfo = m_tabShowCommits.Find(x => x.Sha.Equals(item.Sha));
+                            }
+
+                            if (commitInfo != null)
+                            {
+                                m_tabShowCommits.Remove(commitInfo);
+                            }
+                            else
+                            {
+                                commitInfo = Pool<CommitTabInfo>.Get().SetCommit(item);
+                            }
+
+                            tabShowCommits.Add(commitInfo);
+                        }
+
+                        if (m_tabShowCommits != null)
+                        {
+                            Pool<CommitTabInfo>.Release(m_tabShowCommits);
+                        }
+                        m_tabShowCommits = tabShowCommits;
+
+
+                    });
+
+                    m_cacheRange = range;
                 }
             }
-
-            return m_cacheCommits;
         }
 
         public class CommitAtlasLine : IPool

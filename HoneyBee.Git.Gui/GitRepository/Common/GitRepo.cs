@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Wanderer.Common;
 using Wanderer.GitRepository.View;
@@ -49,10 +50,15 @@ namespace Wanderer.GitRepository.Common
         private int m_commitCount;
         public int CommitCount => m_commitCount;
 
+        private Queue<Action> m_actionQueue;
+        private Task m_actionTask;
+        private bool m_canRunTask;
+
         internal GitRepo(string repoPath)
         {
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
+            m_canRunTask = true;
             ////同步仓库信息
             //SyncGitRepoTask();
         }
@@ -60,12 +66,7 @@ namespace Wanderer.GitRepository.Common
         //更新UI状态
         public void ReBuildUIData()
         {
-            Task.Run(() => {
-                if (m_repository == null)
-                {
-                    m_repository = new Repository(RootPath);
-                }
-
+            RunTask(() => {
                 SetBranchNodes();
                 SetTags();
                 SetSubmodules();
@@ -73,6 +74,57 @@ namespace Wanderer.GitRepository.Common
                 m_commitCount = m_repository.Commits.Count();
             });
         }
+
+
+        public void RunTask(Action action)
+        {
+            if (m_canRunTask)
+            {
+                if (m_actionQueue == null)
+                {
+                    m_actionQueue = new Queue<Action>();
+                }
+
+                m_actionQueue.Enqueue(action);
+
+                if (m_actionTask == null)
+                {
+                    m_actionTask = Task.Run(() => {
+                        Thread.Sleep(100);
+                        if (m_repository == null)
+                        {
+                            m_repository = new Repository(RootPath);
+                        }
+
+                        while (m_actionQueue != null && m_actionQueue.Count>0)
+                        {
+                            Action runAction = m_actionQueue.Dequeue();
+                            if (runAction != null)
+                            {
+                                runAction();
+                            }
+                        }
+                        m_actionTask = null;
+                    });
+                }
+            }
+        }
+
+        //public RepositoryStatus RetrieveStatus()
+        //{
+        //    if (m_repository == null)
+        //    {
+        //        return null;
+        //    }
+
+        //    TaskCompletionSource<RepositoryStatus> result = new TaskCompletionSource<RepositoryStatus>();
+        //    m_repository.RetrieveStatus
+        //    result.SetResult
+
+        //    Task.Run(() => { })
+
+        //}
+
 
         public void SetSelectCommit(string sha)
         {
@@ -146,6 +198,13 @@ namespace Wanderer.GitRepository.Common
 
         public void Dispose()
         {
+            m_canRunTask = false;
+
+            if (m_actionQueue != null)
+            {
+                m_actionQueue.Clear();
+                m_actionQueue = null;
+            }
 
             m_repository?.Dispose();
             m_repository = null;
