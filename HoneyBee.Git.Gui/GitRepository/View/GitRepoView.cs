@@ -216,16 +216,22 @@ namespace Wanderer.GitRepository.View
                 if (ImGui.RadioButton("Work Tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
                 {
                     m_workSpaceRadio = WorkSpaceRadio.WorkTree;
-                    if (m_workTreeView != null)
-                    {
-                        m_workTreeView.UpdateStatus();
-                    }
+
+                    m_commitHistoryView.OnDisable();
+                    m_workTreeView.OnEnable();
+                    //if (m_workTreeView != null)
+                    //{
+                    //    m_workTreeView.UpdateStatus();
+                    //}
                     //_git.Status();
                 }
 
                 if (ImGui.RadioButton("Commit History", m_workSpaceRadio == WorkSpaceRadio.CommitHistory))
                 {
                     m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
+
+                    m_workTreeView.OnDisable();
+                    m_commitHistoryView.OnEnable();
                 }
             });
 

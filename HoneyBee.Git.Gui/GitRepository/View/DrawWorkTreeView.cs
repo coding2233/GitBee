@@ -47,6 +47,13 @@ namespace Wanderer
             UpdateStatus();
         }
 
+        public override void OnEnable()
+        {
+            base.OnEnable();
+
+            UpdateStatus();
+        }
+
         public void Draw()
         {
             //ImGui.ShowStyleEditor();

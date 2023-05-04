@@ -29,7 +29,7 @@ namespace Wanderer.Common
             string luaVersionPath = "lua/version.lua";
             string versionText = Application.GetVersion().ToString();
             luaVersionPath = Path.Combine(Application.DataPath, luaVersionPath);
-            File.WriteAllText(luaVersionPath, versionText);
+            File.WriteAllText(luaVersionPath,$"version = \"{versionText}\"");
         }
 
         internal static void Disable()

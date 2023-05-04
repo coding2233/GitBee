@@ -99,7 +99,7 @@ jobs:
         #git log --pretty=format:"%s" --graph -1 >> checksums.txt
         #echo "\n" >> checksums.txt
         sudo apt update && sudo apt install -y nsis
-        export GITBEE_VERSION=$(cat windows/lua/version.lua)
+        export GITBEE_VERSION=$(cat windows/lua/version.lua | awk -F= '{ print $2 }' | sed -e 's/\"//g' | sed 's/[[:space:]]//g')
         makensis -DSOURCE_DIR=./windows/ -DBUILD_VERSION=${GITBEE_VERSION} installer.nsi
         md5sum gitbee_windows.tar.gz >> checksums.txt
         md5sum *.exe >> checksums.txt

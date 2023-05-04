@@ -61,6 +61,14 @@ namespace Wanderer.GitRepository.View
             m_gitRepo = gitRepo;
         }
 
+        public override void OnEnable()
+        {
+            base.OnEnable();
+
+            GetHistoryCommits(true);
+        }
+
+
         public void Draw()
         {
             m_contentSplitView.Begin();
@@ -576,7 +584,7 @@ namespace Wanderer.GitRepository.View
             {
                 //这里可以增加更多的条件，方便操作更多的信息
                 var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
-                if (!range.Equals(m_cacheRange))
+                if (!range.Equals(m_cacheRange) || force)
                 {
                     m_gitRepo.RunTask(() => {
 
