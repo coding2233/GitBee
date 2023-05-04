@@ -55,4 +55,5 @@ language["New Branch"]="创建新分支"
 language["Checkout"]="检出"
 language["Copy Commit Info"]="复制提交信息"
 language["Copy Commit Hash"]="复制提交哈希值"
+language["Language"]="语言"
 return language

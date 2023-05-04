@@ -12,6 +12,7 @@ namespace Wanderer.Common
     public class LuaPlugin
     {
         private static LuaEnv s_luaEnv;
+        private static string s_languageKey;
         private static Dictionary<string, string> s_language;
         private static Dictionary<string, GLTexture> s_folderIcons;
         private static Dictionary<string, GLTexture> s_fileIcons;
@@ -91,15 +92,35 @@ namespace Wanderer.Common
             return value;
         }
 
+        public static void SetLanguageIndex(int index)
+        {
+            s_language=new Dictionary<string, string>();
+
+            switch (index)
+            {
+                case 1:
+                    s_languageKey = "Language_zh_cn";
+                    break;
+                default:
+                    s_languageKey = null;
+                    break;
+            }
+        }
+
         public static string GetText(string key)
         {
+            if (string.IsNullOrEmpty(s_languageKey))
+            {
+                return key;
+            }
+
             string value;
             if (!s_language.TryGetValue(key, out value))
             {
                 try
                 {
                     s_luaEnv.GetGlobal("Style");
-                    s_luaEnv.PushString("Language");
+                    s_luaEnv.PushString(s_languageKey);
                     s_luaEnv.GetTable(-2);
                     s_luaEnv.PushString(key);
                     s_luaEnv.GetTable(-2);

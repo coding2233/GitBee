@@ -332,12 +332,20 @@ namespace Wanderer.App
 
         int m_styleColors = -1;
 
+        private string[] m_languages;
+        private int m_language = -1;
+
+
         public override void OnAwake()
         {
             base.OnAwake();
 
            var styleColors = database.GetCustomerData<int>("StyleColors", 1);
             SetStyleColors(styleColors);
+
+            m_languages = new string[] { "English", "简体中文" };
+            var languageIndex = database.GetCustomerData<int>("Language", 0);
+            SetLanguage(languageIndex);
         }
 
         //主菜单
@@ -437,10 +445,25 @@ namespace Wanderer.App
                         ImGui.EndMenu();
                     }
 
-                    //if (ImGui.MenuItem("Text Style"))
-                    //{
-                    //    //_textStyleModal.Popup();
-                    //}
+                    if (ImGui.BeginMenu(LuaPlugin.GetText("Language")))
+                    {
+                        var languageIndex = m_language;
+                        for (int i = 0; i < m_languages.Length; i++)
+                        {
+                            if (ImGui.MenuItem(LuaPlugin.GetText(m_languages[i]), "", languageIndex == i))
+                            {
+                                languageIndex = i;
+                            }
+                        }
+
+
+                        if (languageIndex != m_language)
+                        {
+                            SetLanguage(languageIndex);
+                        }
+                        ImGui.EndMenu();
+                    }
+
                     ImGui.EndMenu();
                 }
 
@@ -634,6 +657,16 @@ namespace Wanderer.App
             //TextEditor.SetStyle(userSettings.TextStyleColors);
         }
 
+        private void SetLanguage(int languageIndex)
+        {
+            if (languageIndex != m_language)
+            {
+                database.SetCustomerData<int>("Language", m_language);
+                m_language = languageIndex;
+            }
+
+            LuaPlugin.SetLanguageIndex(m_language);
+        }
 
     }
 

@@ -1,7 +1,7 @@
 ﻿Style = {}
 
 -- 语言
-Style.Language = require("language/zh_cn")
+Style.Language_zh_cn = require("language/zh_cn")
 
 -- 字体
 -- C:\\Windows\\Fonts\\msyh.ttc
