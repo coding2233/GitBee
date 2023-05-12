@@ -11,8 +11,9 @@ target("iiso3")
     set_kind("shared")
     set_arch("x64")
 -- add_defines("LUA_BUILD_AS_DLL","LUA_LIB")
-    add_files("src/*.cpp")
+    add_files("src/*.cpp","src/**.cc")
     -- add_includedirs("imgui/include")
+    add_includedirs("includes")
     add_packages("sdl","glew","opengl","imgui","luajit","libgit2")
 
 
