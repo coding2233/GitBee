@@ -1,6 +1,7 @@
 #ifndef __IISO3_EXPORT_H__
 #define __IISO3_EXPORT_H__
 
+
 #include <iostream>
 #include "TextEditor.h"
 #include "language_definition_ex.h"
@@ -21,6 +22,7 @@
 #endif
 
 #define EXPORT_API EXTERN API
+
 
 // struct TextTokenize
 // {

@@ -244,10 +244,11 @@ namespace Wanderer.App
                 ImGui.GetIO().Fonts.AddFontDefault();
             }
 
-
+            //例如font_config.OversampleH = 2，这将大大减少您的纹理大小。请注意，虽然在大多数情况下 OversampleH = 2 看起来非常接近 3，
+            //但 OversampleH = 1 时质量下降会很明显。
             ImFontConfigPtr imFontConfigPtr = new ImFontConfigPtr(ImGuiNative.ImFontConfig_ImFontConfig())
             {
-                OversampleH = 1,
+                OversampleH = 2,
                 OversampleV = 1,
                 RasterizerMultiply = 1f,
                 MergeMode = true,
@@ -286,6 +287,8 @@ namespace Wanderer.App
                 ImGui.GetIO().Fonts.AddFontFromFileTTF(asciiFontPath, fontSize, null, ImGui.GetIO().Fonts.GetGlyphRangesDefault());
             }
 
+            //io.Fonts.Flags |= ImFontAtlasFlags_NoPowerOfTwoHeight; 为禁用将纹理高度四舍五入为 2 的下一次幂。
+            ImGui.GetIO().Fonts.Flags |= ImFontAtlasFlags.NoPowerOfTwoHeight;
             ImGui.GetIO().Fonts.Build();
 
             //逻辑

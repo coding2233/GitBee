@@ -8,18 +8,22 @@ cmake_policy(SET CMP0091 NEW)
 project(iiso3 LANGUAGES CXX C)
 
 # target
-add_library(iiso3 SHARED "" src/imgui_impl_opengl3_loader.h)
+add_library(iiso3 SHARED "")
 set_target_properties(iiso3 PROPERTIES OUTPUT_NAME "iiso3")
 set_target_properties(iiso3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/debug")
 set_target_properties(iiso3 PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/debug")
 target_include_directories(iiso3 PRIVATE
+    imgui
+    imgui/backends
+)
+target_include_directories(iiso3 PRIVATE
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/include
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/include/SDL2
     C:/Users/EDY/AppData/Local/.xmake/packages/g/glew/2.2.0/618c7b92c819453eaa1a00a41d1d32e3/include
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include/imgui
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include/backends
-    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/13e6f4a6b257413e98184c57fe7c168b/include/luajit
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/ebca1d41e1a84747be637d784d8576de/include/luajit
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/libgit2/v1.3.0/6eb2597f5f504a3f8a3b2fbd494d5de0/include
+    C:/Users/EDY/AppData/Local/.xmake/packages/o/openssl/1.1.1-t/9458079689e342b58f2f2e8d4b2fb860/include
+    C:/Users/EDY/AppData/Local/.xmake/packages/z/zlib/v1.2.13/04bf9d8a64824100b68e5c59e579eda6/include
 )
 target_compile_definitions(iiso3 PRIVATE
     SDL_MAIN_HANDLED
@@ -35,8 +39,11 @@ target_link_libraries(iiso3 PRIVATE
     SDL2-static
     glew32s
     opengl32
-    imgui
     luajit
+    git2
+    libssl
+    libcrypto
+    zlib
     user32
     gdi32
     winmm
@@ -49,17 +56,28 @@ target_link_libraries(iiso3 PRIVATE
     setupapi
     shell32
     opengl32
+    rpcrt4
+    winhttp
+    ws2_32
+    crypt32
 )
 target_link_directories(iiso3 PRIVATE
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/lib
     C:/Users/EDY/AppData/Local/.xmake/packages/g/glew/2.2.0/618c7b92c819453eaa1a00a41d1d32e3/lib
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/lib
-    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/13e6f4a6b257413e98184c57fe7c168b/lib
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/ebca1d41e1a84747be637d784d8576de/lib
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/libgit2/v1.3.0/6eb2597f5f504a3f8a3b2fbd494d5de0/lib
+    C:/Users/EDY/AppData/Local/.xmake/packages/o/openssl/1.1.1-t/9458079689e342b58f2f2e8d4b2fb860/lib
+    C:/Users/EDY/AppData/Local/.xmake/packages/z/zlib/v1.2.13/04bf9d8a64824100b68e5c59e579eda6/lib
 )
 target_sources(iiso3 PRIVATE
+    imgui/backends/imgui_impl_opengl3.cpp
+    imgui/backends/imgui_impl_sdl2.cpp
+    imgui/imgui.cpp
+    imgui/imgui_demo.cpp
+    imgui/imgui_draw.cpp
+    imgui/imgui_tables.cpp
+    imgui/imgui_widgets.cpp
     src/iiso3_export.cpp
-    src/imgui_impl_opengl3.cpp
-    src/imgui_impl_sdl.cpp
     src/imgui_impl_sdl_opengl3.cpp
     src/language_definition_ex.cpp
     src/TextEditor.cpp
@@ -72,15 +90,14 @@ set_target_properties(test PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_D
 add_dependencies(test iiso3)
 target_include_directories(test PRIVATE
     src
+    imgui
+    imgui/backends
 )
 target_include_directories(test PRIVATE
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/include
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/include/SDL2
     C:/Users/EDY/AppData/Local/.xmake/packages/g/glew/2.2.0/618c7b92c819453eaa1a00a41d1d32e3/include
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include/imgui
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/include/backends
-    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/13e6f4a6b257413e98184c57fe7c168b/include/luajit
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/ebca1d41e1a84747be637d784d8576de/include/luajit
 )
 target_compile_definitions(test PRIVATE
     SDL_MAIN_HANDLED
@@ -96,7 +113,6 @@ target_link_libraries(test PRIVATE
     SDL2-static
     glew32s
     opengl32
-    imgui
     luajit
     iiso3
     user32
@@ -115,8 +131,7 @@ target_link_libraries(test PRIVATE
 target_link_directories(test PRIVATE
     C:/Users/EDY/AppData/Local/.xmake/packages/l/libsdl/2.26.4/62e2c71a778b4933a6551703a6128e72/lib
     C:/Users/EDY/AppData/Local/.xmake/packages/g/glew/2.2.0/618c7b92c819453eaa1a00a41d1d32e3/lib
-    C:/Users/EDY/AppData/Local/.xmake/packages/i/imgui/v1.89.3/5a9427714d744141b232565d5e57a80e/lib
-    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/13e6f4a6b257413e98184c57fe7c168b/lib
+    C:/Users/EDY/AppData/Local/.xmake/packages/l/luajit/2.1.0-beta3/ebca1d41e1a84747be637d784d8576de/lib
     build/windows/x64/debug
 )
 target_sources(test PRIVATE

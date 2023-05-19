@@ -161,30 +161,30 @@ namespace Wanderer
         }
 
 
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static IntPtr luaL_newstate();
 
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void luaL_openlibs(IntPtr lua_state);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_close(IntPtr lua_state);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static int luaL_loadfile(IntPtr lua_state, string file_name);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static int luaL_loadstring(IntPtr lua_state, string content);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_call(IntPtr lua_state, int nargs, int nresult);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static int lua_pcall(IntPtr lua_state, int nargs, int nresult,int errfunc); 
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_gettable(IntPtr lua_state, int idx);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_setfield(IntPtr lua_state, int idx, string k);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_getfield(IntPtr lua_state, int idx, string k);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_pushcclosure(IntPtr lua_state, LuaFucntion luaFucntion, int n);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static byte* lua_tolstring(IntPtr lua_state, int idx,ref int len);
         internal static string lua_tolstring(IntPtr lua_state, int idx)
         {
@@ -193,11 +193,11 @@ namespace Wanderer
             var str = Encoding.UTF8.GetString(bytes, len);
             return str;
         }
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static double lua_tonumber(IntPtr lua_state, int idx);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_pushstring(IntPtr lua_state, string str);
-        [DllImport("iiso3.dll")]
+        [DllImport("luajit.dll")]
         extern static void lua_pushnumber(IntPtr lua_state, double number);
 
     }

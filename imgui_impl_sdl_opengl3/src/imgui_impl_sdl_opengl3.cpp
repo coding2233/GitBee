@@ -4,6 +4,16 @@
  static char* glsl_version_;
 
 
+ImGuiContext* CreateImGuiContext()
+{
+    return ImGui::CreateContext();
+}
+
+void ShowImGuiDemoWindow()
+{
+    ImGui::ShowDemoWindow();
+}
+
 SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_height, Uint32 window_flags)
 {
     // Decide GL+GLSL versions
@@ -80,7 +90,7 @@ SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_heig
 
     auto window = SDL_CreateWindow(
         title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height,
-        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | window_flags);
+        SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | window_flags );
     // init_window_icon();
     if (!window) {
         fprintf(stderr, "Error creating window: %s", SDL_GetError());
@@ -109,7 +119,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
     }
 
     // Setup Dear ImGui context
-    // IMGUI_CHECKVERSION();
+    IMGUI_CHECKVERSION();
     // ImGui::CreateContext();
     auto imgui_context = imgui_init_cb();
     if (!imgui_context)
@@ -117,7 +127,9 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
         imgui_context = ImGui::CreateContext();
     }
     ImGui::SetCurrentContext(imgui_context);
-    
+
+//    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_ViewportsEnable ;
+
   //  // Setup Platform/Renderer backends
     ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
     ImGui_ImplOpenGL3_Init(glsl_version_);
@@ -196,8 +208,18 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
 
         ImGui::NewFrame();
         imgui_draw_cb();
-        ImGui::Render();
-        // ImGui::ShowDemoWindow(&show_demo);
+
+
+         ImGui::Render();
+
+
+         if (ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+         {
+             ImGui::UpdatePlatformWindows();
+             ImGui::RenderPlatformWindowsDefault();
+         }
+
+         // ImGui::ShowDemoWindow(&show_demo);
         // ImGui::Render();
         
         // int window_width=0;
@@ -215,6 +237,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
         //     imgui_draw_render_cb();
         // }
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 
         SDL_GL_SwapWindow(window);
      }

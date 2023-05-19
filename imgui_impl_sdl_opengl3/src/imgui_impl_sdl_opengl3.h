@@ -3,6 +3,7 @@
 
 //#pragma comment(linker, "/INCLUDE:LUA_LIB")
 
+#define IMGUI_USER_CONFIG "my_imgui_config.h"
 
 #include <iostream>
 #include <GL/glew.h>
@@ -26,6 +27,9 @@ typedef void (*IMGUI_DRAW_CALLBACK)();
 typedef void (*SDL_EVENT_CALLBACK)(int type,void* data);
 // typedef void (*IMGUI_Free_CALLBACK)();
 
+EXPORT_API ImGuiContext* CreateImGuiContext();
+EXPORT_API void ShowImGuiDemoWindow();
+
 EXPORT_API SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_height, Uint32 window_flags);
 EXPORT_API int CreateRender(SDL_Window* window, IMGUI_INIT_CALLBACK imgui_init_cb, IMGUI_DRAW_CALLBACK imgui_draw_cb, SDL_EVENT_CALLBACK sdl_event_cb);
 EXPORT_API void SDLSetWindowShow(SDL_Window* sdl_window);
@@ -47,7 +51,7 @@ EXPORT_API void SetClipboard(const char* text);
 
 #if _WIN32
 
-
+//
 ////luaxlib
 //#pragma comment(linker, "/export:luaL_newstate=luaL_newstate")
 //#pragma comment(linker, "/export:luaL_openlibs=luaL_openlibs")
