@@ -1,14 +1,11 @@
-#if _WIN32
-#pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
-#endif
+//#if _WIN32
+//#pragma comment(linker, "/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
+//#endif
 
 #include <iostream>
 
 #include "imgui_impl_sdl_opengl3.h"
 #include "iiso3_export.h"
-
-
-
 // static TextEditor *text_editor_;
 
 

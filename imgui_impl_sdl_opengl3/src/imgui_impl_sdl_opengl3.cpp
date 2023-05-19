@@ -1,11 +1,18 @@
 
 #include "imgui_impl_sdl_opengl3.h"
+#include "git2.h"
+
+#include "imgui_git.h"
+
 
  static char* glsl_version_;
 
 
 ImGuiContext* CreateImGuiContext()
 {
+//    ImGuiGit imgui_git=ImGuiGit("E:\\source\\HappyMahjongForDeveloper\\HappyMahjongForArtist\\.git");
+
+
     return ImGui::CreateContext();
 }
 
@@ -88,8 +95,13 @@ SDL_Window* CreateSdlWindow(const char* title, int window_width, int window_heig
         window_height = dm.h * 0.8;
     }
 
+    //添加ImGui的版本号
+    std::string full_title = std::string(title);
+    full_title.append(" - ImGui docking ");
+    full_title.append(IMGUI_VERSION);
+
     auto window = SDL_CreateWindow(
-        title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height,
+            full_title.c_str(), SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, window_width, window_height,
         SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_OPENGL | window_flags );
     // init_window_icon();
     if (!window) {
@@ -180,16 +192,16 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                     }
                     if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                     {
-//                        clock_start = clock();
-//                        frame = 0;
-//                        frame_rate_time = (1 / default_fps) * 1000;
+                        clock_start = clock();
+                        frame = 0;
+                        frame_rate_time = (1 / default_fps) * 1000;
                     }
                     else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
                     {
-//                        clock_start = clock();
-//                        frame = 0;
-//                        //frame_rate_time = 1000;
-//                        frame_rate_time = (1 / 10.0f) * 1000;
+                        clock_start = clock();
+                        frame = 0;
+                        //frame_rate_time = 1000;
+                        frame_rate_time = (1 / 10.0f) * 1000;
                     }
                 }
             }

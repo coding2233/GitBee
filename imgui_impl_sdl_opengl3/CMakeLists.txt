@@ -8,7 +8,7 @@ cmake_policy(SET CMP0091 NEW)
 project(iiso3 LANGUAGES CXX C)
 
 # target
-add_library(iiso3 SHARED "")
+add_library(iiso3 SHARED "" src/imgui_git.cpp src/imgui_git.h)
 set_target_properties(iiso3 PROPERTIES OUTPUT_NAME "iiso3")
 set_target_properties(iiso3 PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/debug")
 set_target_properties(iiso3 PROPERTIES ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/build/windows/x64/debug")
