@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.Common;
 using Wanderer.GitRepository.View;
 
@@ -165,33 +166,45 @@ namespace Wanderer.GitRepository.Common
 
         public void Stage(IEnumerable<string> files = null)
         {
-            if (files == null)
-            {
-                Commands.Stage(m_repository, "*");
-            }
-            else
-            {
-                if (files.Count() > 0)
-                {
-                    Commands.Stage(m_repository, files);
-                }
-            }
-        }
+            //if (files == null)
+            //{
+            //    Commands.Stage(m_repository, "*");
+            //}
+            //else
+            //{
+            //    if (files.Count() > 0)
+            //    {
+            //        Commands.Stage(m_repository, files);
+            //    }
+            //}
+
+            AppContextView.AddView<GitAddCommandView>(this, files);
+		}
 
         public void Unstage(IEnumerable<string> files = null)
         {
-            if (files == null)
+            //if (files == null)
+            //{
+            //    Commands.Unstage(m_repository, "*");
+            //}
+            //else
+            //{
+            //    if (files.Count() > 0)
+            //        Commands.Unstage(m_repository, files);
+            //}
+            if (files == null || files.Count() == 0)
             {
-                Commands.Unstage(m_repository, "*");
-            }
-            else
-            {
-                if (files.Count() > 0)
-                    Commands.Unstage(m_repository, files);
-            }
-        }
+                List<string> indexFiles = new List<string>();
+                foreach (var item in m_repository.Index)
+                {
+                    indexFiles.Add(item.Path);
+                }
+                files = indexFiles;
+			}
+			AppContextView.AddView<GitIndexRestoreCommandView>(this, files);
+		}
 
-        public Commit GetCommit(string commitSha)
+		public Commit GetCommit(string commitSha)
         {
             return m_repository.Commits.Where(x=>x.Sha.Equals(commitSha)).FirstOrDefault();
         }
