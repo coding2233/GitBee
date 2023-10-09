@@ -30,10 +30,9 @@ namespace Wanderer.App.Controller
         public override void Execute()
         {
             AppContextView.AddView<HomeView>();
-
-            //检查更新
-            //CheckUpdate();
-        }
+			//检查更新
+			//CheckUpdate();
+		}
 
         private async void CheckUpdate()
         {

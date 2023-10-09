@@ -178,7 +178,8 @@ namespace Wanderer.GitRepository.Common
             //    }
             //}
 
-            AppContextView.AddView<GitAddCommandView>(this, files);
+            //AppContextView.AddView<GitAddCommandView>(this, files);
+            AppContextView.AddView<GitView>(this).Add(files);
 		}
 
         public void Unstage(IEnumerable<string> files = null)
