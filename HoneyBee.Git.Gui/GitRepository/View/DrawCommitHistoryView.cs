@@ -43,9 +43,6 @@ namespace Wanderer.GitRepository.View
         private IEnumerable<Commit> m_cacheCommits;
         private List<CommitTabInfo> m_tabShowCommits;
 
-        [Inject]
-        public IPluginService m_plugin { get; set; }
-
         private string[] m_localBranchs=new string[0];
         private int m_selectLocalBranch;
         private string m_searchCommit = "";
@@ -294,11 +291,11 @@ namespace Wanderer.GitRepository.View
         {
             var headBranch = m_gitRepo.Repo.Head;
             string headBranchwName = $"'{headBranch}'";
-            if (ImGui.MenuItem(LuaPlugin.GetText("New Branch")+"..."))
+            if (ImGui.MenuItem("New Branch..."))
             {
                 AppContextView.AddView<GitNewBranchCommandView>(m_gitRepo,item.Sha);
             }
-            if (ImGui.MenuItem(LuaPlugin.GetText("New Tag") +"..."))
+            if (ImGui.MenuItem("New Tag..."))
             {
                 AppContextView.AddView<GitNewTagCommandView>(m_gitRepo, item.Sha);
             }
@@ -429,11 +426,11 @@ namespace Wanderer.GitRepository.View
                 //});
             }
             ImGui.Separator();
-            if (ImGui.MenuItem(LuaPlugin.GetText("Copy Commit Info")))
+            if (ImGui.MenuItem("Copy Commit Info"))
             {
                 Application.SetClipboard($"{item.Sha} {item.Author} {item.DateTime} {item.Message}");
             }
-            if (ImGui.MenuItem(LuaPlugin.GetText("Copy Commit Hash")))
+            if (ImGui.MenuItem("Copy Commit Hash"))
             {
                 Application.SetClipboard(item.Sha);
             }

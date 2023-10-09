@@ -34,11 +34,6 @@ namespace Wanderer.TextCodeEditor
         private TextEditor m_textEditor;
         private string m_folderPath;
 
-
-        [Inject]
-        public IPluginService plugin { get; set; }
-
-
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
 
         private TextEditorFolderView m_folderView;
@@ -145,7 +140,7 @@ namespace Wanderer.TextCodeEditor
             {
                 ImGui.BeginTooltip();
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0f);
-                ImGui.TextUnformatted(LuaPlugin.GetText(tip));
+                ImGui.TextUnformatted(tip);
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
             }

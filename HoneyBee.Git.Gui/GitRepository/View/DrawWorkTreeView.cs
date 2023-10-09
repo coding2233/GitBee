@@ -241,7 +241,8 @@ namespace Wanderer
                 }
 
                 //文件夹图标
-                ImGui.GetWindowDrawList().AddImage(node.NodeOpened? LuaPlugin.GetFolderIcon("default_folder_opened").Image: LuaPlugin.GetFolderIcon("default_folder").Image, folderIconPos, folderIconPosMax);
+                var folderGLTexture =  Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
+				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
 
                 if (node.NodeOpened)
                 {
@@ -262,17 +263,17 @@ namespace Wanderer
                 {
                     case FileStatus.Conflicted:
                         statusIcon = "warn";
-                        popTextColor = LuaPlugin.GetColorU32("WarnText", false);
+                        popTextColor = 0xFF0FC4F1;
                         break;
                     case FileStatus.NewInIndex:
                     case FileStatus.NewInWorkdir:
                         statusIcon = "add";
-                        popTextColor = LuaPlugin.GetColorU32("NewText",false);
+                        popTextColor = 0xFF71CC2E;
                         break;
                     case FileStatus.DeletedFromIndex:
                     case FileStatus.DeletedFromWorkdir:
                         statusIcon = "delete";
-                        popTextColor = LuaPlugin.GetColorU32("DeleteText", false);
+                        popTextColor = 0xFF3C4CE7;
                         break;
 
                     case FileStatus.ModifiedInIndex:
@@ -319,8 +320,9 @@ namespace Wanderer
                 }
 
 
-                //文件图标
-                ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
+				//文件图标
+				//node.Name
+				ImGui.GetWindowDrawList().AddImage(Application.LoadTextureFromFile($"Resources/icons/default_file.png").Image, fileIconPos, fileIconPosMax);
                 //var statusIconPos = fileIconPosMax;
                 //statusIconPos.Y = fileIconPos.Y;
                 //var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();

@@ -29,11 +29,10 @@ namespace Wanderer.App
             crossContextBridge.Bind(AppEvent.OpenFolder);
 
             injectionBinder.Bind<IDatabaseService>().To<DatabaseService>().ToSingleton().CrossContext();
-            injectionBinder.Bind<IPluginService>().To<PluginService>().ToSingleton().CrossContext();
             injectionBinder.Bind<IAppModel>().To<AppModel>().ToSingleton().CrossContext();
 
             //mediationBinder.Bind<AppImGuiView>().To<AppImGuiMediator>();
-            mediationBinder.Bind<SSHView>().To<SSHMediator>();
+            //mediationBinder.Bind<SSHView>().To<SSHMediator>();
 
             commandBinder.Bind(ContextEvent.START).To<StartCommand>().Once();
         }

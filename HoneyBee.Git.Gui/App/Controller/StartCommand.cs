@@ -27,24 +27,9 @@ namespace Wanderer.App.Controller
         [Inject(ContextKeys.CONTEXT)]
         public IContext context { get; set; }
         
-        [Inject]
-        public IPluginService pluginService { get; set; }
-
         public override void Execute()
         {
-            ////主窗口
-            //ImGuiView.Create<AppImGuiView>(context,0);
-
-            ////内容主窗口
-            //ImGuiView.Create<HomeView>(context,0);
-
             AppContextView.AddView<HomeView>();
-
-            ////ssh 窗口
-            //ImGuiView.Create<SSHView>(context,0);
-
-            ////运行插件
-            //pluginService.Reload();
 
             //检查更新
             //CheckUpdate();

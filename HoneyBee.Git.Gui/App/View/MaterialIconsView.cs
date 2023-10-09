@@ -13,7 +13,7 @@ namespace Wanderer.App.View
 {
     public class MaterialIconsView: ImGuiTabView
     {
-        public override string Name => LuaPlugin.GetText("Material Icons");
+        public override string Name => "Material Icons";
 
         public override string UniqueKey => Name;
 

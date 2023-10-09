@@ -315,7 +315,7 @@ namespace Wanderer.GitRepository.Common
                 {
                     var bgMin = startPos + new Vector2(0, textHeight * item.Key);
                     var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
-                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("NewTextBg"));
+                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, 0xFF3E5C39);
                     ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(0, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
                 }
 
@@ -323,7 +323,7 @@ namespace Wanderer.GitRepository.Common
                 {
                     var bgMin = startPos + new Vector2(0, textHeight * item.Key);
                     var bgMax = bgMin + new Vector2(ImGui.GetWindowWidth(), textHeight);
-                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, LuaPlugin.GetColorU32("DeleteTextBg"));
+                    ImGui.GetWindowDrawList().AddRectFilled(bgMin, bgMax, 0xFF4D455F);
                     ImGui.GetWindowDrawList().AddText(bgMin + new Vector2(m_diffNumberWidth, 0), ImGui.GetColorU32(ImGuiCol.Text), item.Value.ToString());
                 }
 

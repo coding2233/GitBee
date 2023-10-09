@@ -1,0 +1,19 @@
+# 下划线命名规则
+#默认字体
+font: Configs/Fonts/wqy-microhei.ttc
+#Ascii字体
+ascii_font: Configs/Fonts/SourceCodePro-Medium.ttf
+#字体大小
+font_size: 14
+# 返回字形范围, 可以使用自带字形范围(中、日、韩等)，也可以使用自定自定文本内容
+# 字形范围越小，初始内存占用越小
+# GetGlyphRangesDefault
+# GetGlyphRangesChineseFull
+# GetGlyphRangesChineseSimplifiedCommon
+# GetGlyphRangesCyrillic
+# GetGlyphRangesJapanese
+# GetGlyphRangesKorean
+# GetGlyphRangesThai
+# GetGlyphRangesVietnamese
+# */*.txt 使用自定义字形范围
+glyph_ranges: Configs/Fonts/chinese.txt

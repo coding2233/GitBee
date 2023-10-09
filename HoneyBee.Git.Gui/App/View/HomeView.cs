@@ -17,7 +17,7 @@ namespace Wanderer.App.View
 {
     public class HomeView : ImGuiTabView
     {
-        public override string Name => LuaPlugin.GetText("Home");
+        public override string Name => "Home";
 
         public override string UniqueKey => Name;
 
@@ -119,7 +119,7 @@ namespace Wanderer.App.View
 
         private void OnRepositoriesDraw()
         {
-            ImGui.Text(LuaPlugin.GetText("Repositories"));
+            ImGui.Text("Repositories");
             ImGui.SetNextItemWidth(ImGui.GetWindowWidth());
             ImGui.InputText("",ref m_repoSearchText,100);
             if (m_repositories != null && m_repositories.Count > 0)

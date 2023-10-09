@@ -123,7 +123,7 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
     ImGui_ImplOpenGL3_Init(glsl_version_);
 
     clock_t clock_start = clock();
-    float default_fps = 60.0f;
+    float default_fps = 30.0f;
     long frame_rate_time = (1 / default_fps)*1000;
     long frame = 0;
 
@@ -168,16 +168,16 @@ int CreateRender(SDL_Window* window,  IMGUI_INIT_CALLBACK imgui_init_cb,IMGUI_DR
                     }
                     if (event.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
                     {
-//                        clock_start = clock();
-//                        frame = 0;
-//                        frame_rate_time = (1 / default_fps) * 1000;
+                       clock_start = clock();
+                       frame = 0;
+                       frame_rate_time = (1 / default_fps) * 1000;
                     }
                     else if (event.window.event == SDL_WINDOWEVENT_FOCUS_LOST)
                     {
-//                        clock_start = clock();
-//                        frame = 0;
-//                        //frame_rate_time = 1000;
-//                        frame_rate_time = (1 / 10.0f) * 1000;
+                       clock_start = clock();
+                       frame = 0;
+                       //frame_rate_time = 1000;
+                       frame_rate_time = (1 / 5.0f) * 1000;
                     }
                 }
             }
@@ -418,34 +418,3 @@ void SetClipboard(const char* text)
 //     ImGui_ImplOpenGL3_RenderDrawData(draw_data);
 // }
 
-
- //struct lua_State* CreateLuaState()
- //{
- //    lua_State * lua_state = luaL_newstate(); 
- //    luaL_openlibs(lua_state);
- //    //luaJIT_setmode(lua_state,-1,LUAJIT_MODE_ON);
- //    std::cout << "CreateLuaState:" << lua_state << std::endl;
- //    return lua_state;
- //}
-
-// void CallLuaScript(struct lua_State* lua_state,const char* lua_script)
-// {
-//     int ret = luaL_loadfile(lua_state,lua_script); 
-//     std::cout << "CallLuaScript luaL_loadfile:" << lua_script << ret << std::endl;
-//     ret = lua_pcall(lua_state,0,0,0);
-// }
-
-// void CloseLuaState(struct lua_State* lua_state)
-// {
-//     std::cout << "CloseLuaState" << std::endl;
-//     lua_close(lua_state); 
-// }
-
-// void CallLuaFunction(struct lua_State* lua_state, const char* function_name)
-// {
-//     //获取lua中的showinfo函数
-//     lua_getglobal(lua_state, function_name);
-//     //cpp 调用无参数的lua函数，无返回值
-//     //lua_pcall(global_state_, 1, 0, 0);
-//     lua_pcall(lua_state,0,0,0);
-// }

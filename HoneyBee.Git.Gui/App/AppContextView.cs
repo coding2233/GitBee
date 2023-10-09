@@ -353,11 +353,11 @@ namespace Wanderer.App
         {
             if (ImGui.BeginMainMenuBar())
             {
-                if (ImGui.BeginMenu(LuaPlugin.GetText("File")))
+                if (ImGui.BeginMenu("File"))
                 {
-                    if (ImGui.BeginMenu(LuaPlugin.GetText("New")))
+                    if (ImGui.BeginMenu("New"))
                     {
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Open Folder")))
+                        if (ImGui.MenuItem("Open Folder"))
                         {
                             var folders = StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
                             if (folders != null && folders.Length > 0)
@@ -366,12 +366,12 @@ namespace Wanderer.App
                             }
                         }
 
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Clone")))
+                        if (ImGui.MenuItem("Clone"))
                         {
                             //GitCommandView.RunGitCommandView<CloneGitCommand>();
                         }
 
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Open Repository")))
+                        if (ImGui.MenuItem("Open Repository"))
                         {
                             //mainModel.CreateTab<GitRepoWindow>();
                             StandaloneFileBrowser.OpenFolderPanelAsync("Open Repository", "", false, (folders) => {
@@ -389,7 +389,7 @@ namespace Wanderer.App
 
                         }
 
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Search Repository")))
+                        if (ImGui.MenuItem("Search Repository"))
                         {
                             //mainModel.CreateTab<GitRepoWindow>();
                             StandaloneFileBrowser.OpenFolderPanelAsync("Search Repository", "", false, (folders) => {
@@ -407,33 +407,33 @@ namespace Wanderer.App
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Preference")))
+                    if (ImGui.MenuItem("Preference"))
                     {
                         //m_showPreference = true;
                     }
 
                     ImGui.Separator();
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Exit")))
+                    if (ImGui.MenuItem("Exit"))
                     {
                         Environment.Exit(0);
                     }
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu(LuaPlugin.GetText("Edit")))
+                if (ImGui.BeginMenu("Edit"))
                 {
-                    if (ImGui.BeginMenu(LuaPlugin.GetText("Style")))
+                    if (ImGui.BeginMenu("Style"))
                     {
                         var styleIndex = m_styleColors;
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Light"), "", styleIndex == 0))
+                        if (ImGui.MenuItem("Light", "", styleIndex == 0))
                         {
                             styleIndex = 0;
                         }
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Drak"), "", styleIndex == 1))
+                        if (ImGui.MenuItem("Drak", "", styleIndex == 1))
                         {
                             styleIndex = 1;
                         }
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Classic"), "", styleIndex == 2))
+                        if (ImGui.MenuItem("Classic", "", styleIndex == 2))
                         {
                             styleIndex = 2;
                         }
@@ -445,31 +445,31 @@ namespace Wanderer.App
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.BeginMenu(LuaPlugin.GetText("Language")))
+                    if (ImGui.BeginMenu("Language"))
                     {
-                        var languageIndex = m_language;
-                        for (int i = 0; i < m_languages.Length; i++)
-                        {
-                            if (ImGui.MenuItem(LuaPlugin.GetText(m_languages[i]), "", languageIndex == i))
-                            {
-                                languageIndex = i;
-                            }
-                        }
+                        //var languageIndex = m_language;
+                        //for (int i = 0; i < m_languages.Length; i++)
+                        //{
+                        //    if (ImGui.MenuItem(m_languages[i], "", languageIndex == i))
+                        //    {
+                        //        languageIndex = i;
+                        //    }
+                        //}
 
 
-                        if (languageIndex != m_language)
-                        {
-                            SetLanguage(languageIndex);
-                        }
+                        //if (languageIndex != m_language)
+                        //{
+                        //    SetLanguage(languageIndex);
+                        //}
                         ImGui.EndMenu();
                     }
 
                     ImGui.EndMenu();
                 }
 
-                if (ImGui.BeginMenu(LuaPlugin.GetText("Window")))
+                if (ImGui.BeginMenu("Window"))
                 {
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Home")))
+                    if (ImGui.MenuItem("Home"))
                     {
                         AppContextView.AddView<HomeView>();
                         //AddView<HomeView>();
@@ -477,7 +477,7 @@ namespace Wanderer.App
 
                     if (ImGui.BeginMenu("Debug"))
                     {
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Material Icons")))
+                        if (ImGui.MenuItem("Material Icons"))
                         {
                             AppContextView.AddView<MaterialIconsView>();
                             //AddView<MaterialIconsView>();
@@ -499,8 +499,8 @@ namespace Wanderer.App
                 }
 
 
-                string helpText = LuaPlugin.GetText("Help");
-                if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
+                string helpText = "Help";
+				if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
                 {
                     helpText += Icon.Get(Icon.Material_tips_and_updates);
                 }
@@ -515,23 +515,23 @@ namespace Wanderer.App
                         }
                     }
 
-                    if (ImGui.MenuItem(LuaPlugin.GetText("About")))
+                    if (ImGui.MenuItem("About"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
                         try
                         {
-                            Process.Start("Explorer", "https://coding2233.github.io/GitBee/");
-                        }
-                        catch (Exception e)
+							Process.Start("Explorer", "https://coding2233.github.io/posts/GitBee/");
+						}
+						catch (Exception e)
                         {
                             Log.Warn("Contact {0}", e);
                         }
                     }
 
-                    if (ImGui.BeginMenu(LuaPlugin.GetText("License")))
+                    if (ImGui.BeginMenu("License"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
-                        if (ImGui.MenuItem(LuaPlugin.GetText("Icon")))
+                        if (ImGui.MenuItem("Icon"))
                         {
                             try
                             {
@@ -546,12 +546,12 @@ namespace Wanderer.App
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Issues")))
+                    if (ImGui.MenuItem("Issues"))
                     {
                         //https://github.com/coding2233/GitBee/issues
                     }
 
-                    if (ImGui.MenuItem(LuaPlugin.GetText("Report a bug")))
+                    if (ImGui.MenuItem("Report a bug"))
                     {
 
                     }
@@ -665,7 +665,6 @@ namespace Wanderer.App
                 m_language = languageIndex;
             }
 
-            LuaPlugin.SetLanguageIndex(m_language);
         }
 
     }

@@ -48,9 +48,9 @@ namespace Wanderer.TextCodeEditor.View
                 var folderIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
                 var folderIconPosMax = folderIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
                 node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
-                //文件夹图标
-                ImGui.GetWindowDrawList().AddImage(node.NodeOpened ? LuaPlugin.GetFolderIcon("default_folder_opened").Image : LuaPlugin.GetFolderIcon("default_folder").Image, folderIconPos, folderIconPosMax);
-
+				//文件夹图标
+				var folderGLTexture = Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
+				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
                 if (node.NodeOpened)
                 {
                     foreach (var item in node.Children)
@@ -70,7 +70,7 @@ namespace Wanderer.TextCodeEditor.View
                 {
                     ImGui.TreePop();
                 }
-                ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetFileIcon(node.Name).Image, fileIconPos, fileIconPosMax);
+                ImGui.GetWindowDrawList().AddImage(Application.LoadTextureFromFile($"Resources/icons/default_file.png").Image, fileIconPos, fileIconPosMax);
 
                 if (ImGui.IsItemClicked())
                 {

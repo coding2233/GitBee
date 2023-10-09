@@ -37,9 +37,6 @@ namespace Wanderer.GitRepository.View
         private float m_syncProgress;
 
         [Inject]
-        public IPluginService plugin { get; set; }
-
-        [Inject]
         public IDatabaseService database { get; set; }
 
         #region 子模块
@@ -174,7 +171,7 @@ namespace Wanderer.GitRepository.View
             {
                 ImGui.BeginTooltip();
                 ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35.0f);
-                ImGui.TextUnformatted(LuaPlugin.GetText(tip));
+                ImGui.TextUnformatted(tip);
                 ImGui.PopTextWrapPos();
                 ImGui.EndTooltip();
             }

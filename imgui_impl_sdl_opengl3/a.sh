@@ -1,3 +1,3 @@
 
 xmake
-mv build/windows/x64/debug/iiso3.dll ../HoneyBee.Git.Gui/
+mv build/windows/x64/release/iiso3.dll ../HoneyBee.Git.Gui/
