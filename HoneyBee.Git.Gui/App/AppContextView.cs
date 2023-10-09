@@ -445,24 +445,24 @@ namespace Wanderer.App
                         ImGui.EndMenu();
                     }
 
-                    if (ImGui.BeginMenu("Language"))
-                    {
-                        //var languageIndex = m_language;
-                        //for (int i = 0; i < m_languages.Length; i++)
-                        //{
-                        //    if (ImGui.MenuItem(m_languages[i], "", languageIndex == i))
-                        //    {
-                        //        languageIndex = i;
-                        //    }
-                        //}
+                    //if (ImGui.BeginMenu("Language"))
+                    //{
+                    //    //var languageIndex = m_language;
+                    //    //for (int i = 0; i < m_languages.Length; i++)
+                    //    //{
+                    //    //    if (ImGui.MenuItem(m_languages[i], "", languageIndex == i))
+                    //    //    {
+                    //    //        languageIndex = i;
+                    //    //    }
+                    //    //}
 
 
-                        //if (languageIndex != m_language)
-                        //{
-                        //    SetLanguage(languageIndex);
-                        //}
-                        ImGui.EndMenu();
-                    }
+                    //    //if (languageIndex != m_language)
+                    //    //{
+                    //    //    SetLanguage(languageIndex);
+                    //    //}
+                    //    ImGui.EndMenu();
+                    //}
 
                     ImGui.EndMenu();
                 }
