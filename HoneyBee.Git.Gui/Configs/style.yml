@@ -2,7 +2,7 @@
 #默认字体
 font: Configs/Fonts/wqy-microhei.ttc
 #Ascii字体
-ascii_font: Configs/Fonts/SourceCodePro-Medium.ttf
+# ascii_font: Configs/Fonts/SourceCodePro-Medium.ttf
 #字体大小
 font_size: 14
 # 返回字形范围, 可以使用自带字形范围(中、日、韩等)，也可以使用自定自定文本内容
