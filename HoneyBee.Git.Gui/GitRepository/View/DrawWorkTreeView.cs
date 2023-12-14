@@ -88,8 +88,7 @@ namespace Wanderer
         {
             if (ImGui.Button("Unstage All"))
             {
-                m_gitRepo.Unstage();
-                UpdateStatus();
+                m_gitRepo.Unstage(UpdateStatus);
             }
             ImGui.SameLine();
             if (ImGui.Button("Unstage Selected"))
@@ -97,8 +96,7 @@ namespace Wanderer
                 if (m_stageSelectedNodes.Count > 0)
                 {
                     var selectPath = TreeNodesToPaths(m_stageSelectedNodes);
-                    m_gitRepo.Unstage(selectPath);
-                    UpdateStatus();
+                    m_gitRepo.Unstage(UpdateStatus,selectPath);
                 }
             }
 
@@ -117,8 +115,8 @@ namespace Wanderer
         {
             if (ImGui.Button("Stage All"))
             {
-                m_gitRepo.Stage();
-                UpdateStatus();
+                m_gitRepo.Stage(UpdateStatus);
+             
             }
             ImGui.SameLine();
             if (ImGui.Button("Stage Selected"))
@@ -126,7 +124,7 @@ namespace Wanderer
                 if (m_unstageSelectedNodes.Count > 0)
                 {
                     var selectPath = TreeNodesToPaths(m_unstageSelectedNodes);
-                    m_gitRepo.Stage(selectPath);
+                    m_gitRepo.Stage(UpdateStatus, selectPath);
                     UpdateStatus();
                 }
             }

@@ -191,13 +191,13 @@ namespace Wanderer.GitRepository.View
                     GitCommandView.ShowTerminal(m_repoPath);
                     break;
                 case "Pull":
-                    AppContextView.AddView<GitPullCommandView>(m_gitRepo);
+                    AppContextView.AddView<GitView>(m_gitRepo).Pull().Run();
                     break;
                 case "Fetch":
-                    AppContextView.AddView<GitFetchCommandView>(m_gitRepo);
+					AppContextView.AddView<GitView>(m_gitRepo).Fecth().Run();
                     break;
                 case "Push":
-                    AppContextView.AddView<GitPushCommandView>(m_gitRepo);
+					AppContextView.AddView<GitView>(m_gitRepo).Push().Run();
                     break;
                 case "Explorer":
                     Process.Start("Explorer", m_gitRepo.RootPath.Replace("/","\\"));

@@ -164,45 +164,14 @@ namespace Wanderer.GitRepository.Common
             //Status();
         }
 
-        public void Stage(IEnumerable<string> files = null)
+        public void Stage(Action callback,IEnumerable<string> files = null)
         {
-            //if (files == null)
-            //{
-            //    Commands.Stage(m_repository, "*");
-            //}
-            //else
-            //{
-            //    if (files.Count() > 0)
-            //    {
-            //        Commands.Stage(m_repository, files);
-            //    }
-            //}
-
-            //AppContextView.AddView<GitAddCommandView>(this, files);
-            AppContextView.AddView<GitView>(this).Add(files);
+            AppContextView.AddView<GitView>(this).Add(files).Then(callback).Run();
 		}
 
-        public void Unstage(IEnumerable<string> files = null)
+        public void Unstage(Action callback,IEnumerable<string> files = null)
         {
-            //if (files == null)
-            //{
-            //    Commands.Unstage(m_repository, "*");
-            //}
-            //else
-            //{
-            //    if (files.Count() > 0)
-            //        Commands.Unstage(m_repository, files);
-            //}
-            if (files == null || files.Count() == 0)
-            {
-                List<string> indexFiles = new List<string>();
-                foreach (var item in m_repository.Index)
-                {
-                    indexFiles.Add(item.Path);
-                }
-                files = indexFiles;
-			}
-			AppContextView.AddView<GitIndexRestoreCommandView>(this, files);
+			AppContextView.AddView<GitView>(this).Restore(files).Then(callback).Run();
 		}
 
 		public Commit GetCommit(string commitSha)
