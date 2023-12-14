@@ -49,7 +49,7 @@ namespace Wanderer.GitRepository.View
         public GitRepoView(string repoPath) 
         {
       
-            m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
+            m_workSpaceRadio = WorkSpaceRadio.WorkTree;
             
             m_repoPath = repoPath;
             //m_gitRepoMediator = mediator as GitRepoMediator;
@@ -76,7 +76,8 @@ namespace Wanderer.GitRepository.View
 
         private void CreateGitRepo()
         {
-            m_gitRepo.ReBuildUIData();
+            m_gitRepo.Build();
+			m_gitRepo.ReBuildUIData();
             
             //m_syncDataTip = "正在同步数据";
             //m_gitRepo.SyncGitRepoTask((progress) => {

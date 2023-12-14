@@ -51,7 +51,7 @@ namespace Wanderer.GitRepository.View
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
             m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);
-            m_selectCommitTreeSpliteView = new SplitView(SplitView.SplitType.Vertical);
+            m_selectCommitTreeSpliteView = new SplitView(SplitView.SplitType.Vertical,100);
 
             m_diffShowView = new DiffShowView();
 

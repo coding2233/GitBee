@@ -64,6 +64,11 @@ namespace Wanderer.GitRepository.Common
             //SyncGitRepoTask();
         }
 
+        public void Build()
+        {
+			m_repository = new Repository(RootPath);
+		}
+
         //更新UI状态
         public void ReBuildUIData()
         {
