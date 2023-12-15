@@ -303,9 +303,7 @@ namespace Wanderer.Common
                 }
                 else
                 {
-
 					bool isDirectoryExists = Directory.Exists(filePath);
-                    //bool isFileExists = File.Exists(filePath);
                     if (isDirectoryExists)
                     {
                         if (!s_iconFolderGLTextures.TryGetValue(filePath, out glTexture))
@@ -315,7 +313,6 @@ namespace Wanderer.Common
 							glTexture.Image = ImFileDialogIcon(filePath);
                             if (glTexture.Image != IntPtr.Zero)
                             {
-                                s_folderDefaultIcon = glTexture;
                                 s_iconFolderGLTextures.Add(filePath, glTexture);
                             }
 						}
@@ -327,18 +324,26 @@ namespace Wanderer.Common
                         {
 						    if (!s_iconFileGLTextures.TryGetValue(extension,out glTexture))
 						    {
-                                glTexture = new GLTexture();
-                                glTexture.Size = IconSize;
-                                glTexture.Image = ImFileDialogIcon(filePath);
-                                if (glTexture.Image != IntPtr.Zero)
+								bool isFileExists = File.Exists(filePath);
+                                if (isFileExists)
                                 {
-                                    s_iconFileGLTextures.Add(extension, glTexture);
+									glTexture = new GLTexture();
+									glTexture.Size = IconSize;
+									glTexture.Image = ImFileDialogIcon(filePath);
+                                    if (glTexture.Image != IntPtr.Zero)
+                                    {
+                                        s_iconFileGLTextures.Add(extension, glTexture);
+                                    }
                                 }
+                                else
+                                {
+                                    glTexture = GetDefaultIcon(true);
+								}
 						    }
 					    }
 				    }
-
-                    if (glTexture.Image == IntPtr.Zero)
+                   
+					if (glTexture.Image == IntPtr.Zero)
                     {
                         glTexture = GetDefaultIcon(isFileDefault);
 					}
@@ -372,7 +377,7 @@ namespace Wanderer.Common
 				{
 					s_folderDefaultIcon = new GLTexture();
 					s_folderDefaultIcon.Size = IconSize;
-					s_folderDefaultIcon.Image = ImFileDialogDefaultIcon(isFile);
+                    s_folderDefaultIcon.Image = ImFileDialogIcon(".");//ImFileDialogDefaultIcon(isFile);
 				}
 				return s_folderDefaultIcon;
 			}
