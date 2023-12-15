@@ -2,8 +2,16 @@
 #define __IISO3_EXPORT_H__
 
 #include <iostream>
+#include <GL/glew.h>
+#include <SDL.h>
+#include <stdio.h>
+
 #include "TextEditor.h"
 #include "language_definition_ex.h"
+#include "ImFileDialog.h"
+#include "stb_image.h"
+#include "imgui_impl_sdl.h"
+#include "imgui_impl_opengl3.h"
 
 #if defined _WIN32 || defined __CYGWIN__
 #include "windows.h"
@@ -50,4 +58,7 @@ EXPORT_API bool igIsTextChangedTextEditor(TextEditor * textEditor);
 // EXPORT_API const TextEditor::LanguageDefinition& igGetLanguageDefinition(std::string lang_def_name, std::string keywords[], int keywords_length, std::string identifiers[], int identifiers_length, TextTokenizeCallback text_tokenize_callback, std::string comment_start, std::string comment_end, std::string sigle_line_comment, bool case_sensitive, bool auto_indentation);
 EXPORT_API void igSetLanguageDefinition(TextEditor* text_editor, const char* lang_def_name);
 
+EXPORT_API void ImFileDialogOpen(const char* key, const char* title, const char* filter, bool isMultiselect, const char* startingDir);
+EXPORT_API bool ImFileDialogRender(const char* key);
+EXPORT_API const char* ImFileDialogResult(int *size);
 #endif

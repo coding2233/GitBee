@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Wanderer.App.Service;
 using Wanderer.App.View;
@@ -32,8 +33,11 @@ namespace Wanderer.App
 
         private AppContext m_appContext;
 
-        
-        public AppContextView()
+        private const string OpenFileDialogKey = "AppContextViewOpenFileDialogKey";
+        private static Action<string> s_showOpenFileDialogCallback;
+        private static bool s_showCloseFileDialog;
+
+		public AppContextView()
         {
             Log.LogMessageReceiver += (logger) =>
             {
@@ -203,6 +207,16 @@ namespace Wanderer.App
                 s_imGuiViews[i].OnDraw();
             }
 
+            //文件弹窗
+            if (s_showOpenFileDialogCallback!=null)
+            {
+                if (Application.ImFileDialogRender(OpenFileDialogKey))
+                {
+                    string result = Application.GetFileDialogResult();
+                    s_showOpenFileDialogCallback(result);
+                    s_showOpenFileDialogCallback = null;
+				}
+            }
         }
 
         internal void OnWindowFocus(bool lost)
@@ -321,11 +335,41 @@ namespace Wanderer.App
             ImGui.SameLine();
             ImGui.Text(m_fullLog);
         }
-    }
+
+		#region ImFileDialog
+
+		public static void OpenFileDialog(Action<string> callback, string title, string filter, bool isMultiselect, string startingDir)
+		{
+			s_showOpenFileDialogCallback = callback;
+			Application.OpenFileDialog(OpenFileDialogKey, title, filter, isMultiselect, startingDir);
+		}
+
+		public static string OpenFileDialog(string title, string filter, bool isMultiselect, string startingDir)
+		{
+            if (!s_showCloseFileDialog)
+            {
+                Application.OpenFileDialog(OpenFileDialogKey, title, filter, isMultiselect, startingDir);
+                s_showCloseFileDialog = true;
+			}
+            if (s_showCloseFileDialog)
+            {
+                if (Application.ImFileDialogRender(OpenFileDialogKey))
+                {
+                    s_showCloseFileDialog = false;
+					string result = Application.GetFileDialogResult();
+                    return result;
+                }
+            }
+            return string.Empty;
+		}
+		
+		#endregion
+
+	}
 
 
 
-    public class AppMainImGuiView: EventView
+	public class AppMainImGuiView: EventView
     {
         [Inject]
         public IDatabaseService database { get; set; }
@@ -483,7 +527,13 @@ namespace Wanderer.App
                             //AddView<MaterialIconsView>();
                         }
 
-                        ImGui.EndMenu();
+						if (ImGui.MenuItem("File Dialog"))
+						{
+                            AppContextView.OpenFileDialog((result) => {
+                                Log.Info("OpenFileDialog {0}", result);
+                            }, "Open a texture", "Image file (*.png;*.jpg;*.jpeg;*.bmp;*.tga){.png,.jpg,.jpeg,.bmp,.tga},.*", false, "");
+						}
+						ImGui.EndMenu();
                     }
 
                     if (ImGui.MenuItem("Terminal"))

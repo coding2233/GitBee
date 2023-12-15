@@ -11,8 +11,7 @@
 #include "imgui_impl_sdl.h"
 #include "imgui_impl_opengl3.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+
 #include "imgui_markdown.h"
 
 #include "iiso3_export.h"

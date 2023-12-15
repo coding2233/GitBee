@@ -224,9 +224,35 @@ namespace Wanderer.Common
                 DeleteTexture(&outTexture);
             }
         }
-    }
 
-    public struct GLTexture
+		#region ImFileDialog
+		[DllImport("iiso3.dll")]
+		private extern static void ImFileDialogOpen(string key, string title, string filter, bool isMultiselect, string startingDir);
+		[DllImport("iiso3.dll")]
+		internal extern static bool ImFileDialogRender(string key);
+		[DllImport("iiso3.dll")]
+		private extern static byte* ImFileDialogResult(ref int size);
+
+        internal static void OpenFileDialog(string key, string title, string filter, bool isMultiselect, string startingDir)
+        {
+            ImFileDialogOpen(key, title, filter, isMultiselect, startingDir);
+		}
+        internal static string GetFileDialogResult()
+        {
+            int size= 0;
+            byte* data = ImFileDialogResult(ref size);
+            if (size > 0)
+            {
+                string result = System.Text.Encoding.UTF8.GetString(data, size);
+                return result;
+			}
+			return string.Empty;
+        }
+		#endregion
+
+	}
+
+	public struct GLTexture
     {
         public IntPtr Image;
         public Vector2 Size;

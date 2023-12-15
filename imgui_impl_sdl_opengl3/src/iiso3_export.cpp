@@ -1,3 +1,4 @@
+#define STB_IMAGE_IMPLEMENTATION
 #include "iiso3_export.h"
 
 TextEditor* igNewTextEditor()
@@ -225,4 +226,57 @@ void igSetLanguageDefinition(TextEditor* text_editor, const char* lang_def_name)
 
 	
 	std::cout<<"igSetLanguageDefinition: "<<lang_def_name <<" text_editor->GetLanguageDefinition: "<< text_editor->GetLanguageDefinition().mName <<std::endl;
+}
+
+
+void ImFileDialogOpen(const char* key_c, const char* title_c, const char* filter_c, bool isMultiselect, const char* startingDir_c)
+{
+    std::string key(key_c);
+    std::string title(title_c);
+    std::string filter(filter_c);
+    std::string startingDir(startingDir_c);
+
+    static bool s_im_file_dialog_texture_callback = false;
+    if(!s_im_file_dialog_texture_callback)
+    {
+        ifd::FileDialog::Instance().CreateTexture = [](uint8_t* data, int w, int h, char fmt) -> void* {
+            GLuint tex;
+
+            glGenTextures(1, &tex);
+            glBindTexture(GL_TEXTURE_2D, tex);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, (fmt == 0) ? GL_BGRA : GL_RGBA, GL_UNSIGNED_BYTE, data);
+            glGenerateMipmap(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, 0);
+
+            return (void*)tex;
+        };
+        ifd::FileDialog::Instance().DeleteTexture = [](void* tex) {
+            GLuint texID = (GLuint)tex;
+            glDeleteTextures(1, &texID);
+        };
+        s_im_file_dialog_texture_callback = true;
+    }
+    ifd::FileDialog::Instance().Open(key, title, filter,isMultiselect,startingDir);
+}
+bool ImFileDialogRender(const char* key_c)
+{
+    std::string key(key_c);
+    bool result = ifd::FileDialog::Instance().IsDone(key);
+    return result;
+}
+
+const char* ImFileDialogResult(int *size)
+{
+    std::string res="";
+    if (ifd::FileDialog::Instance().HasResult()) {
+        res = ifd::FileDialog::Instance().GetResult().u8string();
+        printf("OPEN[%s]\n", res.c_str());
+    }
+    ifd::FileDialog::Instance().Close();
+    *size = res.size();
+    return res.data();
 }
