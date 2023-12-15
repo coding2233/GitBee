@@ -26,8 +26,10 @@ namespace Wanderer.Common
 
         private static Dictionary<string, GLTexture> s_glTextures = new Dictionary<string, GLTexture>();
         private static Dictionary<string, string> s_networkGLTextures = new Dictionary<string, string>();
+        private static GLTexture s_folderDefaultIcon;
+        private static GLTexture s_fileDefaultIcon;
 
-        private static string m_dataPath;
+		private static string m_dataPath;
         private static string m_userPath;
         private static string m_tempPath;
         private static string m_tempDataPath;
@@ -265,14 +267,18 @@ namespace Wanderer.Common
         }
 		[DllImport("iiso3.dll")]
 		private extern static IntPtr ImFileDialogIcon(string file_path);
-        internal static GLTexture GetFileIcon(string filePath)
+        internal static GLTexture GetFileIcon(string filePath,bool isFileDefault = true)
         {
             GLTexture glTexture = new GLTexture();
             try
             {
-                if (!string.IsNullOrEmpty(filePath))
+                //if (!string.IsNullOrEmpty(filePath))
                 {
 					glTexture.Image = ImFileDialogIcon(filePath);
+                    if (glTexture.Image == IntPtr.Zero)
+                    {
+                        glTexture = GetDefaultIcon(isFileDefault);
+					}
                     glTexture.Size = IconSize;
 				}
             }
@@ -281,6 +287,33 @@ namespace Wanderer.Common
                 Log.Warn(e.Message);
             }
 			return glTexture;
+		}
+
+        [DllImport("iiso3.dll")]
+        private extern static IntPtr ImFileDialogDefaultIcon(bool is_file);
+		internal static GLTexture GetDefaultIcon(bool isFile,bool update = false)
+        {
+            if (isFile)
+            {
+                if (update || s_fileDefaultIcon.Image == IntPtr.Zero)
+                {
+                    s_fileDefaultIcon = new GLTexture();
+                    s_fileDefaultIcon.Size = IconSize;
+                    s_fileDefaultIcon.Image = ImFileDialogDefaultIcon(isFile);
+                   
+                }
+				return s_fileDefaultIcon;
+			}
+            else
+            {
+				if (update || s_folderDefaultIcon.Image == IntPtr.Zero)
+				{
+					s_folderDefaultIcon = new GLTexture();
+					s_folderDefaultIcon.Size = IconSize;
+					s_folderDefaultIcon.Image = ImFileDialogDefaultIcon(isFile);
+				}
+				return s_folderDefaultIcon;
+			}
 		}
 		#endregion
 

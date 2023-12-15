@@ -240,7 +240,7 @@ namespace Wanderer
 
                 //文件夹图标
                 //var folderGLTexture =  Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
-				var folderGLTexture = Application.GetFileIcon(node.FullName);
+				var folderGLTexture = Application.GetFileIcon(node.FullName,false);
 				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
 
                 if (node.NodeOpened)

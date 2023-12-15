@@ -1423,6 +1423,42 @@ namespace ifd {
 //        printf("%d -- %s -- %s\n",icon,file_path_c,file_path.c_str());
         return icon;
     }
+    void* FileDialog::GetDefaultIcon(bool isFile)
+    {
+        void *default_icon = nullptr;
+        ImVec4 wndBg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+        // light theme - load default icons
+        if ((wndBg.x + wndBg.y + wndBg.z) / 3.0f > 0.5f)
+        {
+            uint8_t *data = (uint8_t *) ifd::GetDefaultFileIcon();
+            if (!isFile)
+                data = (uint8_t *) ifd::GetDefaultFolderIcon();
+            default_icon = this->CreateTexture(data, DEFAULT_ICON_SIZE, DEFAULT_ICON_SIZE, 0);
+        }
+            // dark theme - invert the colors
+        else
+        {
+            uint8_t *data = (uint8_t *) ifd::GetDefaultFileIcon();
+            if (!isFile)
+                data = (uint8_t *) ifd::GetDefaultFolderIcon();
+
+            uint8_t *invData = (uint8_t *) malloc(DEFAULT_ICON_SIZE * DEFAULT_ICON_SIZE * 4);
+            for (int y = 0; y < 32; y++)
+            {
+                for (int x = 0; x < 32; x++)
+                {
+                    int index = (y * DEFAULT_ICON_SIZE + x) * 4;
+                    invData[index + 0] = 255 - data[index + 0];
+                    invData[index + 1] = 255 - data[index + 1];
+                    invData[index + 2] = 255 - data[index + 2];
+                    invData[index + 3] = data[index + 3];
+                }
+            }
+            default_icon = this->CreateTexture(invData, DEFAULT_ICON_SIZE, DEFAULT_ICON_SIZE, 0);
+            free(invData);
+        }
+        return default_icon;
+    }
 }
 
 

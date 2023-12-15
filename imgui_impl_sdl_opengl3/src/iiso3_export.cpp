@@ -298,3 +298,10 @@ void* ImFileDialogIcon(const char* file_path)
     }
     return nullptr;
 }
+
+void* ImFileDialogDefaultIcon(bool is_file)
+{
+    ImFileDialogSetTextureCallback();
+    void *file_icon = ifd::FileDialog::Instance().GetDefaultIcon(is_file);
+    return file_icon;
+}

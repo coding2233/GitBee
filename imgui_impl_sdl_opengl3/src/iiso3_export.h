@@ -63,4 +63,5 @@ EXPORT_API void ImFileDialogOpen(const char* key, const char* title, const char*
 EXPORT_API bool ImFileDialogRender(const char* key);
 EXPORT_API const char* ImFileDialogResult(int *size);
 EXPORT_API void* ImFileDialogIcon(const char* file_path);
+EXPORT_API void* ImFileDialogDefaultIcon(bool is_file);
 #endif
