@@ -279,13 +279,13 @@ const char* ImFileDialogResult(int *size)
 {
     std::string res="";
     if (ifd::FileDialog::Instance().HasResult()) {
-        //res = ifd::FileDialog::Instance().GetResult().u8string();
-        res = ifd::FileDialog::Instance().GetResult().string();
+        res = ifd::FileDialog::Instance().GetResult().u8string();
+        //res = ifd::FileDialog::Instance().GetResult().string();
         printf("OPEN[%s]\n", res.c_str());
     }
     ifd::FileDialog::Instance().Close();
     *size = res.size();
-    return res.data();
+    return res.c_str();
 }
 
 void* ImFileDialogIcon(const char* file_path)
