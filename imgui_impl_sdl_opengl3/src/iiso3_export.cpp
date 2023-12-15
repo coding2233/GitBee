@@ -279,7 +279,8 @@ const char* ImFileDialogResult(int *size)
 {
     std::string res="";
     if (ifd::FileDialog::Instance().HasResult()) {
-        res = ifd::FileDialog::Instance().GetResult().u8string();
+        //res = ifd::FileDialog::Instance().GetResult().u8string();
+        res = ifd::FileDialog::Instance().GetResult().string();
         printf("OPEN[%s]\n", res.c_str());
     }
     ifd::FileDialog::Instance().Close();
