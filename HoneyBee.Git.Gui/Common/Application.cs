@@ -31,7 +31,8 @@ namespace Wanderer.Common
 
 		private static string m_dataPath;
         private static string m_userPath;
-        private static string m_tempPath;
+        private static string m_userBasePath;
+		private static string m_tempPath;
         private static string m_tempDataPath;
 
         internal static string UpdateDownloadURL;
@@ -92,7 +93,28 @@ namespace Wanderer.Common
             }
         }
 
-        public static string TempDataPath
+		public static string UserBasePath
+		{
+			get
+			{
+				if (string.IsNullOrEmpty(m_userBasePath))
+				{
+					m_userBasePath = Environment.GetEnvironmentVariable("USERPROFILE");
+					if (string.IsNullOrEmpty(m_userBasePath))
+					{
+						m_userBasePath = "./";
+					}
+					Log.Info("UserBasePath: {0}", m_userBasePath);
+				}
+				if (!Directory.Exists(m_userBasePath))
+				{
+					Directory.CreateDirectory(m_userBasePath);
+				}
+				return m_userBasePath;
+			}
+		}
+
+		public static string TempDataPath
         {
             get
             {
@@ -261,6 +283,7 @@ namespace Wanderer.Common
             if (size > 0)
             {
                 string result = System.Text.Encoding.UTF8.GetString(data, size);
+                Console.WriteLine("GetFileDialogResult: {0} #", result);
                 return result;
 			}
 			return string.Empty;

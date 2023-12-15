@@ -1,6 +1,5 @@
 ﻿using ImGuiNET;
 using LibGit2Sharp;
-using SFB;
 using strange.extensions.dispatcher.eventdispatcher.api;
 using strange.extensions.mediation.impl;
 using System;

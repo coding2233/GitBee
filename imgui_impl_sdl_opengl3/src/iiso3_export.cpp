@@ -284,8 +284,9 @@ const char* ImFileDialogResult(int *size)
         printf("OPEN[%s]\n", res.c_str());
     }
     ifd::FileDialog::Instance().Close();
-    *size = res.size();
-    return res.c_str();
+    const char* res_c = res.c_str();
+    *size = strlen(res_c);
+    return res_c;
 }
 
 void* ImFileDialogIcon(const char* file_path)

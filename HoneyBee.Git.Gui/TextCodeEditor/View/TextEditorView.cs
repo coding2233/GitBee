@@ -1,7 +1,6 @@
 ﻿using ImGuiNET;
 using LibGit2Sharp;
 using LibGit2Sharp.Handlers;
-using SFB;
 using strange.extensions.context.api;
 using strange.extensions.dispatcher.eventdispatcher.api;
 using System;
