@@ -49,7 +49,8 @@ namespace Wanderer.TextCodeEditor.View
                 var folderIconPosMax = folderIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
                 node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
 				//文件夹图标
-				var folderGLTexture = Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
+				//var folderGLTexture = Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
+                var folderGLTexture = Application.GetFileIcon(node.FullName);
 				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
                 if (node.NodeOpened)
                 {
@@ -65,12 +66,14 @@ namespace Wanderer.TextCodeEditor.View
             {
                 nodeFlag = nodeFlag | ImGuiTreeNodeFlags.Leaf;
                 var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
-                var fileIconPosMax = fileIconPos + new Vector2(ImGui.GetTextLineHeight() * 2, ImGui.GetTextLineHeight());
+                var fileIconPosMax = fileIconPos + Application.IconSize;
                 if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
                 {
                     ImGui.TreePop();
                 }
-                ImGui.GetWindowDrawList().AddImage(Application.LoadTextureFromFile($"Resources/icons/default_file.png").Image, fileIconPos, fileIconPosMax);
+				GLTexture fileIcon = Application.GetFileIcon(node.FullName);
+				//Application.LoadTextureFromFile($"Resources/icons/default_file.png")
+				ImGui.GetWindowDrawList().AddImage(fileIcon.Image, fileIconPos, fileIconPosMax);
 
                 if (ImGui.IsItemClicked())
                 {

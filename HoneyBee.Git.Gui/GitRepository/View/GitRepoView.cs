@@ -103,6 +103,7 @@ namespace Wanderer.GitRepository.View
         public override void OnEnable()
         {
             base.OnEnable();
+            Directory.SetCurrentDirectory(m_gitRepo.RootPath);
             CreateGitRepo();
 
             if (m_workSpaceRadio == WorkSpaceRadio.WorkTree)

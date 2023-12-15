@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ImGuiNET;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,6 +35,20 @@ namespace Wanderer.Common
         internal static string UpdateDownloadURL;
 
         internal const float FontOffset = 3.0f;
+
+        private static Vector2 s_iconSize;
+        public static Vector2 IconSize
+        {
+            get
+            {
+                if (Vector2.Zero == s_iconSize)
+                {
+                    float iconWidth = ImGui.GetFontSize() + FontOffset;
+                    s_iconSize = new Vector2(iconWidth, iconWidth);
+				}
+                return s_iconSize;
+			}
+        }
 
         public static string DataPath
         {
@@ -248,6 +263,25 @@ namespace Wanderer.Common
 			}
 			return string.Empty;
         }
+		[DllImport("iiso3.dll")]
+		private extern static IntPtr ImFileDialogIcon(string file_path);
+        internal static GLTexture GetFileIcon(string filePath)
+        {
+            GLTexture glTexture = new GLTexture();
+            try
+            {
+                if (!string.IsNullOrEmpty(filePath))
+                {
+					glTexture.Image = ImFileDialogIcon(filePath);
+                    glTexture.Size = IconSize;
+				}
+            }
+            catch (System.Exception e)
+            {
+                Log.Warn(e.Message);
+            }
+			return glTexture;
+		}
 		#endregion
 
 	}

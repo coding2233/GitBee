@@ -728,9 +728,11 @@ namespace ifd {
 		SHGetFileInfoW(pathW.c_str(), attrs, &fileInfo, sizeof(SHFILEINFOW), flags);
 
 		if (fileInfo.hIcon == nullptr)
-			return nullptr;
+        {
+            return nullptr;
+        }
 
-		// check if icon is already loaded
+        // check if icon is already loaded
 		auto itr = std::find(m_iconIndices.begin(), m_iconIndices.end(), fileInfo.iIcon);
 		if (itr != m_iconIndices.end()) {
 			const std::string& existingIconFilepath = m_iconFilepaths[itr - m_iconIndices.begin()];
@@ -1412,6 +1414,15 @@ namespace ifd {
 			 escapeKey >= 0 && ImGui::IsKeyPressed(escapeKey))
 			m_isOpen = false;
 	}
+
+    void* FileDialog::GetFileIcon(const char* file_path_c)
+    {
+        const std::string file_path_str(file_path_c);
+        const std::filesystem::path file_path = file_path_str;
+        void* icon = this->m_getIcon(file_path_str);
+//        printf("%d -- %s -- %s\n",icon,file_path_c,file_path.c_str());
+        return icon;
+    }
 }
 
 

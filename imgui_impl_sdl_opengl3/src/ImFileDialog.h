@@ -49,6 +49,7 @@ namespace ifd {
 
 		std::function<void*(uint8_t*, int, int, char)> CreateTexture; // char -> fmt -> { 0 = BGRA, 1 = RGBA }
 		std::function<void(void*)> DeleteTexture;
+        void* GetFileIcon(const char* file_path);
 
 		class FileTreeNode {
 		public:

@@ -229,13 +229,8 @@ void igSetLanguageDefinition(TextEditor* text_editor, const char* lang_def_name)
 }
 
 
-void ImFileDialogOpen(const char* key_c, const char* title_c, const char* filter_c, bool isMultiselect, const char* startingDir_c)
+void ImFileDialogSetTextureCallback()
 {
-    std::string key(key_c);
-    std::string title(title_c);
-    std::string filter(filter_c);
-    std::string startingDir(startingDir_c);
-
     static bool s_im_file_dialog_texture_callback = false;
     if(!s_im_file_dialog_texture_callback)
     {
@@ -260,6 +255,17 @@ void ImFileDialogOpen(const char* key_c, const char* title_c, const char* filter
         };
         s_im_file_dialog_texture_callback = true;
     }
+}
+
+void ImFileDialogOpen(const char* key_c, const char* title_c, const char* filter_c, bool isMultiselect, const char* startingDir_c)
+{
+    ImFileDialogSetTextureCallback();
+
+    std::string key(key_c);
+    std::string title(title_c);
+    std::string filter(filter_c);
+    std::string startingDir(startingDir_c);
+
     ifd::FileDialog::Instance().Open(key, title, filter,isMultiselect,startingDir);
 }
 bool ImFileDialogRender(const char* key_c)
@@ -279,4 +285,16 @@ const char* ImFileDialogResult(int *size)
     ifd::FileDialog::Instance().Close();
     *size = res.size();
     return res.data();
+}
+
+void* ImFileDialogIcon(const char* file_path)
+{
+    ImFileDialogSetTextureCallback();
+
+    if(file_path)
+    {
+        void *file_icon = ifd::FileDialog::Instance().GetFileIcon(file_path);
+        return file_icon;
+    }
+    return nullptr;
 }
