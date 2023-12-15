@@ -285,7 +285,7 @@ const char* ImFileDialogResult(int *size)
     }
     ifd::FileDialog::Instance().Close();
     *size = res.size();
-    return res.data();
+    return res.c_str();
 }
 
 void* ImFileDialogIcon(const char* file_path)
