@@ -283,6 +283,7 @@ namespace Wanderer.Common
             if (size > 0)
             {
                 string result = System.Text.Encoding.UTF8.GetString(data, size);
+                Console.WriteLine("GetFileDialogResult: {0} #", result);
                 return result;
 			}
 			return string.Empty;
