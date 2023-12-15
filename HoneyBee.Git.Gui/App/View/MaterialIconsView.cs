@@ -1,5 +1,4 @@
 ﻿using ImGuiNET;
-using SFB;
 using strange.extensions.context.api;
 using System;
 using System.Collections.Generic;

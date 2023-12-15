@@ -1,5 +1,4 @@
 ﻿using ImGuiNET;
-using SFB;
 using strange.extensions.context.api;
 using strange.extensions.context.impl;
 using strange.extensions.mediation.impl;
@@ -340,6 +339,10 @@ namespace Wanderer.App
 
 		public static void OpenFileDialog(Action<string> callback, string title, string filter, bool isMultiselect, string startingDir)
 		{
+            if (string.IsNullOrEmpty(startingDir))
+            {
+                startingDir = Application.UserBasePath;
+            }
 			s_showOpenFileDialogCallback = callback;
 			Application.OpenFileDialog(OpenFileDialogKey, title, filter, isMultiselect, startingDir);
 		}
@@ -348,7 +351,11 @@ namespace Wanderer.App
 		{
             if (!s_showCloseFileDialog)
             {
-                Application.OpenFileDialog(OpenFileDialogKey, title, filter, isMultiselect, startingDir);
+				if (string.IsNullOrEmpty(startingDir))
+				{
+					startingDir = Application.UserBasePath;
+				}
+				Application.OpenFileDialog(OpenFileDialogKey, title, filter, isMultiselect, startingDir);
                 s_showCloseFileDialog = true;
 			}
             if (s_showCloseFileDialog)
@@ -403,11 +410,11 @@ namespace Wanderer.App
                     {
                         if (ImGui.MenuItem("Open Folder"))
                         {
-                            var folders = StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
-                            if (folders != null && folders.Length > 0)
-                            {
-                                //OnOpenFolder.Dispatch(folders[0]);
-                            }
+                            //var folders = StandaloneFileBrowser.OpenFolderPanel("Open Folder", "", false);
+                            //if (folders != null && folders.Length > 0)
+                            //{
+                            //    //OnOpenFolder.Dispatch(folders[0]);
+                            //}
                         }
 
                         if (ImGui.MenuItem("Clone"))
@@ -417,36 +424,38 @@ namespace Wanderer.App
 
                         if (ImGui.MenuItem("Open Repository"))
                         {
-                            //mainModel.CreateTab<GitRepoWindow>();
-                            StandaloneFileBrowser.OpenFolderPanelAsync("Open Repository", "", false, (folders) => {
-                                if (folders != null && folders.Length > 0)
+							AppContextView.OpenFileDialog((result) => {
+                                string gitPath = result;
+                                if (string.IsNullOrEmpty(gitPath))
                                 {
-                                    string gitPath = Path.Combine(folders[0], ".git");
-                                    Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", gitPath);
-                                    if (Directory.Exists(gitPath))
-                                    {
-                                        //OnOpenRepository?.Invoke(gitPath);
-                                        dispatcher.Dispatch(AppEvent.ShowGitRepo, gitPath);
-                                    }
+                                    return;
                                 }
-                            });
-
+                                if (!gitPath.EndsWith(".git"))
+                                {
+									gitPath = Path.Combine(gitPath, ".git");
+								}
+								Log.Info("OpenFileDialog.OpenFolderPanel: {0}", gitPath);
+								if (Directory.Exists(gitPath))
+								{
+									dispatcher.Dispatch(AppEvent.ShowGitRepo, gitPath);
+								}
+							}, "Open Repository", "", false, "");
                         }
 
                         if (ImGui.MenuItem("Search Repository"))
                         {
-                            //mainModel.CreateTab<GitRepoWindow>();
-                            StandaloneFileBrowser.OpenFolderPanelAsync("Search Repository", "", false, (folders) => {
-                                if (folders != null && folders.Length > 0)
-                                {
-                                    string searchDirPath = folders[0];
-                                    Log.Info("StandaloneFileBrowser.OpenFolderPanel: {0}", searchDirPath);
-                                    if (Directory.Exists(searchDirPath))
-                                    {
-                                        OnSearchRepository(searchDirPath);
-                                    }
-                                }
-                            });
+							AppContextView.OpenFileDialog((result) => {
+								string searchDirPath = result;
+								if (string.IsNullOrEmpty(searchDirPath))
+								{
+									return;
+								}
+								Log.Info("OpenFileDialog.OpenFolderPanel: {0}", searchDirPath);
+								if (Directory.Exists(searchDirPath))
+								{
+									OnSearchRepository(searchDirPath);
+								}
+							}, "Search Repository", "", false, "");
                         }
                         ImGui.EndMenu();
                     }
@@ -533,6 +542,14 @@ namespace Wanderer.App
                                 Log.Info("OpenFileDialog {0}", result);
                             }, "Open a texture", "Image file (*.png;*.jpg;*.jpeg;*.bmp;*.tga){.png,.jpg,.jpeg,.bmp,.tga},.*", false, "");
 						}
+
+						if (ImGui.MenuItem("Folder Dialog"))
+						{
+							AppContextView.OpenFileDialog((result) => {
+								Log.Info("OpenFileDialog {0}", result);
+							}, "Open a folder", "", false, "");
+						}
+
 						ImGui.EndMenu();
                     }
 

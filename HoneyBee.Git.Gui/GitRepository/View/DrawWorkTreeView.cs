@@ -187,8 +187,8 @@ namespace Wanderer
             {
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected : m_nodeDefaultFlags;
 
-                var folderIconPos =ImGui.GetWindowPos()+ ImGui.GetCursorPos()+new Vector2(ImGui.GetTextLineHeight(),-ImGui.GetScrollY() + Application.FontOffset);
-                var folderIconPosMax = folderIconPos + new Vector2(ImGui.GetTextLineHeight()*2, ImGui.GetTextLineHeight());
+                var folderIconPos =ImGui.GetWindowPos()+ ImGui.GetCursorPos()+new Vector2(ImGui.GetTextLineHeight()*1.5f,-ImGui.GetScrollY() + Application.FontOffset);
+                var folderIconPosMax = folderIconPos + Application.IconSize;
 
                 node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
                 if (ImGui.IsItemClicked())
@@ -301,7 +301,7 @@ namespace Wanderer
 
                 var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags| ImGuiTreeNodeFlags.Leaf;
 
-                if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
+                if (ImGui.TreeNodeEx($"\t{node.Name}", nodeFlag))
                 {
                    
 
