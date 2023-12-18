@@ -45,8 +45,8 @@ namespace Wanderer.GitRepository.View
         private string[] m_localBranchs=new string[0];
         private int m_selectLocalBranch;
         private string m_searchCommit = "";
-
-        public DrawCommitHistoryView(GitRepo gitRepo)
+		public override string Name => "Commit History";
+		public DrawCommitHistoryView(GitRepo gitRepo)
         {
             m_contentSplitView = new SplitView(SplitView.SplitType.Vertical);
             m_selectCommitDiffSpliteView = new SplitView(SplitView.SplitType.Horizontal);

@@ -38,8 +38,8 @@ namespace Wanderer
         private List<StatusEntryTreeViewNode> m_unstageMultipleSelectionNodes =new List<StatusEntryTreeViewNode>();
 
         public Action<string> OnEditorText;
-
-        public DrawWorkSpaceView(GitRepo gitRepo)
+		public override string Name => "Work Space";
+		public DrawWorkSpaceView(GitRepo gitRepo)
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;

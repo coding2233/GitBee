@@ -20,6 +20,7 @@ namespace Wanderer
 { 
 	public class DrawSubView : strange.extensions.mediation.impl.View
 	{
+        public virtual string Name { get; }
 		public virtual void OnDraw()
 		{ }
 	}
@@ -51,7 +52,7 @@ namespace Wanderer.GitRepository.View
   //      private DrawWorkTreeView m_workTreeView;
   //      private DrawWorkSpaceView m_workSpaceView;
 		//private DrawCommitHistoryView m_commitHistoryView;
-        private Dictionary<DrawSubView, string> m_submoduleViewMap;
+        private List<DrawSubView> m_submoduleViewList;
 		private DrawSubView m_submoduleSelectView;
 		#endregion
 
@@ -78,10 +79,7 @@ namespace Wanderer.GitRepository.View
 			var workSpaceView = AppContextView.AddView<DrawWorkSpaceView>(m_gitRepo);
             var commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
 
-            m_submoduleViewMap = new Dictionary<DrawSubView, string>();
-            m_submoduleViewMap.Add(workTreeView,"Work Tree");
-            m_submoduleViewMap.Add(workSpaceView, "Work Space");
-            m_submoduleViewMap.Add(commitHistoryView, "Commit History");
+            m_submoduleViewList = new List<DrawSubView>() { workTreeView , workSpaceView, commitHistoryView };
             m_submoduleSelectView = workSpaceView;
 		}
 
@@ -107,9 +105,9 @@ namespace Wanderer.GitRepository.View
         {
             m_submoduleSelectView = null;
 
-			if (m_submoduleViewMap != null)
+			if (m_submoduleViewList != null)
             {
-                foreach (var item in m_submoduleViewMap.Keys)
+                foreach (var item in m_submoduleViewList)
                 {
                     if (item == null)
                     {
@@ -117,8 +115,8 @@ namespace Wanderer.GitRepository.View
                     }
 					AppContextView.RemoveView(item);
 				}
-                m_submoduleViewMap.Clear();
-                m_submoduleViewMap = null;
+				m_submoduleViewList.Clear();
+				m_submoduleViewList = null;
 			}
 
             m_gitRepo?.Dispose();
@@ -240,19 +238,19 @@ namespace Wanderer.GitRepository.View
         {
             DrawTreeNodeHead("Workspace", () => {
 				DrawSubView submoduleSelectView = m_submoduleSelectView;
-				foreach (var item in m_submoduleViewMap)
+				foreach (var item in m_submoduleViewList)
                 {
-					if (ImGui.RadioButton(item.Value,m_submoduleSelectView == item.Key))
+					if (ImGui.RadioButton(item.Name,m_submoduleSelectView == item))
 					{
-						submoduleSelectView = item.Key;
+						submoduleSelectView = item;
 					}
 				}
 
                 if (submoduleSelectView != m_submoduleSelectView)
                 {
-                    foreach (var item in m_submoduleViewMap.Keys)
+                    foreach (var item in m_submoduleViewList)
                     {
-                        if (item != submoduleSelectView)
+                        if (item != null && item != submoduleSelectView)
                         {
                             item.OnDisable();
 						}
