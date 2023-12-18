@@ -151,27 +151,24 @@ namespace Wanderer.App
 
         public IntPtr OnImGuiInit()
         {
-            var context = ImGui.CreateContext();
+			var context = ImGui.CreateContext();
+			try
+			{
+				string iniFilePath = Path.Combine(Application.TempDataPath, "imgui.ini");
+				fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
+				{
+					ImGui.GetIO().NativePtr->IniFilename = iniFileName;
+				}
+				//string logFilePath = Path.Combine(Application.TempDataPath, "log.ini");
+				//fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
+				//{
+				//    ImGui.GetIO().NativePtr->LogFilename = logFileName;
+				//}
 
-            //string iniFilePath = Path.Combine(Application.TempDataPath, "imgui.ini");
-            //fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
-            //{
-            //    ImGui.GetIO().NativePtr->IniFilename = iniFileName;
-            //}
-
-            //string logFilePath = Path.Combine(Application.TempDataPath, "log.ini");
-            //fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
-            //{
-            //    ImGui.GetIO().NativePtr->LogFilename = logFileName;
-            //}
-
-            //io->ImeWindowHandle = ofGetWin32Window();
-            ////Load default font.
-            //var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();
-
-            try
-            {
-                var deserializer = new DeserializerBuilder()
+				//io->ImeWindowHandle = ofGetWin32Window();
+				////Load default font.
+				//var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();
+				var deserializer = new DeserializerBuilder()
                .WithNamingConvention(UnderscoredNamingConvention.Instance)
                .Build();
                 string styleYmlText = File.ReadAllText("Configs/style.yml");
