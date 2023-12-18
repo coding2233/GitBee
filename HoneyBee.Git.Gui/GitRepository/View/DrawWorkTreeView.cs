@@ -41,7 +41,7 @@ namespace Wanderer
 
         private ImGuiTreeNodeFlags m_nodeDefaultFlags;
 
-		private List<FileTreeNode> m_fileTreeNodes = new List<FileTreeNode>();
+		private List<FileTreeNode> m_fileTreeNodes;
 
 		public override string Name => "Work Tree";
 		public DrawWorkTreeView(GitRepo gitRepo)
@@ -54,7 +54,10 @@ namespace Wanderer
         {
             base.OnEnable();
 
-			m_fileTreeNodes = GetFileTreeNodes(".");
+			if (m_fileTreeNodes == null)
+			{
+				m_fileTreeNodes = GetFileTreeNodes(".");
+			}
         }
 
 		List<FileTreeNode> GetFileTreeNodes(string path)
@@ -63,26 +66,29 @@ namespace Wanderer
 			var dirs = Directory.GetDirectories(path);
 			foreach ( var dir in dirs) 
 			{
-				if (dir.EndsWith(".git"))
+				string dirPath = dir.Replace("\\", "/").Replace("./", "");
+				if (dirPath.Equals(".git"))
 				{
 					continue;
 				}
-				if (m_gitRepo.Repo.Ignore.IsPathIgnored(dir))
+
+				if (m_gitRepo.Repo.Ignore.IsPathIgnored(dirPath))
 				{
 					continue;
 				}
-				var dirFileTreeNode = new FileTreeNode(dir, false);
-				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir));
+				var dirFileTreeNode = new FileTreeNode(dirPath, false);
+				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dirPath));
 				fileTreeNodes.Add(dirFileTreeNode);
 			}
 			var files = Directory.GetFiles(path);
 			foreach (var file in files)
 			{
-				if (m_gitRepo.Repo.Ignore.IsPathIgnored(file))
+				string filePath = file.Replace("\\", "/").Replace("./", "");
+				if (m_gitRepo.Repo.Ignore.IsPathIgnored(filePath))
 				{
 					continue;
 				}
-				fileTreeNodes.Add(new FileTreeNode(file));
+				fileTreeNodes.Add(new FileTreeNode(filePath));
 			}
 			return fileTreeNodes;
 		}
@@ -121,6 +127,7 @@ namespace Wanderer
 				{
 					
 				}
+				
 
 				//文件夹图标
 				//var folderGLTexture =  Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
@@ -155,13 +162,7 @@ namespace Wanderer
 				}
 
 
-				if (ImGui.BeginPopupContextItem())
-				{
-					if (ImGui.MenuItem("Edit"))
-					{
-					}
-					ImGui.EndPopup();
-				}
+				
 
 
 				//文件图标
@@ -188,6 +189,23 @@ namespace Wanderer
 
 			}
 
+			if (ImGui.BeginPopupContextItem(node.FullName))
+			{
+				//if (ImGui.MenuItem("Edit"))
+				//{
+				//}
+
+				if (ImGui.MenuItem("Copy Path"))
+				{
+					ImGui.SetClipboardText(node.FullName);
+					//Application.SetClipboard(branchNode.FullName);
+				}
+				if (ImGui.MenuItem("Open"))
+				{
+                    System.Diagnostics.Process.Start("Explorer", node.FullName.Replace("/", "\\"));
+				}
+				ImGui.EndPopup();
+			}
 		}
     }
 

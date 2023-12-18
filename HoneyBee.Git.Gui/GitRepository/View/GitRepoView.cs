@@ -473,7 +473,7 @@ namespace Wanderer.GitRepository.View
 
                 if (ImGui.MenuItem("Copy Branch Name"))
                 {
-                    Application.SetClipboard(branchNode.FullName);
+					Application.SetClipboard(branchNode.FullName);
                 }
                 ImGui.Separator();
                 ImGui.Text("More...");
