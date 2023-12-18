@@ -29,7 +29,6 @@ namespace Wanderer.Common
         private static GLTexture s_folderDefaultIcon;
         private static GLTexture s_fileDefaultIcon;
         private static Dictionary<string, GLTexture> s_iconFileGLTextures = new Dictionary<string, GLTexture>();
-        private static Dictionary<string, GLTexture> s_iconFolderGLTextures = new Dictionary<string, GLTexture>();
 
 		private static string m_dataPath;
         private static string m_userPath;
@@ -306,16 +305,7 @@ namespace Wanderer.Common
 					bool isDirectoryExists = Directory.Exists(filePath);
                     if (isDirectoryExists)
                     {
-                        if (!s_iconFolderGLTextures.TryGetValue(filePath, out glTexture))
-                        {
-							glTexture = new GLTexture();
-							glTexture.Size = IconSize;
-							glTexture.Image = ImFileDialogIcon(filePath);
-                            if (glTexture.Image != IntPtr.Zero)
-                            {
-                                s_iconFolderGLTextures.Add(filePath, glTexture);
-                            }
-						}
+                        glTexture = GetDefaultIcon(false);
 					}
 					else
                     {
