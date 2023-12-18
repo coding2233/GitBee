@@ -21,8 +21,8 @@ using Wanderer.GitRepository.Common;
 
 namespace Wanderer.GitRepository.View
 {
-    internal class DrawCommitHistoryView: strange.extensions.mediation.impl.View
-    {
+    internal class DrawCommitHistoryView: DrawSubView
+	{
         private GitRepo m_gitRepo;
         private int m_commitAddInterval = 20;
         private int m_commitViewIndex = 0;
@@ -65,7 +65,7 @@ namespace Wanderer.GitRepository.View
         }
 
 
-        public void Draw()
+        public override void OnDraw()
         {
             m_contentSplitView.Begin();
             DrawHistoryCommits();

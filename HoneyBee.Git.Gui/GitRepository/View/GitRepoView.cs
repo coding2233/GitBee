@@ -16,16 +16,25 @@ using Wanderer.App.Service;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
+namespace Wanderer
+{ 
+	public class DrawSubView : strange.extensions.mediation.impl.View
+	{
+		public virtual void OnDraw()
+		{ }
+	}
+}
+
 namespace Wanderer.GitRepository.View
 {
-    public class GitRepoView : ImGuiTabView
+	public class GitRepoView : ImGuiTabView
     {
         public override string Name => m_gitRepo == null ? base.Name : m_gitRepo.Name;
 
         public override string UniqueKey => m_repoPath;
 
         private GitRepo m_gitRepo;
-        private WorkSpaceRadio m_workSpaceRadio;
+        //private WorkSpaceRadio m_workSpaceRadio;
 
         private SplitView m_splitView = new SplitView(SplitView.SplitType.Horizontal, 200);
 
@@ -39,17 +48,17 @@ namespace Wanderer.GitRepository.View
         public IDatabaseService database { get; set; }
 
         #region 子模块
-        private DrawWorkTreeView m_workTreeView;
-        private DrawCommitHistoryView m_commitHistoryView;
-        #endregion
+  //      private DrawWorkTreeView m_workTreeView;
+  //      private DrawWorkSpaceView m_workSpaceView;
+		//private DrawCommitHistoryView m_commitHistoryView;
+        private Dictionary<DrawSubView, string> m_submoduleViewMap;
+		private DrawSubView m_submoduleSelectView;
+		#endregion
 
-        public Action<string> OnTextEditor;
+		public Action<string> OnTextEditor;
 
         public GitRepoView(string repoPath) 
         {
-      
-            m_workSpaceRadio = WorkSpaceRadio.WorkTree;
-            
             m_repoPath = repoPath;
             //m_gitRepoMediator = mediator as GitRepoMediator;
 
@@ -64,9 +73,17 @@ namespace Wanderer.GitRepository.View
             _toolItems.Add("Explorer", Icon.Material_folder_open);
 
             m_gitRepo = new GitRepo(m_repoPath);
-            m_workTreeView = AppContextView.AddView<DrawWorkTreeView>(m_gitRepo);
-            m_commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
-        }
+
+			var workTreeView = AppContextView.AddView<DrawWorkTreeView>(m_gitRepo);
+			var workSpaceView = AppContextView.AddView<DrawWorkSpaceView>(m_gitRepo);
+            var commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
+
+            m_submoduleViewMap = new Dictionary<DrawSubView, string>();
+            m_submoduleViewMap.Add(workTreeView,"Work Tree");
+            m_submoduleViewMap.Add(workSpaceView, "Work Space");
+            m_submoduleViewMap.Add(commitHistoryView, "Commit History");
+            m_submoduleSelectView = workSpaceView;
+		}
 
         //public void SetGitRepoPath(string repoPath)
         //{
@@ -88,11 +105,21 @@ namespace Wanderer.GitRepository.View
 
         protected override void OnDestroy()
         {
-            AppContextView.RemoveView(m_commitHistoryView);
-            AppContextView.RemoveView(m_workTreeView);
+            m_submoduleSelectView = null;
 
-            m_commitHistoryView = null;
-            m_workTreeView = null;
+			if (m_submoduleViewMap != null)
+            {
+                foreach (var item in m_submoduleViewMap.Keys)
+                {
+                    if (item == null)
+                    {
+                        continue;
+                    }
+					AppContextView.RemoveView(item);
+				}
+                m_submoduleViewMap.Clear();
+                m_submoduleViewMap = null;
+			}
 
             m_gitRepo?.Dispose();
             m_gitRepo = null;
@@ -105,21 +132,22 @@ namespace Wanderer.GitRepository.View
             Directory.SetCurrentDirectory(m_gitRepo.RootPath);
             CreateGitRepo();
 
-            if (m_workSpaceRadio == WorkSpaceRadio.WorkTree)
+            if (m_submoduleSelectView != null)
             {
-                if (m_workTreeView != null)
-                {
-                    m_workTreeView.UpdateStatus();
-                }
-            }
+                m_submoduleSelectView.OnEnable();
+			}
         }
 
 
         public override void OnDisable()
         {
-            //m_gitRepo?.Dispose();
-            //m_gitRepo = null;
-            base.OnDisable();
+			//m_gitRepo?.Dispose();
+			//m_gitRepo = null;
+			if (m_submoduleSelectView != null)
+			{
+				m_submoduleSelectView.OnDisable();
+			}
+			base.OnDisable();
         }
 
         public override void OnDraw()
@@ -211,27 +239,28 @@ namespace Wanderer.GitRepository.View
         private void OnRepoKeysDraw()
         {
             DrawTreeNodeHead("Workspace", () => {
-                if (ImGui.RadioButton("Work Tree", m_workSpaceRadio == WorkSpaceRadio.WorkTree))
+				DrawSubView submoduleSelectView = m_submoduleSelectView;
+				foreach (var item in m_submoduleViewMap)
                 {
-                    m_workSpaceRadio = WorkSpaceRadio.WorkTree;
+					if (ImGui.RadioButton(item.Value,m_submoduleSelectView == item.Key))
+					{
+						submoduleSelectView = item.Key;
+					}
+				}
 
-                    m_commitHistoryView.OnDisable();
-                    m_workTreeView.OnEnable();
-                    //if (m_workTreeView != null)
-                    //{
-                    //    m_workTreeView.UpdateStatus();
-                    //}
-                    //_git.Status();
-                }
-
-                if (ImGui.RadioButton("Commit History", m_workSpaceRadio == WorkSpaceRadio.CommitHistory))
+                if (submoduleSelectView != m_submoduleSelectView)
                 {
-                    m_workSpaceRadio = WorkSpaceRadio.CommitHistory;
-
-                    m_workTreeView.OnDisable();
-                    m_commitHistoryView.OnEnable();
-                }
-            });
+                    foreach (var item in m_submoduleViewMap.Keys)
+                    {
+                        if (item != submoduleSelectView)
+                        {
+                            item.OnDisable();
+						}
+                    }
+					m_submoduleSelectView = submoduleSelectView;
+					m_submoduleSelectView.OnEnable();
+				}
+			});
 
             DrawTreeNodeHead("Branch", () => {
                 foreach (var item in m_gitRepo.LocalBranchNodes)
@@ -282,34 +311,12 @@ namespace Wanderer.GitRepository.View
 
         private void OnRepoContentDraw()
         {
-            if (m_workSpaceRadio == WorkSpaceRadio.CommitHistory)
+            if (m_submoduleSelectView != null)
             {
-                OnDrawCommitHistory();
-            }
-            else
-            {
-                OnDrawWorkTree();
-            }
+                m_submoduleSelectView.OnDraw();
+
+			}
         }
-
-        private void OnDrawWorkTree()
-        {
-            if (m_workTreeView != null)
-            {
-                m_workTreeView.Draw();
-            }
-        }
-
-    
-
-        private void OnDrawCommitHistory()
-        {
-            if (m_commitHistoryView != null)
-            {
-                m_commitHistoryView.Draw();
-            }
-        }
-
 
         private void DrawTreeNodeHead(string name, Action onDraw)
         {
@@ -730,8 +737,9 @@ namespace Wanderer.GitRepository.View
 
         private enum WorkSpaceRadio
         {
-            WorkTree,
-            CommitHistory,
+			WorkTree,
+			WorkSpace,
+			CommitHistory,
         }
     }
 }

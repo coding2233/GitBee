@@ -35,6 +35,11 @@ namespace Wanderer.GitRepository.Common
                 m_showDiff = null;
             }
 
+            if (patchEntryChanges == null || gitRepo==null)
+            {
+                return;
+            }
+
             //查找合适的
             foreach (var item in m_showDiffs)
             {
@@ -368,7 +373,7 @@ namespace Wanderer.GitRepository.Common
 
         public bool Build(PatchEntryChanges patchEntryChanges, GitRepo gitRepo)
         {
-            if (patchEntryChanges.Status == ChangeKind.Conflicted)
+            if (patchEntryChanges!=null && patchEntryChanges.Status == ChangeKind.Conflicted)
             {
                 m_content = patchEntryChanges.Patch;
                 if (!patchEntryChanges.IsBinaryComparison)
