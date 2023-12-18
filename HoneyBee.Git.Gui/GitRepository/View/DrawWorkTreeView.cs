@@ -7,14 +7,31 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Reflection;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
-using static System.Net.WebRequestMethods;
 
 namespace Wanderer
 {
+	public class FileTreeNode
+	{
+		public string FullName { get; private set; }
+		public string Name { get; private set; }
+		public bool NodeOpened { get; set; }
+		public bool IsFile { get; private set; }
+		public List<FileTreeNode> Children { get; private set; }
+		public FileTreeNode(string path, bool isFile = true)
+		{
+			FullName = path.Replace("\\","/");
+			Name = Path.GetFileName(path);
+			NodeOpened = false;
+			IsFile = isFile;
+			Children = new List<FileTreeNode>();
+		}
+	}
+
     public class DrawWorkTreeView: DrawSubView
 	{
         private SplitView m_horizontalSplitView = new SplitView(SplitView.SplitType.Horizontal);
@@ -24,127 +41,154 @@ namespace Wanderer
 
         private ImGuiTreeNodeFlags m_nodeDefaultFlags;
 
-        private List<StatusEntryTreeViewNode> m_stageTreeView=new List<StatusEntryTreeViewNode>();
+		private List<FileTreeNode> m_fileTreeNodes = new List<FileTreeNode>();
 
 		public override string Name => "Work Tree";
 		public DrawWorkTreeView(GitRepo gitRepo)
         {
-            m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.FramePadding;
+            m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;
-            UpdateStatus();
         }
 
         public override void OnEnable()
         {
             base.OnEnable();
 
-            UpdateStatus();
+			m_fileTreeNodes = GetFileTreeNodes(".");
         }
 
-        public override void OnDraw()
+		List<FileTreeNode> GetFileTreeNodes(string path)
+		{
+			List<FileTreeNode> fileTreeNodes = new List<FileTreeNode>();
+			var dirs = Directory.GetDirectories(path);
+			foreach ( var dir in dirs) 
+			{
+				if (dir.EndsWith(".git"))
+				{
+					continue;
+				}
+				if (m_gitRepo.Repo.Ignore.IsPathIgnored(dir))
+				{
+					continue;
+				}
+				var dirFileTreeNode = new FileTreeNode(dir, false);
+				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir));
+				fileTreeNodes.Add(dirFileTreeNode);
+			}
+			var files = Directory.GetFiles(path);
+			foreach (var file in files)
+			{
+				if (m_gitRepo.Repo.Ignore.IsPathIgnored(file))
+				{
+					continue;
+				}
+				fileTreeNodes.Add(new FileTreeNode(file));
+			}
+			return fileTreeNodes;
+		}
+
+		public override void OnDraw()
         {
-            ImGui.BeginChild("WorkTreeView_Content", ImGui.GetWindowSize() - new Vector2(0, 100));
-           
-            ImGui.EndChild();
+            ImGui.BeginChild("WorkTreeView_Content", ImGui.GetWindowSize() - new Vector2(0, 0));
+			m_horizontalSplitView.Begin();
+			if (m_fileTreeNodes != null)
+			{
+				foreach (var item in m_fileTreeNodes)
+				{
+					DrawStatusEntryTreeNode(item);
+				}
+			}
+			m_horizontalSplitView.Separate();
+			m_horizontalSplitView.End();
+			ImGui.EndChild();
         }
 
-        internal void UpdateStatus()
-        {
-            try
-            {
-                RepositoryStatus statuses = null;
-                if (m_gitRepo != null && m_gitRepo.Repo != null)
-                {
-					statuses = m_gitRepo.Repo.RetrieveStatus();
-                }
+     
+		private void DrawStatusEntryTreeNode(FileTreeNode node)
+		{
 
-                m_stageTreeView.Clear();
-              
+			bool selected = false;
 
-                if (statuses == null)
-                {
-                    return;
-                }
-        
-                foreach (var item in statuses)
-                {
-                    if (item.State == FileStatus.Ignored)
-                    {
-                        continue;
-                    }
+			if (node.Children != null && node.Children.Count > 0)
+			{
+				var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected : m_nodeDefaultFlags;
 
-                    //FileStatus.xxxxInIndex index ~= stage
-                    if (CheckFileStatus(item.State, FileStatus.NewInIndex) || CheckFileStatus(item.State, FileStatus.ModifiedInIndex)
-                        || CheckFileStatus(item.State, FileStatus.RenamedInIndex) || CheckFileStatus(item.State, FileStatus.TypeChangeInIndex)
-                        || CheckFileStatus(item.State, FileStatus.DeletedFromIndex))
-                    {
-                        StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                    }
-                    else
-                    {
-                    }
-                }
+				var folderIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight() * 1.5f, -ImGui.GetScrollY() + Application.FontOffset);
+				var folderIconPosMax = folderIconPos + Application.IconSize;
 
-                //foreach (var item in m_stageTreeView)
-                //{
-                //    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes, item);
-                //}
+				node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
+				if (ImGui.IsItemClicked())
+				{
+					
+				}
 
-                //foreach (var item in m_unstageTreeView)
-                //{
-                //    BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
-                //}
+				//文件夹图标
+				//var folderGLTexture =  Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
+				var folderGLTexture = Application.GetFileIcon(node.FullName, false);
+				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
 
-                
-            }
-            catch (Exception e)
-            {
-                Log.Warn("DrawWorkTreeView exception: {0}",e);
-            }
-        }
+				if (node.NodeOpened)
+				{
+					foreach (var item in node.Children)
+					{
+						DrawStatusEntryTreeNode(item);
+					}
+					ImGui.TreePop();
+				}
+			}
+			else
+			{
+			
+				uint popTextColor = ImGui.GetColorU32(ImGuiCol.Text);
+				ImGui.PushStyleColor(ImGuiCol.Text, popTextColor);
 
-        private bool CheckFileStatus(FileStatus fileStatus, FileStatus checkStatus)
-        {
-            return (fileStatus & checkStatus) == checkStatus;
-        }
+				var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
+				var fileIconPosMax = fileIconPos + Application.IconSize;
 
-        private void BuildMultipleSelectionNodes(List<StatusEntryTreeViewNode> nodes, StatusEntryTreeViewNode node)
-        {
-            nodes.Add(node);
-            if (node.Children != null && node.Children.Count > 0)
-            {
-                foreach (var item in node.Children)
-                {
-                    BuildMultipleSelectionNodes(nodes, item);
-                }
-            }
-        }
+				var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags | ImGuiTreeNodeFlags.Leaf;
+
+				if (ImGui.TreeNodeEx($"\t{node.Name}", nodeFlag))
+				{
 
 
-        //节点转路径
-        private HashSet<string> TreeNodesToPaths(IEnumerable<StatusEntryTreeViewNode> nodes)
-        {
-            HashSet<string> filePaths = new HashSet<string>();
-            foreach (var item in nodes)
-            {
-                if (item.Data != null)
-                {
-                    filePaths.Add(item.Data.FilePath);
-                }
-                else
-                {
-                    if (item.Children != null && item.Children.Count > 0)
-                    {
-                        var childFilePaths = TreeNodesToPaths(item.Children);
-                        foreach (var childFilePath in childFilePaths)
-                        {
-                            filePaths.Add(childFilePath);
-                        }
-                    }
-                }
-            }
-            return filePaths;
-        }
+					ImGui.TreePop();
+				}
+
+
+				if (ImGui.BeginPopupContextItem())
+				{
+					if (ImGui.MenuItem("Edit"))
+					{
+					}
+					ImGui.EndPopup();
+				}
+
+
+				//文件图标
+				//node.Name
+				GLTexture fileIcon = Application.GetFileIcon(node.FullName);
+				//Application.LoadTextureFromFile($"Resources/icons/default_file.png")
+				ImGui.GetWindowDrawList().AddImage(fileIcon.Image, fileIconPos, fileIconPosMax);
+				//var statusIconPos = fileIconPosMax;
+				//statusIconPos.Y = fileIconPos.Y;
+				//var statusIconPosMax = statusIconPos + Vector2.One * ImGui.GetTextLineHeight();
+				//ImGui.GetWindowDrawList().AddImage(LuaPlugin.GetIcon(statusIcon).Image, statusIconPos, statusIconPosMax);
+
+
+				ImGui.PopStyleColor();
+
+				if (ImGui.IsItemHovered())
+				{
+				}
+
+				if (ImGui.IsItemClicked())
+				{
+					
+				}
+
+			}
+
+		}
     }
 
    

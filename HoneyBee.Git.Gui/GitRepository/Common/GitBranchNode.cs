@@ -139,43 +139,44 @@ namespace Wanderer.GitRepository.Common
         public override bool NodeOpened { get; set; } = true;
     }
 
-    //public class GitBranchNode
-    //{
-    //    public string Name { get; set; }
-    //    public string FullName { get; set; }
-    //    public Branch Branch { get; set; }
-    //    public List<GitBranchNode> Children { get; set; }
-    //    public int BehindBy { get; set; }
-    //    public int AheadBy { get; set; }
 
-    //    public void UpdateByIndex()
-    //    {
-    //        AheadBy = 0;
-    //        BehindBy = 0;
-    //        if (Children != null)
-    //        {
-    //            foreach (var item in Children)
-    //            {
-    //                item.UpdateByIndex();
-    //                AheadBy += item.AheadBy;
-    //                BehindBy += item.BehindBy;
-    //            }
-    //        }
-    //        if (Branch != null && Branch.IsTracking)
-    //        {
-    //            var trackingDetails = Branch.TrackingDetails;
-    //            if (trackingDetails != null)
-    //            {
-    //                if (trackingDetails.BehindBy != null)
-    //                {
-    //                    BehindBy += (int)trackingDetails.BehindBy;
-    //                }
-    //                if (trackingDetails.AheadBy != null)
-    //                {
-    //                    AheadBy += (int)trackingDetails.AheadBy;
-    //                }
-    //            }
-    //        }
-    //    }
-    //}
+	//public class GitBranchNode
+	//{
+	//    public string Name { get; set; }
+	//    public string FullName { get; set; }
+	//    public Branch Branch { get; set; }
+	//    public List<GitBranchNode> Children { get; set; }
+	//    public int BehindBy { get; set; }
+	//    public int AheadBy { get; set; }
+
+	//    public void UpdateByIndex()
+	//    {
+	//        AheadBy = 0;
+	//        BehindBy = 0;
+	//        if (Children != null)
+	//        {
+	//            foreach (var item in Children)
+	//            {
+	//                item.UpdateByIndex();
+	//                AheadBy += item.AheadBy;
+	//                BehindBy += item.BehindBy;
+	//            }
+	//        }
+	//        if (Branch != null && Branch.IsTracking)
+	//        {
+	//            var trackingDetails = Branch.TrackingDetails;
+	//            if (trackingDetails != null)
+	//            {
+	//                if (trackingDetails.BehindBy != null)
+	//                {
+	//                    BehindBy += (int)trackingDetails.BehindBy;
+	//                }
+	//                if (trackingDetails.AheadBy != null)
+	//                {
+	//                    AheadBy += (int)trackingDetails.AheadBy;
+	//                }
+	//            }
+	//        }
+	//    }
+	//}
 }
