@@ -28,6 +28,8 @@ namespace Wanderer.Common
         private static Dictionary<string, string> s_networkGLTextures = new Dictionary<string, string>();
         private static GLTexture s_folderDefaultIcon;
         private static GLTexture s_fileDefaultIcon;
+        private static Dictionary<string, GLTexture> s_iconFileGLTextures = new Dictionary<string, GLTexture>();
+        private static Dictionary<string, GLTexture> s_iconFolderGLTextures = new Dictionary<string, GLTexture>();
 
 		private static string m_dataPath;
         private static string m_userPath;
@@ -292,17 +294,59 @@ namespace Wanderer.Common
 		private extern static IntPtr ImFileDialogIcon(string file_path);
         internal static GLTexture GetFileIcon(string filePath,bool isFileDefault = true)
         {
-            GLTexture glTexture = new GLTexture();
-            try
-            {
-                //if (!string.IsNullOrEmpty(filePath))
+            GLTexture glTexture = default(GLTexture);
+			try
+			{
+				if (string.IsNullOrEmpty(filePath))
                 {
-					glTexture.Image = ImFileDialogIcon(filePath);
-                    if (glTexture.Image == IntPtr.Zero)
+					glTexture = GetDefaultIcon(isFileDefault);
+                }
+                else
+                {
+					bool isDirectoryExists = Directory.Exists(filePath);
+                    if (isDirectoryExists)
+                    {
+                        if (!s_iconFolderGLTextures.TryGetValue(filePath, out glTexture))
+                        {
+							glTexture = new GLTexture();
+							glTexture.Size = IconSize;
+							glTexture.Image = ImFileDialogIcon(filePath);
+                            if (glTexture.Image != IntPtr.Zero)
+                            {
+                                s_iconFolderGLTextures.Add(filePath, glTexture);
+                            }
+						}
+					}
+					else
+                    {
+                        var extension = Path.GetExtension(filePath);
+                        if (!string.IsNullOrEmpty(extension))
+                        {
+						    if (!s_iconFileGLTextures.TryGetValue(extension,out glTexture))
+						    {
+								bool isFileExists = File.Exists(filePath);
+                                if (isFileExists)
+                                {
+									glTexture = new GLTexture();
+									glTexture.Size = IconSize;
+									glTexture.Image = ImFileDialogIcon(filePath);
+                                    if (glTexture.Image != IntPtr.Zero)
+                                    {
+                                        s_iconFileGLTextures.Add(extension, glTexture);
+                                    }
+                                }
+                                else
+                                {
+                                    glTexture = GetDefaultIcon(true);
+								}
+						    }
+					    }
+				    }
+                   
+					if (glTexture.Image == IntPtr.Zero)
                     {
                         glTexture = GetDefaultIcon(isFileDefault);
 					}
-                    glTexture.Size = IconSize;
 				}
             }
             catch (System.Exception e)
@@ -333,7 +377,7 @@ namespace Wanderer.Common
 				{
 					s_folderDefaultIcon = new GLTexture();
 					s_folderDefaultIcon.Size = IconSize;
-					s_folderDefaultIcon.Image = ImFileDialogDefaultIcon(isFile);
+                    s_folderDefaultIcon.Image = ImFileDialogIcon(".");//ImFileDialogDefaultIcon(isFile);
 				}
 				return s_folderDefaultIcon;
 			}
