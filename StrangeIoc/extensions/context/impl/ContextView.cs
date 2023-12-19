@@ -69,14 +69,20 @@ namespace strange.extensions.context.impl
         {
             if (s_self != null)
             {
-                var context = s_self.context;
-                var view = Activator.CreateInstance(typeof(T), args) as T;
-                context.AddView(view);
-                view.OnAwake();
+                try
+                {
+                    var context = s_self.context;
+                    var view = Activator.CreateInstance(typeof(T), args) as T;
+                    context.AddView(view);
+                    view.OnAwake();
 
-                s_self.OnViewAdd(view);
-
-                return view;
+                    s_self.OnViewAdd(view);
+                    return view;
+                }
+                catch (System.Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
             }
 
             return default;

@@ -369,10 +369,12 @@ namespace Wanderer.App
             }
             return string.Empty;
 		}
-		
-		#endregion
+
+        #endregion
+
 
 	}
+
 
 
 
@@ -736,4 +738,92 @@ namespace Wanderer.App
 
     }
 
+
+
+	public class PopupImGuiView : ImGuiView
+	{
+        private const string PopupImGuiViewKey = "PopupImGuiView - {0}";
+        private bool m_popup;
+        private Action<bool> m_onCallback;
+        private string m_name;
+        private string m_title;
+		private string m_desc;
+		private string m_ok;
+        private string m_cancel;
+
+        public void Show(Action<bool> callback,string name, string title, string desc, string ok, string cancel)
+        {
+			m_popup = true;
+            m_name = string.Format(PopupImGuiViewKey, name);
+			m_title = title;
+			m_desc = desc;
+			m_onCallback = callback;
+			m_ok = ok;
+			m_cancel = cancel;
+		}
+
+		public override void OnDraw()
+		{
+            if (m_popup)
+            {
+				ImGui.OpenPopup(m_name);
+                ImGui.SetNextWindowSize(ImGui.GetWindowSize() * 0.35f, ImGuiCond.FirstUseEver);
+                if (ImGui.BeginPopupModal(m_name, ref m_popup))
+                {
+                    DrawPopupItem();
+					ImGui.EndPopup();
+                }
+
+				if (!m_popup)
+				{
+					ClosePopup(false);
+				}
+			}
+		}
+
+        private void DrawPopupItem()
+        {
+            if (!string.IsNullOrEmpty(m_title))
+            {
+                ImGui.Text(m_title);
+            }
+			if (!string.IsNullOrEmpty(m_desc))
+			{
+				ImGui.Text(m_desc);
+			}
+
+			bool showOk = false;
+            if (!string.IsNullOrEmpty(m_ok))
+            {
+				ImGui.SetNextItemWidth(100);
+                if (ImGui.Button(m_ok))
+                {
+                    ClosePopup(true);
+				}
+                showOk = true;
+			}
+
+			if (!string.IsNullOrEmpty(m_cancel))
+			{
+                if (showOk)
+                {
+                    ImGui.SameLine();
+                }
+				ImGui.SetNextItemWidth(100);
+				if (ImGui.Button(m_cancel))
+				{
+					ClosePopup(false);
+				}
+			}
+
+		}
+
+		private void ClosePopup(bool result)
+        {
+			ImGui.CloseCurrentPopup();
+			AppContextView.RemoveView(this);
+			m_onCallback?.Invoke(result);
+		}
+
+	}
 }
