@@ -60,14 +60,9 @@ namespace Wanderer.GitRepository.Common
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
             Name = Path.GetFileName(RootPath);
             m_canRunTask = true;
-            ////同步仓库信息
-            //SyncGitRepoTask();
-        }
-
-        public void Build()
-        {
 			m_repository = new Repository(RootPath);
 		}
+
 
         //更新UI状态
         public void ReBuildUIData()

@@ -20,6 +20,7 @@ namespace Wanderer
 		public string FullName { get; private set; }
 		public string Name { get; private set; }
 		public bool NodeOpened { get; set; }
+		public bool Delete { get; set; }
 		public bool IsFile { get; private set; }
 		public List<FileTreeNode> Children { get; private set; }
 		public FileTreeNode(string path, bool isFile = true)
@@ -42,23 +43,77 @@ namespace Wanderer
         private ImGuiTreeNodeFlags m_nodeDefaultFlags;
 
 		private List<FileTreeNode> m_fileTreeNodes;
+		private Dictionary<string,FileTreeNode> m_fileNodeMap;
 
 		public override string Name => "Work Tree";
+
+		private FileSystemWatcher m_fileSystemWatcher;
+
 		public DrawWorkTreeView(GitRepo gitRepo)
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;
-        }
+			m_fileNodeMap = new Dictionary<string, FileTreeNode>();
+			m_fileTreeNodes = new List<FileTreeNode>();
+			FileNodeInit();
+		}
 
-        public override void OnEnable()
+		private async void FileNodeInit()
+		{
+			string rootPath = m_gitRepo.RootPath;
+			await Task.Run(() => {
+				m_fileTreeNodes = GetFileTreeNodes(rootPath);
+			});
+
+			m_fileSystemWatcher = new FileSystemWatcher(rootPath);
+			m_fileSystemWatcher.Changed += OnFileWatcherChanged;
+		}
+
+
+
+		protected override void OnDestroy()
+		{
+            if (m_fileSystemWatcher!=null)
+            {
+				m_fileSystemWatcher.Changed -= OnFileWatcherChanged;
+				m_fileSystemWatcher.Dispose();
+				m_fileSystemWatcher = null;
+			}
+            base.OnDestroy();
+		}
+
+		public override void OnEnable()
         {
             base.OnEnable();
 
-			if (m_fileTreeNodes == null)
+			
+		}
+
+		private void OnFileWatcherChanged(object sender, FileSystemEventArgs e)
+		{
+			switch (e.ChangeType)
 			{
-				m_fileTreeNodes = GetFileTreeNodes(".");
+				case WatcherChangeTypes.Created:
+				case WatcherChangeTypes.Renamed:
+					string newPath = ToRepoPath(e.FullPath);
+					bool isFile = File.Exists(e.FullPath);
+					m_fileNodeMap.Add(newPath,new FileTreeNode(newPath, isFile));
+					break;
+				case WatcherChangeTypes.Deleted:
+					string oldPath = ToRepoPath(e.FullPath);
+					if (m_fileNodeMap.TryGetValue(oldPath, out FileTreeNode fileTreeNode))
+					{
+						fileTreeNode.Delete = true;
+						m_fileNodeMap.Remove(oldPath);
+					}
+					break;
+				case WatcherChangeTypes.All:
+				case WatcherChangeTypes.Changed:
+					break;
+				default:
+					break;
 			}
-        }
+		}
 
 		List<FileTreeNode> GetFileTreeNodes(string path)
 		{
@@ -66,7 +121,7 @@ namespace Wanderer
 			var dirs = Directory.GetDirectories(path);
 			foreach ( var dir in dirs) 
 			{
-				string dirPath = dir.Replace("\\", "/").Replace("./", "");
+				string dirPath = ToRepoPath(dir);
 				if (dirPath.Equals(".git"))
 				{
 					continue;
@@ -77,20 +132,39 @@ namespace Wanderer
 					continue;
 				}
 				var dirFileTreeNode = new FileTreeNode(dirPath, false);
-				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dirPath));
+				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir));
 				fileTreeNodes.Add(dirFileTreeNode);
+				m_fileNodeMap.Add(dirPath, dirFileTreeNode);
 			}
-			var files = Directory.GetFiles(path);
-			foreach (var file in files)
+			try
 			{
-				string filePath = file.Replace("\\", "/").Replace("./", "");
-				if (m_gitRepo.Repo.Ignore.IsPathIgnored(filePath))
+				var files = Directory.GetFiles(path);
+				foreach (var file in files)
 				{
-					continue;
+					string filePath = ToRepoPath(file);
+					if (m_gitRepo.Repo.Ignore.IsPathIgnored(filePath))
+					{
+						continue;
+					}
+					var fileNode = new FileTreeNode(filePath);
+					fileTreeNodes.Add(fileNode);
+					m_fileNodeMap.Add(filePath, fileNode);
 				}
-				fileTreeNodes.Add(new FileTreeNode(filePath));
+			}
+			catch (System.Exception e)
+			{
+				Log.Warn("GetFileTreeNodes exception: {0}",e.Message);
 			}
 			return fileTreeNodes;
+		}
+
+
+		private string ToRepoPath(string path)
+		{
+			path = path.Replace("\\", "/");
+			int rootLength = m_gitRepo.RootPath.Length + 1;
+			path = path.Substring(rootLength, path.Length - rootLength);
+			return path;
 		}
 
 		public override void OnDraw()
@@ -101,6 +175,11 @@ namespace Wanderer
 			{
 				foreach (var item in m_fileTreeNodes)
 				{
+					if (item.Delete)
+					{
+						m_fileTreeNodes.Remove(item);
+						break;
+					}
 					DrawStatusEntryTreeNode(item);
 				}
 			}
@@ -138,6 +217,11 @@ namespace Wanderer
 				{
 					foreach (var item in node.Children)
 					{
+						if (item.Delete)
+						{
+							node.Children.Remove(item);
+							break;
+						}
 						DrawStatusEntryTreeNode(item);
 					}
 					ImGui.TreePop();
@@ -149,12 +233,12 @@ namespace Wanderer
 				uint popTextColor = ImGui.GetColorU32(ImGuiCol.Text);
 				ImGui.PushStyleColor(ImGuiCol.Text, popTextColor);
 
-				var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight(), -ImGui.GetScrollY() + Application.FontOffset);
+				var fileIconPos = ImGui.GetWindowPos() + ImGui.GetCursorPos() + new Vector2(ImGui.GetTextLineHeight() * 1.5f, -ImGui.GetScrollY() + Application.FontOffset);
 				var fileIconPosMax = fileIconPos + Application.IconSize;
 
 				var nodeFlag = selected ? m_nodeDefaultFlags | ImGuiTreeNodeFlags.Selected | ImGuiTreeNodeFlags.Leaf : m_nodeDefaultFlags | ImGuiTreeNodeFlags.Leaf;
 
-				if (ImGui.TreeNodeEx($"\t{node.Name}", nodeFlag))
+				if (ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag))
 				{
 
 

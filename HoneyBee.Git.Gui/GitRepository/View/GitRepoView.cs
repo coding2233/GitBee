@@ -90,7 +90,6 @@ namespace Wanderer.GitRepository.View
 
         private void CreateGitRepo()
         {
-            m_gitRepo.Build();
 			m_gitRepo.ReBuildUIData();
             
             //m_syncDataTip = "正在同步数据";
