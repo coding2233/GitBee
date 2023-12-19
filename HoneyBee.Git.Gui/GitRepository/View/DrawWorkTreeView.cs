@@ -22,11 +22,13 @@ namespace Wanderer
 		public bool NodeOpened { get; set; }
 		public bool Delete { get; set; }
 		public bool IsFile { get; private set; }
+		public FileTreeNode Parent { get; private set; }
 		public List<FileTreeNode> Children { get; private set; }
-		public FileTreeNode(string path, bool isFile = true)
+		public FileTreeNode(string path,FileTreeNode parent, bool isFile = true)
 		{
-			FullName = path.Replace("\\","/");
+			FullName = path;
 			Name = Path.GetFileName(path);
+			Parent = parent; 
 			NodeOpened = false;
 			IsFile = isFile;
 			Children = new List<FileTreeNode>();
@@ -62,7 +64,7 @@ namespace Wanderer
 		{
 			string rootPath = m_gitRepo.RootPath;
 			await Task.Run(() => {
-				m_fileTreeNodes = GetFileTreeNodes(rootPath);
+				m_fileTreeNodes = GetFileTreeNodes(rootPath,null);
 			});
 
 			m_fileSystemWatcher = new FileSystemWatcher(rootPath);
@@ -97,7 +99,15 @@ namespace Wanderer
 				case WatcherChangeTypes.Renamed:
 					string newPath = ToRepoPath(e.FullPath);
 					bool isFile = File.Exists(e.FullPath);
-					m_fileNodeMap.Add(newPath,new FileTreeNode(newPath, isFile));
+					string parentPath = Path.GetDirectoryName(newPath);
+					FileTreeNode parent = null;
+					m_fileNodeMap.TryGetValue(parentPath, out parent);
+					var newFileTreeNode = new FileTreeNode(newPath, parent, isFile);
+					if (parent != null)
+					{
+						parent.Children.Add(newFileTreeNode);
+					}
+					m_fileNodeMap.Add(newPath, newFileTreeNode);
 					break;
 				case WatcherChangeTypes.Deleted:
 					string oldPath = ToRepoPath(e.FullPath);
@@ -115,7 +125,7 @@ namespace Wanderer
 			}
 		}
 
-		List<FileTreeNode> GetFileTreeNodes(string path)
+		List<FileTreeNode> GetFileTreeNodes(string path, FileTreeNode parent)
 		{
 			List<FileTreeNode> fileTreeNodes = new List<FileTreeNode>();
 			var dirs = Directory.GetDirectories(path);
@@ -131,8 +141,8 @@ namespace Wanderer
 				{
 					continue;
 				}
-				var dirFileTreeNode = new FileTreeNode(dirPath, false);
-				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir));
+				var dirFileTreeNode = new FileTreeNode(dirPath, parent, false);
+				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir, dirFileTreeNode));
 				fileTreeNodes.Add(dirFileTreeNode);
 				m_fileNodeMap.Add(dirPath, dirFileTreeNode);
 			}
@@ -146,7 +156,7 @@ namespace Wanderer
 					{
 						continue;
 					}
-					var fileNode = new FileTreeNode(filePath);
+					var fileNode = new FileTreeNode(filePath, parent);
 					fileTreeNodes.Add(fileNode);
 					m_fileNodeMap.Add(filePath, fileNode);
 				}
