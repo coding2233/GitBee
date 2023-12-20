@@ -370,9 +370,26 @@ namespace Wanderer.App
             return string.Empty;
 		}
 
-        #endregion
+		#endregion
 
 
+		#region Extension widget
+		public static bool Spinner(string title, float radius, int thickness,bool centered = true)
+		{
+			var oldCurPos = ImGui.GetCursorPos();
+			if (centered)
+            {
+                var newCurPos = ImGui.GetContentRegionAvail() * 0.5f;
+                ImGui.SetCursorPos(newCurPos);
+            }
+            bool result = Application.ImGuiSpinner(title, radius, thickness);
+            if (centered)
+            {
+                ImGui.SetCursorPos(oldCurPos);
+            }
+			return result;
+		}
+		#endregion
 	}
 
 

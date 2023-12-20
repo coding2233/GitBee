@@ -374,6 +374,8 @@ namespace Wanderer.Common
 		}
 		#endregion
 
+		[DllImport("iiso3.dll")]
+		internal extern static bool ImGuiSpinner(string label, float radius, int thickness);
 	}
 
 	public struct GLTexture

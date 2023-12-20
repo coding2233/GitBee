@@ -41,5 +41,7 @@ EXPORT_API void MarkDown(const char* text, size_t size, ImGui::MarkdownImageCall
 
 EXPORT_API void SetClipboard(const char* text);
 
+EXPORT_API bool ImGuiSpinner(const char* label, float radius, int thickness);
+
 
 #endif

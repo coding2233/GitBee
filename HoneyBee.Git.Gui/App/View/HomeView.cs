@@ -63,7 +63,8 @@ namespace Wanderer.App.View
             m_splitView.Begin();
             OnRepositoriesDraw();
             m_splitView.Separate();
-            OnRepositoryContentDraw();
+			AppContextView.Spinner("##Spinner", 12, 3);
+			OnRepositoryContentDraw();
             m_splitView.End();
         }
 
