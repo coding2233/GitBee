@@ -374,7 +374,7 @@ namespace Wanderer.App
 
 
 		#region Extension widget
-		public static bool Spinner(string title, float radius, int thickness,bool centered = true)
+		public static bool Spinner(bool centered = true,string title= "##Spinner", float radius=12, int thickness=3)
 		{
 			var oldCurPos = ImGui.GetCursorPos();
 			if (centered)

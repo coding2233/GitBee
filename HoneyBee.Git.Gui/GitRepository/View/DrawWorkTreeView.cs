@@ -10,6 +10,7 @@ using System.Reflection;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
 
@@ -179,9 +180,9 @@ namespace Wanderer
 
 		public override void OnDraw()
         {
-            ImGui.BeginChild("WorkTreeView_Content", ImGui.GetWindowSize() - new Vector2(0, 0));
+			ImGui.BeginChild("WorkTreeView_Content", ImGui.GetWindowSize() - new Vector2(0, 0));
 			m_horizontalSplitView.Begin();
-			if (m_fileTreeNodes != null)
+			if (m_fileTreeNodes != null && m_fileTreeNodes.Count > 0)
 			{
 				foreach (var item in m_fileTreeNodes)
 				{
@@ -193,10 +194,14 @@ namespace Wanderer
 					DrawStatusEntryTreeNode(item);
 				}
 			}
+			else
+			{
+				AppContextView.Spinner();
+			}
 			m_horizontalSplitView.Separate();
 			m_horizontalSplitView.End();
 			ImGui.EndChild();
-        }
+		}
 
      
 		private void DrawStatusEntryTreeNode(FileTreeNode node)
