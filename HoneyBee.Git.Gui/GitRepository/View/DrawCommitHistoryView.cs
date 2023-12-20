@@ -368,28 +368,11 @@ namespace Wanderer.GitRepository.View
             }
             if (ImGui.MenuItem("Revert Commit..."))
             {
-                bool commitChange = true;
-                //GitCommandView.RunGitCommandView<HandleGitCommand>(() =>
-                //{
-                //    ImGui.Text("Confirm whether to Revert the selected commit？");
-                //    ImGui.Checkbox("Commit this change", ref commitChange);
-
-                //    if (ImGui.Button("OK"))
-                //    {
-                //        string revertCmd = commitChange ? $"revert {item.Sha}" : $"revert --no-commit {item.Sha}";
-                //        GitCommandView.RunGitCommandView<CommonGitCommand>(m_gitRepo, revertCmd);
-                //        return false;
-                //    }
-
-                //    ImGui.SameLine();
-                //    if (ImGui.Button("Cancel"))
-                //    {
-                //        return false;
-                //    }
-                //    return true;
-                //});
-
-            }
+                string desc = $"{Icon.Get(Icon.Material_commit)} {item.ShaShort} {item.Message}";
+                AppContextView.AddView<PopupImGuiView>().Show((result) => {
+                    AppContextView.AddView<GitView>(m_gitRepo).Revert(item.Sha).Then(() => { }).Run();
+                }, "Revert", "Revert the current commit", desc, "ok",null);
+			}
             if (ImGui.MenuItem("Cherry-Pick Commit..."))
             {
                 //git cherry-pick <commmit>
