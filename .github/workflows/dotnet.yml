@@ -19,12 +19,12 @@ jobs:
   #       dotnet restore
   #       dotnet build --no-restore -c Release
   #       cd ../
-  #       ls HoneyBee.Git.Gui/bin/Release/net6.0
+  #       ls HoneyBee.Git.Gui/bin/Release/net8.0
   #   - name: Expose as artifact
   #     uses: actions/upload-artifact@v2
   #     with:
   #       name: HoneyBee-Git-Linux
-  #       path: HoneyBee.Git.Gui/bin/Release/net6.0
+  #       path: HoneyBee.Git.Gui/bin/Release/net8.0
         
   build-windows:
     runs-on: windows-latest
@@ -33,7 +33,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
     - name: Build
       run: |
         cd HoneyBee.Git.Gui/
@@ -41,13 +41,13 @@ jobs:
         dotnet restore
         dotnet build --no-restore -c Release
         cd ../
-        dir HoneyBee.Git.Gui/bin/Release/net6.0
-        HoneyBee.Git.Gui/bin/Release/net6.0/GitBee.exe --version
+        dir HoneyBee.Git.Gui/bin/Release/net8.0
+        HoneyBee.Git.Gui/bin/Release/net8.0/GitBee.exe --version
     - name: Expose as artifact
       uses: actions/upload-artifact@v2
       with:
         name: GitBee-Windows
-        path: HoneyBee.Git.Gui/bin/Release/net6.0
+        path: HoneyBee.Git.Gui/bin/Release/net8.0
   
   # build-macos:
   #   runs-on: macos-latest
@@ -63,12 +63,12 @@ jobs:
   #       dotnet restore
   #       dotnet build --no-restore -c Release
   #       cd ../
-  #       ls HoneyBee.Git.Gui/bin/Release/net6.0
+  #       ls HoneyBee.Git.Gui/bin/Release/net8.0
   #   - name: Expose as artifact
   #     uses: actions/upload-artifact@v2
   #     with:
   #       name: HoneyBee-Git-Macos
-  #       path: HoneyBee.Git.Gui/bin/Release/net6.0
+  #       path: HoneyBee.Git.Gui/bin/Release/net8.0
         
   push-itch:
     runs-on: ubuntu-latest

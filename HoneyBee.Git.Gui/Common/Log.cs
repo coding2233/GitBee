@@ -246,7 +246,8 @@ namespace Wanderer
                     var buffer = System.Text.Encoding.UTF8.GetBytes(writeLog);
                     //System.IO.File.WriteAllText(m_logPath, writeLog);
                     m_logFieStream.Write(buffer, 0, buffer.Length);
-                }
+                    m_logFieStream.Flush();
+				}
             }
             catch (Exception e)
             {
