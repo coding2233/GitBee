@@ -30,8 +30,10 @@ namespace Wanderer.App.Controller
         public override void Execute()
         {
             AppContextView.AddView<HomeView>();
-			//检查更新
-			//CheckUpdate();
+            //检查更新
+#if !DEBUG
+			CheckUpdate();
+#endif
 		}
 
         private async void CheckUpdate()
@@ -45,18 +47,17 @@ namespace Wanderer.App.Controller
 
                 //https://github.com/woodpecker-ci/woodpecker/releases/latest/download/checksums.txt
 
-                string targetOS = "windows";
-                if (System.OperatingSystem.IsLinux())
-                {
-                    targetOS = "linux";
-                }
-                else if (System.OperatingSystem.IsMacOS())
-                {
-                    targetOS = "osx";
-                }
+                //string targetOS = "windows";
+                //if (System.OperatingSystem.IsLinux())
+                //{
+                //    targetOS = "linux";
+                //}
+                //else if (System.OperatingSystem.IsMacOS())
+                //{
+                //    targetOS = "osx";
+                //}
                 
-                // https://github.com/woodpecker-ci/woodpecker/releases/latest/download
-                string remoteUrl = "https://gunfire-res.oss-cn-chengdu.aliyuncs.com/gitbee";
+                string remoteUrl = "https://github.com/coding2233/GitBee/releases/download/develop";
                 string versionText = "checksums.txt";
                 string targetPath = $"{remoteUrl}/{versionText}";
 

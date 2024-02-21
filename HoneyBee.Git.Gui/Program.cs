@@ -34,12 +34,6 @@ namespace Wanderer.App
                     case "--version":
                         Console.Write(Application.GetVersion().ToString());
                         return;
-                    case "--write-version":
-                        //string luaVersionPath = "lua/version.lua";
-                        //string versionText = Application.GetVersion().ToString();
-                        //luaVersionPath = Path.Combine(Application.DataPath, luaVersionPath);
-                        //File.WriteAllText(luaVersionPath, $"version = \"{versionText}\"");
-                        return;
                     default:
                         break;
                 }
