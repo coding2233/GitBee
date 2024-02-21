@@ -1,5 +1,5 @@
 diff --git a/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj b/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
-index 99efce8..4dd703d 100644
+index c695aa0..aac9b6d 100644
 --- a/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
 +++ b/HoneyBee.Git.Gui/HoneyBee.Git.Gui.csproj
 @@ -1,7 +1,7 @@
@@ -8,6 +8,6 @@ index 99efce8..4dd703d 100644
    <PropertyGroup>
 -    <OutputType>Exe</OutputType>
 +    <OutputType>WinExe</OutputType>
-     <TargetFramework>net6.0</TargetFramework>
+     <TargetFramework>net8.0</TargetFramework>
+     <PublishAot>true</PublishAot>
      <!--<ImplicitUsings>enable</ImplicitUsings>-->
-     <!--<Nullable>enable</Nullable>-->
