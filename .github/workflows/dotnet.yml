@@ -5,6 +5,7 @@ on:
     branches: [ dev ]
 
 jobs:
+  
   # build-linux:
   #   runs-on: ubuntu-latest
   #   steps:
@@ -44,13 +45,6 @@ jobs:
         dir HoneyBee.Git.Gui/bin/Release/net8.0
         HoneyBee.Git.Gui/bin/Release/net8.0/GitBee.exe --version
     
-  - uses: manleydev/butler-publish-itchio-action@master
-    env:
-      BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
-      CHANNEL: windows
-      ITCH_GAME: GitBee
-      ITCH_USER: wanderer-x
-      PACKAGE: HoneyBee.Git.Gui/bin/Release/net8.0
 
     - name: Expose as artifact
       uses: actions/upload-artifact@v2
@@ -81,7 +75,7 @@ jobs:
         
   push-itch:
     runs-on: ubuntu-latest
-    needs: [build-windows]
+    needs: [pre-release-dev,build-windows]
     steps:
     - uses: actions/checkout@v2
     # - name: Download an artifact - linux
@@ -117,6 +111,14 @@ jobs:
         mv *.exe gitbee_oss/
         mv checksums.txt gitbee_oss/
         ls -alh
+
+    - uses: softprops/action-gh-release@v1
+      with:
+        prerelease: true
+        name: develop
+        tag_name: develop
+        fail_on_unmatched_files: true
+        files: gitbee_oss/*.*
 
     - name: Upload to oss
       uses: tvrcgo/upload-to-oss@v0.1.1
