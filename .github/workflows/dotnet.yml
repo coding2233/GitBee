@@ -43,6 +43,15 @@ jobs:
         cd ../
         dir HoneyBee.Git.Gui/bin/Release/net8.0
         HoneyBee.Git.Gui/bin/Release/net8.0/GitBee.exe --version
+    
+  - uses: manleydev/butler-publish-itchio-action@master
+    env:
+      BUTLER_CREDENTIALS: ${{ secrets.BUTLER_CREDENTIALS }}
+      CHANNEL: windows
+      ITCH_GAME: GitBee
+      ITCH_USER: wanderer-x
+      PACKAGE: HoneyBee.Git.Gui/bin/Release/net8.0
+
     - name: Expose as artifact
       uses: actions/upload-artifact@v2
       with:
