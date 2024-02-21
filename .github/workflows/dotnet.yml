@@ -75,8 +75,29 @@ jobs:
         
   push-itch:
     runs-on: ubuntu-latest
-    needs: [pre-release-dev,build-windows]
+    needs: [build-windows]
     steps:
+    - uses: actions/github-script@v7 
+      with: 
+        script: |
+          const releases = await github.rest.repos.listReleases({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+          });
+          for (const release of releases.data) {
+            if (release.tag_name === 'develop') {
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+              });
+            }
+          }
+          await github.rest.git.deleteRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: `tags/nightly`,
+          });
     - uses: actions/checkout@v2
     # - name: Download an artifact - linux
     #   uses: actions/download-artifact@v2
