@@ -96,7 +96,7 @@ jobs:
           await github.rest.git.deleteRef({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            ref: `tags/nightly`,
+            ref: `tags/develop`,
           });
     - uses: actions/checkout@v2
     # - name: Download an artifact - linux
