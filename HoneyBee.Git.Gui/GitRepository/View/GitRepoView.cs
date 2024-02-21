@@ -73,22 +73,29 @@ namespace Wanderer.GitRepository.View
             _toolItems.Add("Terminal", Icon.Material_terminal);
             _toolItems.Add("Explorer", Icon.Material_folder_open);
 
-            m_gitRepo = new GitRepo(m_repoPath);
+            InitGitRepo();
+		}
+
+        private async void InitGitRepo()
+        {
+			await Task.Run(() => {
+				m_gitRepo = new GitRepo(m_repoPath);
+			});
 
 			var workTreeView = AppContextView.AddView<DrawWorkTreeView>(m_gitRepo);
 			var workSpaceView = AppContextView.AddView<DrawWorkSpaceView>(m_gitRepo);
-            var commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
+			var commitHistoryView = AppContextView.AddView<DrawCommitHistoryView>(m_gitRepo);
 
-            m_submoduleViewList = new List<DrawSubView>() { workTreeView , workSpaceView, commitHistoryView };
-            m_submoduleSelectView = workSpaceView;
+			m_submoduleViewList = new List<DrawSubView>() { workTreeView, workSpaceView, commitHistoryView };
+			m_submoduleSelectView = workSpaceView;
 		}
 
-        //public void SetGitRepoPath(string repoPath)
-        //{
+		//public void SetGitRepoPath(string repoPath)
+		//{
 
-        //}
+		//}
 
-        private void CreateGitRepo()
+		private void CreateGitRepo()
         {
 			m_gitRepo.ReBuildUIData();
             
@@ -126,13 +133,17 @@ namespace Wanderer.GitRepository.View
         public override void OnEnable()
         {
             base.OnEnable();
-            Directory.SetCurrentDirectory(m_gitRepo.RootPath);
-            CreateGitRepo();
 
-            if (m_submoduleSelectView != null)
+            if (m_gitRepo != null)
             {
-                m_submoduleSelectView.OnEnable();
-			}
+                Directory.SetCurrentDirectory(m_gitRepo.RootPath);
+                CreateGitRepo();
+
+                if (m_submoduleSelectView != null)
+                {
+                    m_submoduleSelectView.OnEnable();
+                }
+            }
         }
 
 
@@ -149,8 +160,12 @@ namespace Wanderer.GitRepository.View
 
         public override void OnDraw()
         {
-            if (m_gitRepo == null)
-                return;
+            if (m_gitRepo == null || m_submoduleViewList == null)
+            {
+				AppContextView.Spinner();
+				return;
+            }
+
             OnToolbarDraw();
 
             if (!string.IsNullOrEmpty(m_syncDataTip))
@@ -311,7 +326,6 @@ namespace Wanderer.GitRepository.View
             if (m_submoduleSelectView != null)
             {
                 m_submoduleSelectView.OnDraw();
-
 			}
         }
 
