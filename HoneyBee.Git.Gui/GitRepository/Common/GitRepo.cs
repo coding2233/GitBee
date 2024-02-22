@@ -22,6 +22,8 @@ namespace Wanderer.GitRepository.Common
         Status = 1 << 2,
 		Branch = 1 << 3,
 		Commit = 1 << 4,
+
+        All = Status| Branch| Commit,
 	}
 
     public class GitRepo : IDisposable
@@ -56,9 +58,6 @@ namespace Wanderer.GitRepository.Common
 
         public LibGit2Sharp.Diff Diff => m_repository.Diff;
 
-        private int m_commitCount;
-        public int CommitCount => m_commitCount;
-
         private Queue<Action> m_actionQueue;
         private Task m_actionTask;
         private bool m_canRunTask;
@@ -71,6 +70,7 @@ namespace Wanderer.GitRepository.Common
 			Name = Path.GetFileName(RootPath);
             m_canRunTask = true;
 			m_repository = new Repository(RootPath);
+            SetDirty(GitRepoDirtyStatus.All);
 		}
 
 		#region Dirty status
@@ -108,8 +108,6 @@ namespace Wanderer.GitRepository.Common
                 SetBranchNodes();
                 SetTags();
                 SetSubmodules();
-
-                m_commitCount = m_repository.Commits.Count();
             });
         }
 
@@ -177,7 +175,7 @@ namespace Wanderer.GitRepository.Common
             BuildSignature();
             //提交到仓库中
             m_repository.Commit(commitMessage, m_signatureAuthor, m_signatureAuthor);
-            ReBuildUIData();
+            SetDirty(GitRepoDirtyStatus.All);
         }
 
         private Signature BuildSignature()

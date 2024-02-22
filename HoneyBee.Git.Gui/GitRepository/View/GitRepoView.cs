@@ -95,17 +95,6 @@ namespace Wanderer.GitRepository.View
 
 		//}
 
-		private void CreateGitRepo()
-        {
-			m_gitRepo.ReBuildUIData();
-            
-            //m_syncDataTip = "正在同步数据";
-            //m_gitRepo.SyncGitRepoTask((progress) => {
-            //    m_syncProgress = progress;
-            //},() => {
-            //    m_syncDataTip = null;
-            //});
-        }
 
         protected override void OnDestroy()
         {
@@ -137,9 +126,9 @@ namespace Wanderer.GitRepository.View
 
 			if (m_gitRepo != null)
             {
-                CreateGitRepo();
+                m_gitRepo.SetDirty(GitRepoDirtyStatus.All);
 
-                if (m_submoduleSelectView != null)
+				if (m_submoduleSelectView != null)
                 {
                     m_submoduleSelectView.OnEnable();
                 }
@@ -226,7 +215,7 @@ namespace Wanderer.GitRepository.View
             switch (item)
             {
                 case "Sync":
-                    m_gitRepo?.ReBuildUIData();
+                    m_gitRepo?.SetDirty(GitRepoDirtyStatus.All);
                     break;
                 case "Terminal":
                     GitCommandView.ShowTerminal(m_repoPath);
@@ -250,6 +239,11 @@ namespace Wanderer.GitRepository.View
 
         private void OnRepoKeysDraw()
         {
+            if (m_gitRepo.CheckAndRemoveDirtyStatus(GitRepoDirtyStatus.Branch))
+            {
+                m_gitRepo.ReBuildUIData();
+            }
+
             DrawTreeNodeHead("Workspace", () => {
 				DrawSubView submoduleSelectView = m_submoduleSelectView;
 				foreach (var item in m_submoduleViewList)

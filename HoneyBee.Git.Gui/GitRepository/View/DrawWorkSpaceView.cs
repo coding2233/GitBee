@@ -225,7 +225,6 @@ namespace Wanderer
                     try
                     {
                         m_gitRepo.Commit(m_submitMessage);
-                        m_gitRepo.SetDirty(GitRepoDirtyStatus.Commit);
 					}
                     catch (Exception e)
                     {
