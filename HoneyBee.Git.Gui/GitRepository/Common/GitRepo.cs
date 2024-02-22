@@ -16,6 +16,13 @@ using Wanderer.GitRepository.View;
 
 namespace Wanderer.GitRepository.Common
 {
+    public enum GitRepoDirtyStatus
+    {
+        None,
+        Status,
+        Branch,
+    }
+
     public class GitRepo : IDisposable
     {
         private Repository m_repository;
@@ -55,6 +62,8 @@ namespace Wanderer.GitRepository.Common
         private Task m_actionTask;
         private bool m_canRunTask;
 
+        private GitRepoDirtyStatus m_dirtyStatus;
+
         internal GitRepo(string repoPath)
         {
             RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
@@ -63,9 +72,36 @@ namespace Wanderer.GitRepository.Common
 			m_repository = new Repository(RootPath);
 		}
 
+		#region Dirty status
+		public void SetDirty(GitRepoDirtyStatus status)
+        {
+            m_dirtyStatus |= status;
+		}
 
-        //更新UI状态
-        public void ReBuildUIData()
+        public bool CheckDirtyStatus(GitRepoDirtyStatus status)
+        {
+            bool result = (m_dirtyStatus & status) == status;
+            return result;
+		}
+
+        public void RemoveDirtyStatus(GitRepoDirtyStatus status)
+        {
+            m_dirtyStatus &= ~status;
+		}
+
+		public bool CheckAndRemoveDirtyStatus(GitRepoDirtyStatus status)
+        {
+            bool result = CheckDirtyStatus(status);
+			if (result)
+            {
+                RemoveDirtyStatus(status);
+			}
+            return result;
+		}
+		#endregion
+
+		//更新UI状态
+		public void ReBuildUIData()
         {
             RunTask(() => {
                 SetBranchNodes();

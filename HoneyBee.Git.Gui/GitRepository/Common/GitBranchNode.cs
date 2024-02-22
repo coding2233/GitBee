@@ -47,22 +47,29 @@ namespace Wanderer.GitRepository.Common
             }
             string[] nameArgs = path.Split('/');
             Queue<string> nameTree = new Queue<string>();
+            List<string> fullNameList = new List<string>();
+            StringBuilder fulNameBuilder = new StringBuilder();
             foreach (var item in nameArgs)
             {
                 nameTree.Enqueue(item);
-            }
 
-            JoinTreeViewNode(nodes, nameTree, data);
+				fulNameBuilder.Append(item);
+                fullNameList.Add(fulNameBuilder.ToString());
+                fulNameBuilder.Append("/");
+			}
+
+            JoinTreeViewNode(nodes, nameTree, fullNameList, data);
         }
 
 
-        private static void JoinTreeViewNode(List<T> nodes, Queue<string> nameTree, TData data)
+        private static void JoinTreeViewNode(List<T> nodes, Queue<string> nameTree, List<string> fullNameList, TData data)
         {
             if (nameTree.Count == 1)
             {
                 T node = new T();
                 node.Name = nameTree.Dequeue();
-                node.Data = data;
+                node.FullName = fullNameList[fullNameList.Count - 1];
+				node.Data = data;
                 //branchNode.FullName = branch.FriendlyName;
                 nodes.Add(node);
             }
@@ -74,10 +81,11 @@ namespace Wanderer.GitRepository.Common
                 {
                     findNode = new T();
                     findNode.Name = name;
-                    findNode.Children = new List<T>();
+                    findNode.FullName = fullNameList[fullNameList.Count - nameTree.Count - 1];
+					findNode.Children = new List<T>();
                     nodes.Add(findNode);
                 }
-                JoinTreeViewNode(findNode.Children, nameTree, data);
+                JoinTreeViewNode(findNode.Children, nameTree, fullNameList,data);
             }
         }
 
@@ -128,13 +136,13 @@ namespace Wanderer.GitRepository.Common
 
     public class StatusEntryTreeViewNode : TreeViewNode<StatusEntryTreeViewNode, StatusEntry>
     {
-        public override string FullName
-        {
-            get
-            {
-                return Data != null ? Data.FilePath : null;
-            }
-        }
+        //public override string FullName
+        //{
+        //    get
+        //    {
+        //        return Data != null ? Data.FilePath : null;
+        //    }
+        //}
 
         public override bool NodeOpened { get; set; } = true;
     }

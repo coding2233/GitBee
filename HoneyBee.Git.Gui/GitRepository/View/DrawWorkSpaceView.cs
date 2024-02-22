@@ -9,9 +9,9 @@ using System.Numerics;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using Wanderer.App;
 using Wanderer.Common;
 using Wanderer.GitRepository.Common;
-using static System.Net.WebRequestMethods;
 
 namespace Wanderer
 {
@@ -39,25 +39,35 @@ namespace Wanderer
 
         public Action<string> OnEditorText;
 		public override string Name => "Work Space";
+
+        private bool m_isUpdateStatus;
+
 		public DrawWorkSpaceView(GitRepo gitRepo)
         {
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;
             m_diffShowView = new DiffShowView();
-            UpdateStatus();
+            SetUpdateStatus();
         }
 
         public override void OnEnable()
         {
             base.OnEnable();
 
-            UpdateStatus();
+            SetUpdateStatus();
         }
 
         public override void OnDraw()
         {
+            if (m_isUpdateStatus)
+            {
+                AppContextView.Spinner();
+                return;
+            }
             //ImGui.ShowStyleEditor();
-            ImGui.BeginChild("WorkSpaceView_Content", ImGui.GetWindowSize() - new Vector2(0, 100));
+            UpdateStatus();
+
+			ImGui.BeginChild("WorkSpaceView_Content", ImGui.GetWindowSize() - new Vector2(0, 100));
             m_horizontalSplitView.Begin();
             DrawStageStatus();
             m_horizontalSplitView.Separate();
@@ -88,7 +98,7 @@ namespace Wanderer
         {
             if (ImGui.Button("Unstage All"))
             {
-                m_gitRepo.Unstage(UpdateStatus);
+                m_gitRepo.Unstage(SetUpdateStatus);
             }
             ImGui.SameLine();
             if (ImGui.Button("Unstage Selected"))
@@ -96,7 +106,7 @@ namespace Wanderer
                 if (m_stageSelectedNodes.Count > 0)
                 {
                     var selectPath = TreeNodesToPaths(m_stageSelectedNodes);
-                    m_gitRepo.Unstage(UpdateStatus,selectPath);
+                    m_gitRepo.Unstage(SetUpdateStatus,selectPath);
                 }
             }
 
@@ -115,7 +125,7 @@ namespace Wanderer
         {
             if (ImGui.Button("Stage All"))
             {
-                m_gitRepo.Stage(UpdateStatus);
+                m_gitRepo.Stage(SetUpdateStatus);
              
             }
             ImGui.SameLine();
@@ -124,8 +134,8 @@ namespace Wanderer
                 if (m_unstageSelectedNodes.Count > 0)
                 {
                     var selectPath = TreeNodesToPaths(m_unstageSelectedNodes);
-                    m_gitRepo.Stage(UpdateStatus, selectPath);
-                    UpdateStatus();
+                    m_gitRepo.Stage(SetUpdateStatus, selectPath);
+                    SetUpdateStatus();
                 }
             }
             ImGui.SameLine();
@@ -133,9 +143,18 @@ namespace Wanderer
             {
                 if (m_unstageSelectedNodes.Count > 0)
                 {
+                    //新增物体直接删除
+                    foreach (var item in m_unstageSelectedNodes)
+                    {
+                        RemoveNewNode(item, m_unstageSelectedNodes);
+					}
+
                     var selectPath = TreeNodesToPaths(m_unstageSelectedNodes);
-                    m_gitRepo.Restore(selectPath);
-                    UpdateStatus();
+                    if (selectPath != null && selectPath.Count > 0)
+                    {
+                        m_gitRepo.Restore(selectPath);
+                    }
+                    SetUpdateStatus();
                 }
             }
 
@@ -149,6 +168,47 @@ namespace Wanderer
                 ImGui.EndChild();
             }
         }
+
+		private void RemoveNewNode(StatusEntryTreeViewNode node, HashSet<StatusEntryTreeViewNode> nodes)
+		{
+			if (node == null)
+			{
+				return;
+			}
+
+            if (node.Data != null && node.Data.State == FileStatus.NewInWorkdir)
+            {
+                try
+                {
+                    string filePath = node.Data.FilePath;
+                    if (!string.IsNullOrEmpty(filePath))
+                    {
+                        filePath = Path.Combine(m_gitRepo.RootPath, filePath);
+                        if (File.Exists(filePath))
+                        {
+                            File.Delete(filePath);
+
+                            if (nodes != null && nodes.Contains(node))
+                            {
+                                nodes.Remove(node);
+							}
+                        }
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Log.Info("Delet {0} exception:{1}", node.FullName, e.Message);
+                }
+            }
+            else if (node.Children != null)
+            {
+                foreach (var item in node.Children)
+                {
+                    RemoveNewNode(item, nodes);
+				}
+            }
+		}
+
 
         /// <summary>
         /// 提交模块
@@ -170,12 +230,11 @@ namespace Wanderer
                     {
                         Log.Warn("DrawSubmit exception: {0}",e);
                     }
-                    UpdateStatus();
+                    SetUpdateStatus();
                 }
                 m_submitMessage = "";
             }
         }
-
 
         private void DrawStatusEntryTreeNode(StatusEntryTreeViewNode node, bool isStage)
         {
@@ -387,65 +446,82 @@ namespace Wanderer
             }
 
         }
-        internal void UpdateStatus()
+
+
+        private void SetUpdateStatus()
         {
-            try
-            {
-                RepositoryStatus statuses = null;
-                if (m_gitRepo != null && m_gitRepo.Repo != null)
-                {
-					statuses = m_gitRepo.Repo.RetrieveStatus();
-                }
-
-                m_stageTreeView.Clear();
-                m_unstageTreeView.Clear();
-                m_stageSelectedNodes.Clear();
-                m_unstageSelectedNodes.Clear();
-                m_stageMultipleSelectionNodes.Clear();
-                m_unstageMultipleSelectionNodes.Clear();
-
-                if (statuses == null)
-                {
-                    return;
-                }
-        
-                foreach (var item in statuses)
-                {
-                    if (item.State == FileStatus.Ignored)
-                    {
-                        continue;
-                    }
-
-                    //FileStatus.xxxxInIndex index ~= stage
-                    if (CheckFileStatus(item.State, FileStatus.NewInIndex) || CheckFileStatus(item.State, FileStatus.ModifiedInIndex)
-                        || CheckFileStatus(item.State, FileStatus.RenamedInIndex) || CheckFileStatus(item.State, FileStatus.TypeChangeInIndex)
-                        || CheckFileStatus(item.State, FileStatus.DeletedFromIndex))
-                    {
-                        StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
-                    }
-                    else
-                    {
-                        StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
-                    }
-                }
-
-                foreach (var item in m_stageTreeView)
-                {
-                    BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes, item);
-                }
-
-                foreach (var item in m_unstageTreeView)
-                {
-                    BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
-                }
-
-                
-            }
-            catch (Exception e)
-            {
-                Log.Warn("DrawWorkTreeView exception: {0}",e);
-            }
+            m_gitRepo?.SetDirty(GitRepoDirtyStatus.Status);
+            
         }
+
+        private void UpdateStatus()
+        {
+            if (m_gitRepo == null 
+                || !m_gitRepo.CheckAndRemoveDirtyStatus(GitRepoDirtyStatus.Status))
+            {
+                return;
+            }
+
+			m_stageTreeView.Clear();
+			m_unstageTreeView.Clear();
+			m_stageSelectedNodes.Clear();
+			m_unstageSelectedNodes.Clear();
+			m_stageMultipleSelectionNodes.Clear();
+			m_unstageMultipleSelectionNodes.Clear();
+			Task.Run(() => {
+				try
+				{
+                    m_isUpdateStatus = true;
+					RepositoryStatus statuses = null;
+					if (m_gitRepo != null && m_gitRepo.Repo != null)
+					{
+						statuses = m_gitRepo.Repo.RetrieveStatus();
+					}
+
+					if (statuses == null)
+					{
+                        m_isUpdateStatus = false;
+						return;
+					}
+
+					foreach (var item in statuses)
+					{
+						if (item.State == FileStatus.Ignored)
+						{
+							continue;
+						}
+
+						//FileStatus.xxxxInIndex index ~= stage
+						if (CheckFileStatus(item.State, FileStatus.NewInIndex) || CheckFileStatus(item.State, FileStatus.ModifiedInIndex)
+							|| CheckFileStatus(item.State, FileStatus.RenamedInIndex) || CheckFileStatus(item.State, FileStatus.TypeChangeInIndex)
+							|| CheckFileStatus(item.State, FileStatus.DeletedFromIndex))
+						{
+							StatusEntryTreeViewNode.JoinTreeViewNode(m_stageTreeView, item.FilePath, item);
+						}
+						else
+						{
+							StatusEntryTreeViewNode.JoinTreeViewNode(m_unstageTreeView, item.FilePath, item);
+						}
+					}
+
+					foreach (var item in m_stageTreeView)
+					{
+						BuildMultipleSelectionNodes(m_stageMultipleSelectionNodes, item);
+					}
+
+					foreach (var item in m_unstageTreeView)
+					{
+						BuildMultipleSelectionNodes(m_unstageMultipleSelectionNodes, item);
+					}
+				}
+				catch (Exception e)
+				{
+					Log.Warn("DrawWorkTreeView exception: {0}", e);
+				}
+
+				m_isUpdateStatus = false;
+			});
+		}
 
         private bool CheckFileStatus(FileStatus fileStatus, FileStatus checkStatus)
         {
@@ -477,15 +553,16 @@ namespace Wanderer
                 }
                 else
                 {
-                    if (item.Children != null && item.Children.Count > 0)
-                    {
-                        var childFilePaths = TreeNodesToPaths(item.Children);
-                        foreach (var childFilePath in childFilePaths)
-                        {
-                            filePaths.Add(childFilePath);
-                        }
-                    }
-                }
+                    filePaths.Add(item.FullName);
+					//if (item.Children != null && item.Children.Count > 0)
+					//{
+					//    var childFilePaths = TreeNodesToPaths(item.Children);
+					//    foreach (var childFilePath in childFilePaths)
+					//    {
+					//        filePaths.Add(childFilePath);
+					//    }
+					//}
+				}
             }
             return filePaths;
         }
