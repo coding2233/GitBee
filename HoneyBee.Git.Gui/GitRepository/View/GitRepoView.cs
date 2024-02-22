@@ -60,10 +60,10 @@ namespace Wanderer.GitRepository.View
 
         public GitRepoView(string repoPath) 
         {
-            m_repoPath = repoPath;
-            //m_gitRepoMediator = mediator as GitRepoMediator;
+            m_repoPath = repoPath.Replace("\\", "/").Replace("/.git", "");
+			//m_gitRepoMediator = mediator as GitRepoMediator;
 
-            _toolItems = new Dictionary<string, int>();
+			_toolItems = new Dictionary<string, int>();
             //_toolItems.Add("Commit", Icon.Material_add);
             _toolItems.Add("Sync", Icon.Material_sync);
             _toolItems.Add("Pull", Icon.Material_download);
@@ -133,10 +133,10 @@ namespace Wanderer.GitRepository.View
         public override void OnEnable()
         {
             base.OnEnable();
+			Directory.SetCurrentDirectory(m_repoPath);
 
-            if (m_gitRepo != null)
+			if (m_gitRepo != null)
             {
-                Directory.SetCurrentDirectory(m_gitRepo.RootPath);
                 CreateGitRepo();
 
                 if (m_submoduleSelectView != null)

@@ -67,8 +67,8 @@ namespace Wanderer.GitRepository.Common
 
         internal GitRepo(string repoPath)
         {
-            RootPath = repoPath.Replace("\\", "/").Replace("/.git", "");
-            Name = Path.GetFileName(RootPath);
+			RootPath = repoPath;
+			Name = Path.GetFileName(RootPath);
             m_canRunTask = true;
 			m_repository = new Repository(RootPath);
 		}
