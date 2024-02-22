@@ -18,10 +18,11 @@ namespace Wanderer.GitRepository.Common
 {
     public enum GitRepoDirtyStatus
     {
-        None,
-        Status,
-        Branch,
-    }
+        None = 1 << 1,
+        Status = 1 << 2,
+		Branch = 1 << 3,
+		Commit = 1 << 4,
+	}
 
     public class GitRepo : IDisposable
     {

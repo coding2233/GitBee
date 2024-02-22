@@ -55,13 +55,14 @@ namespace Wanderer.GitRepository.View
             m_diffShowView = new DiffShowView();
 
             m_gitRepo = gitRepo;
-        }
+            m_gitRepo?.SetDirty(GitRepoDirtyStatus.Commit);
+		}
 
-        public override void OnEnable()
+		public override void OnEnable()
         {
             base.OnEnable();
 
-            GetHistoryCommits(true);
+			m_gitRepo?.SetDirty(GitRepoDirtyStatus.Commit);
         }
 
 
@@ -81,10 +82,9 @@ namespace Wanderer.GitRepository.View
 
             var itemWidth = ImGui.GetWindowWidth() * 0.2f;
             ImGui.SetNextItemWidth(itemWidth);
-            bool gethistoryCommitsForce = false;
             if (ImGui.Combo("Branch", ref m_selectLocalBranch, m_localBranchs, m_localBranchs.Length))
             {
-                gethistoryCommitsForce = true;
+				m_gitRepo?.SetDirty(GitRepoDirtyStatus.Commit);
             }
             ImGui.SameLine();
             ImGui.SetNextItemWidth(160);
@@ -135,7 +135,7 @@ namespace Wanderer.GitRepository.View
             }
             m_lastCommitScrollY = ImGui.GetScrollY();
 
-            GetHistoryCommits(gethistoryCommitsForce);
+            GetHistoryCommits();
             if (m_tabShowCommits==null)
                 return;
 
@@ -557,12 +557,19 @@ namespace Wanderer.GitRepository.View
             return ImGui.GetScrollMaxY() * (size / m_commitViewMax);
         }
 
-        void GetHistoryCommits(bool force=false)
+        void GetHistoryCommits()
         {
-            if (m_cacheCommits == null && m_gitRepo!=null)
+			if (m_cacheCommits == null && m_gitRepo!=null)
             {
-                //这里可以增加更多的条件，方便操作更多的信息
-                var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
+                //强制更新
+				bool force = m_gitRepo.CheckAndRemoveDirtyStatus(GitRepoDirtyStatus.Commit);
+                if (force)
+                {
+                    m_commitViewIndex = 0;
+				}
+
+				//这里可以增加更多的条件，方便操作更多的信息
+				var range = new Range(m_commitViewIndex, m_commitViewIndex + m_commitViewMax);
                 if (!range.Equals(m_cacheRange) || force)
                 {
                     m_gitRepo.RunTask(() => {
