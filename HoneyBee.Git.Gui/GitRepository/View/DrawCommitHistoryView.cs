@@ -28,7 +28,9 @@ namespace Wanderer.GitRepository.View
         private int m_commitViewIndex = 0;
         private int m_commitViewMax = 200;
         private float m_lastCommitScrollY = 0.0f;
-        private Commit m_selectCommit;
+        private int m_commitMax;
+
+		private Commit m_selectCommit;
         private Patch m_selectCommitPatch;
         private PatchEntryChanges m_selectCommitPatchEntry;
 
@@ -40,7 +42,7 @@ namespace Wanderer.GitRepository.View
 
         private Range m_cacheRange;
         private IEnumerable<Commit> m_cacheCommits;
-        private List<CommitTabInfo> m_tabShowCommits;
+        private List<CommitTableInfo> m_tableShowCommits;
 
         private string[] m_localBranchs=new string[0];
         private int m_selectLocalBranch;
@@ -78,8 +80,6 @@ namespace Wanderer.GitRepository.View
 
         private void DrawHistoryCommits()
         {
-            int commitMax = m_gitRepo.CommitCount;
-
             var itemWidth = ImGui.GetWindowWidth() * 0.2f;
             ImGui.SetNextItemWidth(itemWidth);
             if (ImGui.Combo("Branch", ref m_selectLocalBranch, m_localBranchs, m_localBranchs.Length))
@@ -89,7 +89,7 @@ namespace Wanderer.GitRepository.View
             ImGui.SameLine();
             ImGui.SetNextItemWidth(160);
             int newCommitViewIndex = m_commitViewIndex;
-            if (ImGui.InputInt($"Commit Range ({m_commitViewIndex}-{m_commitViewIndex + m_commitViewMax}/{commitMax})##Commit-Index-InputInt", ref newCommitViewIndex, 1, 100, ImGuiInputTextFlags.EnterReturnsTrue))
+            if (ImGui.InputInt($"Commit Range ({m_commitViewIndex}-{m_commitViewIndex + m_commitViewMax}/{m_commitMax})##Commit-Index-InputInt", ref newCommitViewIndex, 1, 100, ImGuiInputTextFlags.EnterReturnsTrue))
             {
                 if (newCommitViewIndex != m_commitViewIndex)
                 {
@@ -119,25 +119,28 @@ namespace Wanderer.GitRepository.View
             }
             else if (m_lastCommitScrollY >= ImGui.GetScrollMaxY())
             {
-                if (commitMax >= m_commitViewMax)
+                if (m_commitMax >= m_commitViewMax)
                 {
                     m_commitViewIndex += m_commitAddInterval;
-                    commitMax = commitMax - m_commitViewMax;
-                    m_commitViewIndex = Math.Min(m_commitViewIndex, commitMax);
+                    m_commitMax = m_commitMax - m_commitViewMax;
+                    m_commitViewIndex = Math.Min(m_commitViewIndex, m_commitMax);
                 }
                 else
                 {
                     m_commitViewIndex = 0;
                 }
 
-                if (m_commitViewIndex > 0 && m_commitViewIndex < commitMax)
+                if (m_commitViewIndex > 0 && m_commitViewIndex < m_commitMax)
                     ImGui.SetScrollY(ImGui.GetScrollMaxY() - GetScrollInterval(m_commitAddInterval));
             }
             m_lastCommitScrollY = ImGui.GetScrollY();
 
             GetHistoryCommits();
-            if (m_tabShowCommits==null)
+            if (m_tableShowCommits == null)
+            {
+                AppContextView.Spinner();
                 return;
+            }
 
             if (ImGui.BeginTable("GitRepo-Commits", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
             {
@@ -151,7 +154,7 @@ namespace Wanderer.GitRepository.View
 
                 List<CommitAtlasLine> commitAtlasLines = new List<CommitAtlasLine>();
                 int atalsMaxId = -1;
-                foreach (var item in m_tabShowCommits)
+                foreach (var item in m_tableShowCommits)
                 {
                     //if (index < m_commitViewIndex)
                     //    continue;
@@ -243,8 +246,8 @@ namespace Wanderer.GitRepository.View
                         }
                     }
 
-                    //ImGui.Text(item.MessageShort);
-                    if (ImGui.Selectable(item.Message, m_selectCommit != null && m_selectCommit.Sha == item.Sha, ImGuiSelectableFlags.SpanAllColumns))
+					//ImGui.Text(item.MessageShort);
+					if (ImGui.Selectable($"{item.Message}##{item.Sha}", m_selectCommit != null && m_selectCommit.Sha == item.Sha, ImGuiSelectableFlags.SpanAllColumns))
                     {
                         m_gitRepo.SetSelectCommit(item.Sha);
                         //m_gitRepo.SelectCommit = m_gitRepo.SetSelectCommit(item.Sha);
@@ -286,7 +289,7 @@ namespace Wanderer.GitRepository.View
         }
 
 
-        private void OnCommitPopupContextItem(CommitTabInfo item)
+        private void OnCommitPopupContextItem(CommitTableInfo item)
         {
             var headBranch = m_gitRepo.Repo.Head;
             string headBranchwName = $"'{headBranch}'";
@@ -585,9 +588,10 @@ namespace Wanderer.GitRepository.View
                         }
                         m_localBranchs = localBranch.ToArray();
 
+                        ICommitLog commits = null;
                         if (m_selectLocalBranch <= 0)
                         {
-                            m_cacheCommits = m_gitRepo.Repo.Commits.Take(range);
+                            commits = m_gitRepo.Repo.Commits;
                         }
                         else
                         {
@@ -596,10 +600,13 @@ namespace Wanderer.GitRepository.View
                                 //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
                                 IncludeReachableFrom = m_localBranchs[m_selectLocalBranch],  // formerly "Until"
                             };
-                            m_cacheCommits = m_gitRepo.Repo.Commits.QueryBy(filter).Take(range);
+                            commits = m_gitRepo.Repo.Commits.QueryBy(filter);
                         }
 
-                        if (!string.IsNullOrEmpty(m_searchCommit))
+                        m_commitMax = commits.Count();
+						m_cacheCommits = commits.Take(range);
+
+						if (!string.IsNullOrEmpty(m_searchCommit))
                         {
                             m_cacheCommits = m_cacheCommits.Where((commitInfo) =>
                             {
@@ -637,32 +644,32 @@ namespace Wanderer.GitRepository.View
 
 
                         //更新tab显示数据
-                        List<CommitTabInfo> tabShowCommits = new List<CommitTabInfo>();
+                        List<CommitTableInfo> tabShowCommits = new List<CommitTableInfo>();
                         foreach (var item in m_cacheCommits)
                         {
-                            CommitTabInfo commitInfo = null;
-                            if (m_tabShowCommits != null)
+                            CommitTableInfo commitInfo = null;
+                            if (m_tableShowCommits != null)
                             {
-                                commitInfo = m_tabShowCommits.Find(x => x.Sha.Equals(item.Sha));
+                                commitInfo = m_tableShowCommits.Find(x => x.Sha.Equals(item.Sha));
                             }
 
                             if (commitInfo != null)
                             {
-                                m_tabShowCommits.Remove(commitInfo);
+                                m_tableShowCommits.Remove(commitInfo);
                             }
                             else
                             {
-                                commitInfo = Pool<CommitTabInfo>.Get().SetCommit(item);
+                                commitInfo = Pool<CommitTableInfo>.Get().SetCommit(item);
                             }
 
                             tabShowCommits.Add(commitInfo);
                         }
 
-                        if (m_tabShowCommits != null)
+                        if (m_tableShowCommits != null)
                         {
-                            Pool<CommitTabInfo>.Release(m_tabShowCommits);
+                            Pool<CommitTableInfo>.Release(m_tableShowCommits);
                         }
-                        m_tabShowCommits = tabShowCommits;
+                        m_tableShowCommits = tabShowCommits;
 
 
                     });
@@ -690,7 +697,7 @@ namespace Wanderer.GitRepository.View
         }
 
 
-        public class CommitTabInfo : IPool
+        public class CommitTableInfo : IPool
         {
             public string Sha { get; private set; }
             public string ShaShort { get; private set; }
@@ -712,7 +719,7 @@ namespace Wanderer.GitRepository.View
                 Parents = null;
             }
 
-            public CommitTabInfo SetCommit(Commit commit)
+            public CommitTableInfo SetCommit(Commit commit)
             {
                 Sha = commit.Sha;
                 ShaShort = Sha.Substring(0, 10);
