@@ -16,23 +16,46 @@ using Wanderer.GitRepository.Common;
 
 namespace Wanderer
 {
-	public class FileTreeNode
+	public class FileTreeNode:IPool
 	{
-		public string FullName { get; private set; }
+		public string FullPath { get; private set; }
+		public string Path { get; private set; }
 		public string Name { get; private set; }
 		public bool NodeOpened { get; set; }
 		public bool Delete { get; set; }
 		public bool IsFile { get; private set; }
 		public FileTreeNode Parent { get; private set; }
 		public List<FileTreeNode> Children { get; private set; }
-		public FileTreeNode(string path,FileTreeNode parent, bool isFile = true)
+
+		public void OnGet()
 		{
-			FullName = path;
-			Name = Path.GetFileName(path);
+		}
+
+		public void OnRelease()
+		{
+		}
+
+		//public FileTreeNode(string path,FileTreeNode parent, bool isFile = true)
+		//{
+		//	FullName = path;
+		//	Name = Path.GetFileName(path);
+		//	Parent = parent; 
+		//	NodeOpened = false;
+		//	IsFile = isFile;
+		//	Children = new List<FileTreeNode>();
+		//}
+
+		public FileTreeNode Setup(string rootPath,string path, FileTreeNode parent, bool isFile = true)
+		{
+			Path = path.Replace("\\","/");
+			FullPath = string.IsNullOrEmpty(rootPath)? Path:System.IO.Path.Combine(rootPath, path).Replace("\\","/");
+			Name = System.IO.Path.GetFileName(path);
 			Parent = parent; 
 			NodeOpened = false;
 			IsFile = isFile;
 			Children = new List<FileTreeNode>();
+
+			return this;
 		}
 	}
 
@@ -57,39 +80,56 @@ namespace Wanderer
             m_nodeDefaultFlags = ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth | ImGuiTreeNodeFlags.FramePadding;
             m_gitRepo = gitRepo;
 			m_fileNodeMap = new Dictionary<string, FileTreeNode>();
-			m_fileTreeNodes = new List<FileTreeNode>();
+
 			FileNodeInit();
 		}
 
-		private async void FileNodeInit()
-		{
-			string rootPath = m_gitRepo.RootPath;
-			await Task.Run(() => {
-				m_fileTreeNodes = GetFileTreeNodes(rootPath,null);
-			});
-
-			m_fileSystemWatcher = new FileSystemWatcher(rootPath);
-			m_fileSystemWatcher.Changed += OnFileWatcherChanged;
-		}
-
-
-
 		protected override void OnDestroy()
 		{
-            if (m_fileSystemWatcher!=null)
-            {
+			if (m_fileSystemWatcher != null)
+			{
 				m_fileSystemWatcher.Changed -= OnFileWatcherChanged;
 				m_fileSystemWatcher.Dispose();
 				m_fileSystemWatcher = null;
 			}
-            base.OnDestroy();
+
+			ReleaseFileTreeNodes(m_fileTreeNodes);
+			m_fileTreeNodes = null;
+			base.OnDestroy();
 		}
 
 		public override void OnEnable()
         {
             base.OnEnable();
+		}
 
-			
+		public override void OnDisable()
+		{
+			base.OnDisable();
+		}
+		private async void FileNodeInit()
+		{
+			string rootPath = m_gitRepo.RootPath;
+			await Task.Run(() => {
+				m_fileTreeNodes = GetFileTreeNodes(rootPath, null);
+			});
+
+			m_fileSystemWatcher = new FileSystemWatcher(rootPath);
+			m_fileSystemWatcher.Changed += OnFileWatcherChanged;
+		}
+		private void ReleaseFileTreeNodes(List<FileTreeNode> nodes)
+		{
+			if (nodes != null)
+			{
+				foreach (var item in nodes)
+				{
+					if (item.Children != null)
+					{
+						ReleaseFileTreeNodes(item.Children);
+					}
+					Pool<FileTreeNode>.Release(item);
+				}
+			}
 		}
 
 		private void OnFileWatcherChanged(object sender, FileSystemEventArgs e)
@@ -103,7 +143,7 @@ namespace Wanderer
 					string parentPath = Path.GetDirectoryName(newPath);
 					FileTreeNode parent = null;
 					m_fileNodeMap.TryGetValue(parentPath, out parent);
-					var newFileTreeNode = new FileTreeNode(newPath, parent, isFile);
+					var newFileTreeNode = Pool<FileTreeNode>.Get().Setup(null,newPath, parent, isFile);
 					if (parent != null)
 					{
 						parent.Children.Add(newFileTreeNode);
@@ -143,7 +183,7 @@ namespace Wanderer
 				{
 					continue;
 				}
-				var dirFileTreeNode = new FileTreeNode(dirPath, parent, false);
+				var dirFileTreeNode = Pool<FileTreeNode>.Get().Setup(path,dirPath, parent, false);
 				dirFileTreeNode.Children.AddRange(GetFileTreeNodes(dir, dirFileTreeNode));
 				fileTreeNodes.Add(dirFileTreeNode);
 				m_fileNodeMap.Add(dirPath, dirFileTreeNode);
@@ -159,7 +199,7 @@ namespace Wanderer
 					{
 						continue;
 					}
-					var fileNode = new FileTreeNode(filePath, parent);
+					var fileNode = Pool<FileTreeNode>.Get().Setup(path,filePath, parent);
 					fileTreeNodes.Add(fileNode);
 					m_fileNodeMap.Add(filePath, fileNode);
 				}
@@ -219,15 +259,19 @@ namespace Wanderer
 				var folderIconPosMax = folderIconPos + Application.IconSize;
 
 				node.NodeOpened = ImGui.TreeNodeEx($"\t\t{node.Name}", nodeFlag);
+
+				DrawPopupContextItem(node);
+
+
 				if (ImGui.IsItemClicked())
 				{
 					
 				}
-				
+
 
 				//文件夹图标
 				//var folderGLTexture =  Application.LoadTextureFromFile(node.NodeOpened ? "Resources/icons/default_folder_opened.png" : "Resources/icons/default_folder.png");
-				var folderGLTexture = Application.GetFileIcon(node.FullName, false);
+				var folderGLTexture = Application.GetFileIcon(node.FullPath, false);
 				ImGui.GetWindowDrawList().AddImage(folderGLTexture.Image, folderIconPos, folderIconPosMax);
 
 				if (node.NodeOpened)
@@ -262,13 +306,11 @@ namespace Wanderer
 					ImGui.TreePop();
 				}
 
-
-				
-
+				DrawPopupContextItem(node);
 
 				//文件图标
 				//node.Name
-				GLTexture fileIcon = Application.GetFileIcon(node.FullName);
+				GLTexture fileIcon = Application.GetFileIcon(node.FullPath);
 				//Application.LoadTextureFromFile($"Resources/icons/default_file.png")
 				ImGui.GetWindowDrawList().AddImage(fileIcon.Image, fileIconPos, fileIconPosMax);
 				//var statusIconPos = fileIconPosMax;
@@ -290,7 +332,13 @@ namespace Wanderer
 
 			}
 
-			if (ImGui.BeginPopupContextItem(node.FullName))
+			
+		}
+
+
+		private void DrawPopupContextItem(FileTreeNode node)
+		{
+			if (ImGui.BeginPopupContextItem(node.FullPath))
 			{
 				//if (ImGui.MenuItem("Edit"))
 				//{
@@ -298,17 +346,19 @@ namespace Wanderer
 
 				if (ImGui.MenuItem("Copy Path"))
 				{
-					ImGui.SetClipboardText(node.FullName);
+					ImGui.SetClipboardText(node.Path);
 					//Application.SetClipboard(branchNode.FullName);
 				}
 				if (ImGui.MenuItem("Open"))
 				{
-                    System.Diagnostics.Process.Start("Explorer", node.FullName.Replace("/", "\\"));
+					System.Diagnostics.Process.Start("Explorer", node.Path.Replace("/", "\\"));
 				}
 				ImGui.EndPopup();
 			}
 		}
-    }
+
+
+	}
 
    
 }
