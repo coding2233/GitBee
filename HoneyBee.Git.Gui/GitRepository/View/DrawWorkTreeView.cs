@@ -33,6 +33,8 @@ namespace Wanderer
 
 		public void OnRelease()
 		{
+			FullPath = null; Path = null; Name = null;
+			Parent = null; Children = null;
 		}
 
 		//public FileTreeNode(string path,FileTreeNode parent, bool isFile = true)
