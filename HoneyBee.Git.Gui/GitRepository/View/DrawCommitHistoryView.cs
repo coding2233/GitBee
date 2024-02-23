@@ -562,7 +562,7 @@ namespace Wanderer.GitRepository.View
 
         void GetHistoryCommits()
         {
-			if (m_cacheCommits == null && m_gitRepo!=null)
+			if (m_gitRepo!=null)
             {
                 //强制更新
 				bool force = m_gitRepo.CheckAndRemoveDirtyStatus(GitRepoDirtyStatus.Commit);
@@ -578,7 +578,7 @@ namespace Wanderer.GitRepository.View
                     m_gitRepo.RunTask(() => {
 
                         List<string> localBranch = new List<string>();
-                        localBranch.Add("Default-All-Branch");
+                        localBranch.Add("All-Branch");
                         foreach (var item in m_gitRepo.Repo.Branches)
                         {
                             if (!item.IsRemote)
