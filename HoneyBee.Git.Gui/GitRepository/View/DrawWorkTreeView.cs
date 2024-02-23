@@ -138,7 +138,8 @@ namespace Wanderer
 					continue;
 				}
 
-				if (m_gitRepo.Repo.Ignore.IsPathIgnored(dirPath))
+				if (m_gitRepo != null && m_gitRepo.Repo != null 
+					&& m_gitRepo.Repo.Ignore.IsPathIgnored(dirPath))
 				{
 					continue;
 				}
@@ -153,7 +154,8 @@ namespace Wanderer
 				foreach (var file in files)
 				{
 					string filePath = ToRepoPath(file);
-					if (m_gitRepo.Repo.Ignore.IsPathIgnored(filePath))
+					if (m_gitRepo != null && m_gitRepo.Repo != null 
+						&& m_gitRepo.Repo.Ignore.IsPathIgnored(filePath))
 					{
 						continue;
 					}
