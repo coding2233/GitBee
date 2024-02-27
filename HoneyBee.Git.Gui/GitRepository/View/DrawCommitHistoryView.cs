@@ -39,7 +39,6 @@ namespace Wanderer.GitRepository.View
         private SplitView m_selectCommitTreeSpliteView;
 
         private Range m_cacheRange;
-        private ICommitLog m_commitLog;
 		private IEnumerable<Commit> m_cacheCommits;
         private List<CommitTableInfo> m_tableShowCommits;
 
@@ -559,7 +558,7 @@ namespace Wanderer.GitRepository.View
 
         void GetCommitTableInfos(bool reset,int targetCount = 0)
         {
-            if (m_cacheCommits == null)
+			if (m_cacheCommits == null)
             {
                 return;
             }
@@ -589,13 +588,14 @@ namespace Wanderer.GitRepository.View
                 }
 			}
 
-            if (m_tableShowCommits.Count >= m_commitMax)
-            {
-                Log.Info("m_tableShowCommits.Count >= m_commitMax");
-                return;
-            }
+            //if (m_tableShowCommits.Count >= m_commitMax)
+            //{
+            //    Log.Info("m_tableShowCommits.Count >= m_commitMax");
+            //    return;
+            //}
 
-            int startIndex = m_tableShowCommits.Count;
+
+			int startIndex = m_tableShowCommits.Count;
 			var range = new Range(startIndex, startIndex + commitViewMax);
 			var commits = m_cacheCommits.Take(range);
 
@@ -637,23 +637,30 @@ namespace Wanderer.GitRepository.View
 					}
 					m_localBranchs = localBranch.ToArray();
 
-					string includeReachableFrom = m_selectLocalBranch > 0 ? m_localBranchs[m_selectLocalBranch] : "HEAD";
-					var filter = new CommitFilter
-					{
-						//ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-						IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
-					};
-
-					m_commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
-
-                    if (string.IsNullOrEmpty(m_searchCommit))
+                    ICommitLog commitLog;
+					if (m_selectLocalBranch > 0)
                     {
-                        m_cacheCommits = m_commitLog;
+                        string includeReachableFrom = m_localBranchs[m_selectLocalBranch];
+                        var filter = new CommitFilter
+                        {
+                            //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+                            IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
+                        };
 
+                        commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
                     }
                     else
                     {
-						m_cacheCommits = m_commitLog.Where((commitInfo) =>
+                        commitLog = m_gitRepo.Repo.Commits;
+					}
+
+                    if (string.IsNullOrEmpty(m_searchCommit))
+                    {
+                        m_cacheCommits = commitLog;
+                    }
+                    else
+                    {
+						m_cacheCommits = commitLog.Where((commitInfo) =>
 						{
 							if (commitInfo.Author.Name.Contains(m_searchCommit))
 							{
@@ -682,16 +689,18 @@ namespace Wanderer.GitRepository.View
 							return false;
 						});
 					}
-					m_commitMax = m_cacheCommits.Count();
 
+					m_commitMax = m_cacheCommits.Count();
 					var dateTimeMiddle = DateTime.Now;
+
+                    m_commitMax = -1;
 
 					GetCommitTableInfos(true);
 
 					var dateTimeEnd = DateTime.Now;
-                    double timeMiddle = dateTimeEnd.Subtract(dateTimeMiddle).TotalMilliseconds;
+                    double timeMiddle = dateTimeMiddle.Subtract(dateTimeStart).TotalMilliseconds;
                     double timeEnd = dateTimeEnd.Subtract(dateTimeStart).TotalMilliseconds;
-					Console.WriteLine($"{m_tableShowCommits.Count} {timeMiddle} {timeMiddle / 1000} {timeEnd} {timeEnd / 1000}");
+                    Log.Info($"{m_tableShowCommits.Count} timeMiddle: {timeMiddle / 1000}  timeEnd: {timeEnd / 1000}");
 				});
 			}
 		}
@@ -716,10 +725,11 @@ namespace Wanderer.GitRepository.View
 
         public class CommitTableInfo : IPool
         {
-            public string Sha { get; private set; }
-            public string ShaShort { get; private set; }
-            public string Author { get; private set; }
-            public string Message { get; private set; }
+            public string Sha  => this.Commit.Sha;
+
+			public string ShaShort { get; private set; }
+            public string Author => this.Commit.Author.Name;
+            public string Message => this.Commit.MessageShort;
             public string DateTime { get; private set; }
             public List<string> Parents { get; private set; }
             public Commit Commit { get; private set; }
@@ -729,10 +739,7 @@ namespace Wanderer.GitRepository.View
 
             public void OnRelease()
             {
-                Sha = null;
                 ShaShort = null;
-                Author = null;
-                Message = null;
                 DateTime = null;
                 Parents = null;
                 Commit = null;
@@ -741,10 +748,7 @@ namespace Wanderer.GitRepository.View
             public CommitTableInfo SetCommit(Commit commit)
             {
                 Commit = commit;
-				Sha = commit.Sha;
                 ShaShort = Sha.Substring(0, 10);
-                Author = commit.Author.Name;
-                Message = commit.MessageShort;
                 DateTime = commit.Author.When.DateTime.ToString();
                 if (commit.Parents!=null)
                 {
