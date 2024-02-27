@@ -162,9 +162,9 @@ namespace Wanderer.GitRepository.Common
         //}
 
 
-        public void SetSelectCommit(string sha)
+        public void SetSelectCommit(Commit commit)
         {
-            SelectCommit = m_repository.Commits.Where(x => x.Sha.Equals(sha)).First();
+            SelectCommit = commit;
         }
 
         public void Commit(string commitMessage)
