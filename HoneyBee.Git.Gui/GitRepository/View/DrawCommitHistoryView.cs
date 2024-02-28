@@ -39,7 +39,6 @@ namespace Wanderer.GitRepository.View
         private SplitView m_selectCommitDiffSpliteView;
         private SplitView m_selectCommitTreeSpliteView;
 
-        private Range m_cacheRange;
 		private IEnumerable<Commit> m_cacheCommits;
         private List<CommitTableInfo> m_tableShowCommits;
         private bool m_getAllCommit;
@@ -91,50 +90,44 @@ namespace Wanderer.GitRepository.View
 
         private void DrawHistoryCommits()
         {
+            bool redraw = false;
             var itemWidth = ImGui.GetWindowWidth() * 0.2f;
             ImGui.SetNextItemWidth(itemWidth);
             if (ImGui.Combo("Branch", ref m_selectLocalBranch, m_localBranchs, m_localBranchs.Length))
             {
                 GetCommitLog(true);
+                redraw = true;
 			}
 			ImGui.SameLine();
             ImGui.SetNextItemWidth(160);
             int newCommitViewIndex = m_tableShowCommits.Count;
-            if (ImGui.InputInt($"Commit Range ({newCommitViewIndex}/{m_commitMax})##Commit-Index-InputInt", ref newCommitViewIndex, 1, 100, ImGuiInputTextFlags.EnterReturnsTrue))
+            if (ImGui.InputInt($"Commit Range ({0}/{newCommitViewIndex})##Commit-Index-InputInt", ref newCommitViewIndex, 1, 100, ImGuiInputTextFlags.EnterReturnsTrue))
             {
                 if (newCommitViewIndex > m_tableShowCommits.Count)
                 {
                     GetCommitTableInfos(false, newCommitViewIndex);
 				}
             }
-            ImGui.SameLine();
+			if (ImGui.IsItemHovered() && string.IsNullOrEmpty(m_searchCommit))
+			{
+				ImGui.SetTooltip("Set commit range | EnterReturnsTrue");
+			}
+			ImGui.SameLine();
             ImGui.SetNextItemWidth(itemWidth);
             if (ImGui.InputText("Search", ref m_searchCommit, 200, ImGuiInputTextFlags.EnterReturnsTrue))
             {
                 GetCommitLog(true);
+				redraw = true;
 			}
 			if (ImGui.IsItemHovered() && string.IsNullOrEmpty(m_searchCommit))
             {
-                ImGui.SetTooltip("Please input sha/message/author/date time...");
+                ImGui.SetTooltip("Please input sha/message/author/date time... | EnterReturnsTrue");
             }
 
             ImGui.BeginChild("DrawHistoryCommits-TableData");
 
-            if (m_lastCommitScrollY <= 0.0f)
-            {
-                //float moveInterval = GetScrollInterval(_commitViewIndex - _commitAddInterval >= 0 ? _commitAddInterval : _commitViewIndex - _commitAddInterval);
-                //m_commitViewIndex -= m_commitAddInterval;
-                //m_commitViewIndex = Math.Max(m_commitViewIndex, 0);
-                //if (m_commitViewIndex > 0)
-                //    ImGui.SetScrollY(GetScrollInterval(m_commitAddInterval));
-            }
-            else if (m_lastCommitScrollY >= ImGui.GetScrollMaxY())
-            {
-                GetCommitTableInfos(false);
-            }
-            m_lastCommitScrollY = ImGui.GetScrollY();
-
-            if (ImGui.BeginTable("GitRepo-Commits", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
+			
+			if (ImGui.BeginTable("GitRepo-Commits", 5, ImGuiTableFlags.RowBg | ImGuiTableFlags.Borders | ImGuiTableFlags.Resizable | ImGuiTableFlags.Reorderable))
             {
                 //图谱
                 //ImGui.TableSetupColumn("Graph", ImGuiTableColumnFlags.WidthFixed | ImGuiTableColumnFlags.NoResize);
@@ -284,12 +277,23 @@ namespace Wanderer.GitRepository.View
                 ImGui.EndTable();
             }
 
+            if (redraw)
+            {
+                ImGui.SetScrollY(0);
+            }
 
-            ImGui.EndChild();
-        }
+			var scrollY = ImGui.GetScrollY();
+			if (scrollY > m_lastCommitScrollY && scrollY >= ImGui.GetScrollMaxY())
+			{
+				GetCommitTableInfos(false);
+			}
+			m_lastCommitScrollY = scrollY;
+
+			ImGui.EndChild();
+		}
 
 
-        private void OnCommitPopupContextItem(CommitTableInfo item)
+		private void OnCommitPopupContextItem(CommitTableInfo item)
         {
             var headBranch = m_gitRepo.Repo.Head;
             string headBranchwName = $"'{headBranch}'";
@@ -579,7 +583,7 @@ namespace Wanderer.GitRepository.View
                     int commitViewMax = m_commitViewMax;
                     if (reset)
                     {
-                        ClearTableCommitInfo();
+						ClearTableCommitInfo();
                     }
                     else
                     {
@@ -645,91 +649,92 @@ namespace Wanderer.GitRepository.View
 			}
 		}
        
-		void GetCommitLog(bool manualCall)
+		async void GetCommitLog(bool manualCall)
 		{
 			//强制更新
 			bool isCommitDirty = m_gitRepo.CheckAndRemoveDirtyStatus(GitRepoDirtyStatus.Commit);
 			if (isCommitDirty || manualCall)
 			{
-                Task.Run(() => {
-                    try
-                    {
-                        m_cacheCommits = null;
+				try
+				{
+					m_cacheCommits = null;
 
-						List<string> localBranch = new List<string>();
-                        localBranch.Add("All-Branch");
-                        foreach (var item in m_gitRepo.Repo.Branches)
-                        {
-                            if (!item.IsRemote)
-                            {
-                                localBranch.Add(item.FriendlyName);
-                            }
-                        }
-                        m_localBranchs = localBranch.ToArray();
-
-						string includeReachableFrom = m_selectLocalBranch > 0 ? m_localBranchs[m_selectLocalBranch]: "HEAD";
-						var filter = new CommitFilter
+					List<string> localBranch = new List<string>();
+					localBranch.Add("All-Branch");
+					foreach (var item in m_gitRepo.Repo.Branches)
+					{
+						if (!item.IsRemote)
 						{
-
-							//ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-							IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
-						    //CommitSortStrategies.Time和CommitSortStrategies.None时间天差地别
-						    //https://github.com/libgit2/libgit2sharp/issues/1558
-							SortBy = CommitSortStrategies.None
-						};
-
-						ICommitLog commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
-
-						var stopwatch = Stopwatch.StartNew();
-		
-						if (string.IsNullOrEmpty(m_searchCommit))
-                        {
-                            m_cacheCommits = commitLog;
-                        }
-                        else
-                        {
-                            m_cacheCommits = commitLog.Where((commitInfo) =>
-                            {
-                                if (commitInfo.Author.Name.Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                if (commitInfo.Committer.Name.Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                if (commitInfo.Sha.Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                if (commitInfo.Message.Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
-                                {
-                                    return true;
-                                }
-                                return false;
-                            });
-                        }
-
-						Log.Info("Time to start getting the log: {0}", stopwatch.Elapsed);
-
-                        GetCommitTableInfos(true);
-
-						Log.Info("Build imgui table log info: {0}", stopwatch.Elapsed);
-
+							localBranch.Add(item.FriendlyName);
+						}
 					}
-					catch (System.Exception e)
-                    {
-                        Log.Warn("GetCommitLog exception: {0}",e);
-                    }
-				});
+					m_localBranchs = localBranch.ToArray();
+
+					string includeReachableFrom = m_selectLocalBranch > 0 ? m_localBranchs[m_selectLocalBranch] : "HEAD";
+					var filter = new CommitFilter
+					{
+
+						//ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+						IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
+																	  //CommitSortStrategies.Time和CommitSortStrategies.None时间天差地别
+																	  //https://github.com/libgit2/libgit2sharp/issues/1558
+						SortBy = CommitSortStrategies.None
+					};
+
+					ICommitLog commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
+
+					var stopwatch = Stopwatch.StartNew();
+
+					if (string.IsNullOrEmpty(m_searchCommit))
+					{
+						m_cacheCommits = commitLog;
+					}
+					else
+					{
+                        await Task.Run(() => {
+							m_cacheCommits = commitLog.Where((commitInfo) =>
+							{
+								if (commitInfo.Author.Name.Contains(m_searchCommit))
+								{
+									return true;
+								}
+								if (commitInfo.Committer.Name.Contains(m_searchCommit))
+								{
+									return true;
+								}
+								if (commitInfo.Sha.Contains(m_searchCommit))
+								{
+									return true;
+								}
+								if (commitInfo.Message.Contains(m_searchCommit))
+								{
+									return true;
+								}
+								if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
+								{
+									return true;
+								}
+								if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
+								{
+									return true;
+								}
+								return false;
+							}).ToArray();
+							Log.Info("Time to start getting the log where search: {0}", stopwatch.Elapsed);
+						});
+					}
+
+					Log.Info("Time to start getting the log: {0}", stopwatch.Elapsed);
+
+					GetCommitTableInfos(true);
+
+					Log.Info("Build imgui table log info: {0}", stopwatch.Elapsed);
+
+				}
+				catch (System.Exception e)
+				{
+					Log.Warn("GetCommitLog exception: {0}", e);
+				}
 			}
 		}
 
