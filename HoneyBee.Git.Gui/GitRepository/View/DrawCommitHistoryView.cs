@@ -658,30 +658,36 @@ namespace Wanderer.GitRepository.View
 				try
 				{
 					m_cacheCommits = null;
+                    string headTrachName = null;
 
 					List<string> localBranch = new List<string>();
+					localBranch.Add("HEAD");
 					localBranch.Add("All-Branch");
+					
 					foreach (var item in m_gitRepo.Repo.Branches)
 					{
-						if (!item.IsRemote)
-						{
-							localBranch.Add(item.FriendlyName);
+                        if (!item.IsRemote)
+                        {
+                            localBranch.Add(item.FriendlyName);
+
+							if (item.IsCurrentRepositoryHead)
+							{
+                                headTrachName = item.TrackedBranch?.FriendlyName;
+							}
 						}
 					}
 					m_localBranchs = localBranch.ToArray();
 
-					string includeReachableFrom = m_selectLocalBranch > 0 ? m_localBranchs[m_selectLocalBranch] : "HEAD";
+					string includeReachableFrom = m_selectLocalBranch == 1 &&!string.IsNullOrEmpty(headTrachName) ? headTrachName: m_localBranchs[m_selectLocalBranch];
 					var filter = new CommitFilter
 					{
-
-						//ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-						IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
-																	  //CommitSortStrategies.Time和CommitSortStrategies.None时间天差地别
-																	  //https://github.com/libgit2/libgit2sharp/issues/1558
+						IncludeReachableFrom = includeReachableFrom,  
+						//CommitSortStrategies.Time和CommitSortStrategies.None时间天差地别
+						//https://github.com/libgit2/libgit2sharp/issues/1558
 						SortBy = CommitSortStrategies.None
 					};
 
-					ICommitLog commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
+                    ICommitLog commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
 
 					var stopwatch = Stopwatch.StartNew();
 
