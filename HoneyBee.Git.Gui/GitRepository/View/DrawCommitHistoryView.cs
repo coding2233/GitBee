@@ -145,136 +145,138 @@ namespace Wanderer.GitRepository.View
 
                 List<CommitAtlasLine> commitAtlasLines = new List<CommitAtlasLine>();
                 int atalsMaxId = -1;
-                foreach (var item in m_tableShowCommits)
+                lock (m_tableShowCommits)
                 {
-                    //if (index < m_commitViewIndex)
-                    //    continue;
-                    //else if (index >= m_commitViewIndex + m_commitViewMax)
-                    //    break;
-
-                    if (item == null)
+                    foreach (var item in m_tableShowCommits)
                     {
-                        break;
-                    }
+                        //if (index < m_commitViewIndex)
+                        //    continue;
+                        //else if (index >= m_commitViewIndex + m_commitViewMax)
+                        //    break;
 
-                    //表格
-                    ImGui.TableNextRow();
-                    ImGui.TableSetColumnIndex(0);
-                    //图谱绘制
-                    int atlasId = 0;
-                    float pointXOffset = 0;
-                    var atlasLines = commitAtlasLines.FindAll(x => x.Parent == item.Sha);
-                    if (atlasLines != null && atlasLines.Count > 0)
-                    {
-                        foreach (var itemLine in atlasLines)
+                        if (item == null)
                         {
-                            if (atlasId == 0)
+                            break;
+                        }
+
+                        //表格
+                        ImGui.TableNextRow();
+                        ImGui.TableSetColumnIndex(0);
+                        //图谱绘制
+                        int atlasId = 0;
+                        float pointXOffset = 0;
+                        var atlasLines = commitAtlasLines.FindAll(x => x.Parent == item.Sha);
+                        if (atlasLines != null && atlasLines.Count > 0)
+                        {
+                            foreach (var itemLine in atlasLines)
                             {
-                                atlasId = itemLine.AtlasId;
+                                if (atlasId == 0)
+                                {
+                                    atlasId = itemLine.AtlasId;
+                                }
+                                else
+                                {
+                                    atlasId = Math.Min(atlasId, itemLine.AtlasId);
+                                }
+                                commitAtlasLines.Remove(itemLine);
                             }
-                            else
+
+                        }
+                        else
+                        {
+                            atlasId = atalsMaxId + 1;
+                        }
+                        pointXOffset = ImGui.GetTextLineHeight() * atlasId;
+
+                        var atlasPoint = ImGui.GetCursorPos() + ImGui.GetWindowPos() + new Vector2(pointXOffset, ImGui.GetTextLineHeight() * 0.5f - ImGui.GetScrollY());
+                        ImGui.GetWindowDrawList().AddCircleFilled(atlasPoint, ImGui.GetTextLineHeight() * 0.25f, ImGui.GetColorU32(ImGuiCol.ButtonActive));
+                        if (atlasLines != null && atlasLines.Count > 0)
+                        {
+                            foreach (var itemLine in atlasLines)
                             {
-                                atlasId = Math.Min(atlasId, itemLine.AtlasId);
+                                ImGui.GetWindowDrawList().AddLine(itemLine.ChildPoint, atlasPoint, ImGui.GetColorU32(ImGuiCol.ButtonActive));
+                                Pool<CommitAtlasLine>.Release(itemLine);
                             }
-                            commitAtlasLines.Remove(itemLine);
                         }
 
-                    }
-                    else
-                    {
-                        atlasId = atalsMaxId + 1;
-                    }
-                    pointXOffset = ImGui.GetTextLineHeight() * atlasId;
 
-                    var atlasPoint = ImGui.GetCursorPos() + ImGui.GetWindowPos() + new Vector2(pointXOffset, ImGui.GetTextLineHeight() * 0.5f - ImGui.GetScrollY());
-                    ImGui.GetWindowDrawList().AddCircleFilled(atlasPoint, ImGui.GetTextLineHeight() * 0.25f, ImGui.GetColorU32(ImGuiCol.ButtonActive));
-                    if (atlasLines != null && atlasLines.Count > 0)
-                    {
-                        foreach (var itemLine in atlasLines)
+                        if (item.Parents != null)
                         {
-                            ImGui.GetWindowDrawList().AddLine(itemLine.ChildPoint, atlasPoint, ImGui.GetColorU32(ImGuiCol.ButtonActive));
-                            Pool<CommitAtlasLine>.Release(itemLine);
-                        }
-                    }
-
-
-                    if (item.Parents != null)
-                    {
-                        int itemIndex = 0;
-                        foreach (var itemParent in item.Parents)
-                        {
-                            var atlasLine = Pool<CommitAtlasLine>.Get();
-                            atlasLine.AtlasId = atlasId + itemIndex;
-                            atlasLine.ChildPoint = atlasPoint;
-                            atlasLine.Parent = itemParent;
-                            itemIndex++;
-                            commitAtlasLines.Add(atlasLine);
-
-                            atalsMaxId = Math.Max(atalsMaxId, atlasLine.AtlasId);
-                        }
-                    }
-
-                    //ImGui.Text("");
-                    ImGui.SetCursorPosX(ImGui.GetCursorPosX() + pointXOffset + ImGui.GetTextLineHeight());
-                    ImGui.TableSetColumnIndex(1);
-
-
-                    if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
-                    {
-                        if (notes != null && notes.Count > 0)
-                        {
-                            foreach (var itemNote in notes)
+                            int itemIndex = 0;
+                            foreach (var itemParent in item.Parents)
                             {
-                                var noteRectMin = ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY()) + ImGui.GetCursorPos();
-                                var noteRectMax = noteRectMin + ImGui.CalcTextSize(itemNote);
+                                var atlasLine = Pool<CommitAtlasLine>.Get();
+                                atlasLine.AtlasId = atlasId + itemIndex;
+                                atlasLine.ChildPoint = atlasPoint;
+                                atlasLine.Parent = itemParent;
+                                itemIndex++;
+                                commitAtlasLines.Add(atlasLine);
 
-                                //ImGuiView.Colors[1]-Vector4.One*0.5f)
-                                ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax, ImGui.GetColorU32(ImGuiCol.TextSelectedBg));
+                                atalsMaxId = Math.Max(atalsMaxId, atlasLine.AtlasId);
+                            }
+                        }
 
-                                //int colorIndex = branchIndex % ImGuiView.Colors.Count;
-                                //var textColor = ImGuiView.Colors[0];
+                        //ImGui.Text("");
+                        ImGui.SetCursorPosX(ImGui.GetCursorPosX() + pointXOffset + ImGui.GetTextLineHeight());
+                        ImGui.TableSetColumnIndex(1);
 
-                                ImGui.Text(itemNote);
-                                //ImGui.TextColored(textColor, itemNote);
+
+                        if (m_gitRepo.CommitNotes.TryGetValue(item.Sha, out List<string> notes))
+                        {
+                            if (notes != null && notes.Count > 0)
+                            {
+                                foreach (var itemNote in notes)
+                                {
+                                    var noteRectMin = ImGui.GetWindowPos() - new Vector2(ImGui.GetScrollX(), ImGui.GetScrollY()) + ImGui.GetCursorPos();
+                                    var noteRectMax = noteRectMin + ImGui.CalcTextSize(itemNote);
+
+                                    //ImGuiView.Colors[1]-Vector4.One*0.5f)
+                                    ImGui.GetWindowDrawList().AddRectFilled(noteRectMin, noteRectMax, ImGui.GetColorU32(ImGuiCol.TextSelectedBg));
+
+                                    //int colorIndex = branchIndex % ImGuiView.Colors.Count;
+                                    //var textColor = ImGuiView.Colors[0];
+
+                                    ImGui.Text(itemNote);
+                                    //ImGui.TextColored(textColor, itemNote);
+                                    ImGui.SameLine();
+                                }
+                            }
+                        }
+
+                        //ImGui.Text(item.MessageShort);
+                        if (ImGui.Selectable($"{item.Message}##{item.Sha}", m_selectCommit != null && m_selectCommit.Sha == item.Sha, ImGuiSelectableFlags.SpanAllColumns))
+                        {
+                            m_gitRepo.SetSelectCommit(item.Commit);
+                            //m_gitRepo.SelectCommit = m_gitRepo.SetSelectCommit(item.Sha);
+                        }
+
+                        //右键菜单 - test
+                        if (ImGui.BeginPopupContextItem(item.Sha))
+                        {
+                            //m_gitRepo.SelectCommit = item;
+                            m_gitRepo.SetSelectCommit(item.Commit);
+
+                            if (m_gitRepo.SelectCommit != null)
+                            {
+                                ImGui.Text(Icon.Get(Icon.Material_commit));
                                 ImGui.SameLine();
+                                ImGui.Text(item.ShaShort);
+                                ImGui.SameLine();
+                                ImGui.Text(item.Message);
+                                ImGui.Separator();
+                                OnCommitPopupContextItem(item);
                             }
+                            ImGui.EndPopup();
                         }
+
+                        ImGui.TableSetColumnIndex(2);
+                        ImGui.Text(item.DateTime);
+                        ImGui.TableSetColumnIndex(3);
+                        ImGui.Text(item.Author);// [{item.Committer.Email}]
+                        ImGui.TableSetColumnIndex(4);
+                        ImGui.Text($"{item.ShaShort}");
                     }
-
-					//ImGui.Text(item.MessageShort);
-					if (ImGui.Selectable($"{item.Message}##{item.Sha}", m_selectCommit != null && m_selectCommit.Sha == item.Sha, ImGuiSelectableFlags.SpanAllColumns))
-                    {
-                        m_gitRepo.SetSelectCommit(item.Commit);
-                        //m_gitRepo.SelectCommit = m_gitRepo.SetSelectCommit(item.Sha);
-                    }
-
-                    //右键菜单 - test
-                    if (ImGui.BeginPopupContextItem(item.Sha))
-                    {
-                        //m_gitRepo.SelectCommit = item;
-                        m_gitRepo.SetSelectCommit(item.Commit);
-
-                        if (m_gitRepo.SelectCommit != null)
-                        {
-                            ImGui.Text(Icon.Get(Icon.Material_commit));
-                            ImGui.SameLine();
-                            ImGui.Text(item.ShaShort);
-                            ImGui.SameLine();
-                            ImGui.Text(item.Message);
-                            ImGui.Separator();
-                            OnCommitPopupContextItem(item);
-                        }
-                        ImGui.EndPopup();
-                    }
-
-                    ImGui.TableSetColumnIndex(2);
-                    ImGui.Text(item.DateTime);
-                    ImGui.TableSetColumnIndex(3);
-                    ImGui.Text(item.Author);// [{item.Committer.Email}]
-                    ImGui.TableSetColumnIndex(4);
-                    ImGui.Text($"{item.ShaShort}");
                 }
-
                 Pool<CommitAtlasLine>.Release(commitAtlasLines);
 
                 ImGui.EndTable();
@@ -624,83 +626,90 @@ namespace Wanderer.GitRepository.View
 			{
                 Task.Run(() => {
 
-                    var dateTimeStart = DateTime.Now;
-
-					List<string> localBranch = new List<string>();
-					localBranch.Add("All-Branch");
-					foreach (var item in m_gitRepo.Repo.Branches)
-					{
-						if (!item.IsRemote)
-						{
-							localBranch.Add(item.FriendlyName);
-						}
-					}
-					m_localBranchs = localBranch.ToArray();
-
-                    ICommitLog commitLog;
-					if (m_selectLocalBranch > 0)
+                    try
                     {
-                        string includeReachableFrom = m_localBranchs[m_selectLocalBranch];
-                        var filter = new CommitFilter
+                        var dateTimeStart = DateTime.Now;
+
+                        List<string> localBranch = new List<string>();
+                        localBranch.Add("All-Branch");
+                        foreach (var item in m_gitRepo.Repo.Branches)
                         {
-                            //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-                            IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
-                        };
+                            if (!item.IsRemote)
+                            {
+                                localBranch.Add(item.FriendlyName);
+                            }
+                        }
+                        m_localBranchs = localBranch.ToArray();
 
-                        commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
+                        ICommitLog commitLog;
+                        if (m_selectLocalBranch > 0)
+                        {
+                            string includeReachableFrom = m_localBranchs[m_selectLocalBranch];
+                            var filter = new CommitFilter
+                            {
+                                //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+                                IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
+                            };
+
+                            commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
+                        }
+                        else
+                        {
+                            commitLog = m_gitRepo.Repo.Commits;
+                        }
+
+                        if (string.IsNullOrEmpty(m_searchCommit))
+                        {
+                            m_cacheCommits = commitLog;
+                        }
+                        else
+                        {
+                            m_cacheCommits = commitLog.Where((commitInfo) =>
+                            {
+                                if (commitInfo.Author.Name.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Committer.Name.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Sha.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Message.Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
+                                {
+                                    return true;
+                                }
+                                return false;
+                            });
+                        }
+
+                       // m_commitMax = m_cacheCommits.Count();
+                        var dateTimeMiddle = DateTime.Now;
+
+                        m_commitMax = -1;
+
+                        GetCommitTableInfos(true);
+
+                        var dateTimeEnd = DateTime.Now;
+                        double timeMiddle = dateTimeMiddle.Subtract(dateTimeStart).TotalMilliseconds;
+                        double timeEnd = dateTimeEnd.Subtract(dateTimeStart).TotalMilliseconds;
+                        Log.Info($"{m_tableShowCommits.Count} timeMiddle: {timeMiddle / 1000}  timeEnd: {timeEnd / 1000}");
                     }
-                    else
+                    catch (System.Exception e)
                     {
-                        commitLog = m_gitRepo.Repo.Commits;
-					}
-
-                    if (string.IsNullOrEmpty(m_searchCommit))
-                    {
-                        m_cacheCommits = commitLog;
+                        Log.Warn("++++"+e);
                     }
-                    else
-                    {
-						m_cacheCommits = commitLog.Where((commitInfo) =>
-						{
-							if (commitInfo.Author.Name.Contains(m_searchCommit))
-							{
-								return true;
-							}
-							if (commitInfo.Committer.Name.Contains(m_searchCommit))
-							{
-								return true;
-							}
-							if (commitInfo.Sha.Contains(m_searchCommit))
-							{
-								return true;
-							}
-							if (commitInfo.Message.Contains(m_searchCommit))
-							{
-								return true;
-							}
-							if (commitInfo.Author.When.DateTime.ToString().Contains(m_searchCommit))
-							{
-								return true;
-							}
-							if (commitInfo.Committer.When.DateTime.ToString().Contains(m_searchCommit))
-							{
-								return true;
-							}
-							return false;
-						});
-					}
-
-					m_commitMax = m_cacheCommits.Count();
-					var dateTimeMiddle = DateTime.Now;
-
-                    m_commitMax = -1;
-
-					GetCommitTableInfos(true);
-
-					var dateTimeEnd = DateTime.Now;
-                    double timeMiddle = dateTimeMiddle.Subtract(dateTimeStart).TotalMilliseconds;
-                    double timeEnd = dateTimeEnd.Subtract(dateTimeStart).TotalMilliseconds;
-                    Log.Info($"{m_tableShowCommits.Count} timeMiddle: {timeMiddle / 1000}  timeEnd: {timeEnd / 1000}");
 				});
 			}
 		}
