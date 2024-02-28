@@ -126,7 +126,7 @@ namespace Wanderer.GitRepository.View
 
 			if (m_gitRepo != null)
             {
-                m_gitRepo.SetDirty(GitRepoDirtyStatus.All);
+                //m_gitRepo.SetDirty(GitRepoDirtyStatus.All);
 
 				if (m_submoduleSelectView != null)
                 {

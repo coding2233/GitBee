@@ -13,12 +13,12 @@ namespace Wanderer.Common
 
         public static T Get()
         {
-            T t;
+            T t = null;
             if (m_objects.Count > 0)
             {
                 t = m_objects.Dequeue();
             }
-            else
+            if(null == t)
             {
                 t = new T();
             }

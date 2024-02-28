@@ -4,6 +4,7 @@ using strange.extensions.dispatcher.eventdispatcher.api;
 using strange.extensions.mediation.impl;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -41,6 +42,7 @@ namespace Wanderer.GitRepository.View
         private Range m_cacheRange;
 		private IEnumerable<Commit> m_cacheCommits;
         private List<CommitTableInfo> m_tableShowCommits;
+        private bool m_getAllCommit;
 
         private string[] m_localBranchs=new string[0];
         private int m_selectLocalBranch;
@@ -560,57 +562,82 @@ namespace Wanderer.GitRepository.View
 
         void GetCommitTableInfos(bool reset,int targetCount = 0)
         {
-			if (m_cacheCommits == null)
+            try
             {
-                return;
-            }
-
-            if (m_tableShowCommits == null)
-            {
-                m_tableShowCommits = new List<CommitTableInfo>();
-            }
-
-            int commitViewMax = m_commitViewMax;
-            if (reset)
-            {
-                ClearTableCommitInfo();
-            }
-            else
-            {
-                if (targetCount > m_tableShowCommits.Count)
+				if (m_cacheCommits == null)
                 {
-                    commitViewMax = targetCount - m_tableShowCommits.Count;
+                    return;
                 }
-                else
-                {
-                    if (targetCount > 0)
+
+                lock(m_cacheCommits)
+                { 
+                    if (m_tableShowCommits == null)
                     {
-                        return;
+                        m_tableShowCommits = new List<CommitTableInfo>();
                     }
+
+                    int commitViewMax = m_commitViewMax;
+                    if (reset)
+                    {
+                        ClearTableCommitInfo();
+                    }
+                    else
+                    {
+						if (m_getAllCommit)
+						{
+							return;
+						}
+						if (targetCount > m_tableShowCommits.Count)
+                        {
+                            commitViewMax = targetCount - m_tableShowCommits.Count;
+                        }
+                        else
+                        {
+                            if (targetCount > 0)
+                            {
+                                return;
+                            }
+                        }
+                    }
+
+                    //if (m_tableShowCommits.Count >= m_commitMax)
+                    //{
+                    //    Log.Info("m_tableShowCommits.Count >= m_commitMax");
+                    //    return;
+                    //}
+
+                    var stopwatch = Stopwatch.StartNew();
+
+                    int startIndex = m_tableShowCommits.Count;
+                    var range = new Range(startIndex, startIndex + commitViewMax);
+                    var commits = m_cacheCommits.Take(range);
+                    Log.Info("Time to commits take range: {0}", stopwatch.Elapsed);
+                    int commitCount = 0;
+                    foreach (var item in commits)
+                    {
+                        var commitTableInfo = Pool<CommitTableInfo>.Get().SetCommit(item);
+                        m_tableShowCommits.Add(commitTableInfo);
+                        commitCount++;
+					}
+
+                    if (commitCount < commitViewMax)
+                    {
+                        m_getAllCommit = true;
+                    }
+                    Log.Info("Time to commits build table log: {0}", stopwatch.Elapsed);
                 }
-			}
 
-            //if (m_tableShowCommits.Count >= m_commitMax)
-            //{
-            //    Log.Info("m_tableShowCommits.Count >= m_commitMax");
-            //    return;
-            //}
-
-
-			int startIndex = m_tableShowCommits.Count;
-			var range = new Range(startIndex, startIndex + commitViewMax);
-			var commits = m_cacheCommits.Take(range);
-
-			foreach (var item in commits)
-			{
-				var commitTableInfo = Pool<CommitTableInfo>.Get().SetCommit(item);
-				m_tableShowCommits.Add(commitTableInfo);
-			}
+            }
+            catch (System.Exception e)
+            {
+                Log.Warn("GetCommitTableInfos exception: {0}", e);
+            }
 		}
 
 
-        private void ClearTableCommitInfo()
+		private void ClearTableCommitInfo()
         {
+            m_getAllCommit = false;
 			if (m_tableShowCommits != null)
 			{
 				Pool<CommitTableInfo>.Release(m_tableShowCommits);
@@ -625,12 +652,11 @@ namespace Wanderer.GitRepository.View
 			if (isCommitDirty || manualCall)
 			{
                 Task.Run(() => {
-
                     try
                     {
-                        var dateTimeStart = DateTime.Now;
+                        m_cacheCommits = null;
 
-                        List<string> localBranch = new List<string>();
+						List<string> localBranch = new List<string>();
                         localBranch.Add("All-Branch");
                         foreach (var item in m_gitRepo.Repo.Branches)
                         {
@@ -641,24 +667,22 @@ namespace Wanderer.GitRepository.View
                         }
                         m_localBranchs = localBranch.ToArray();
 
-                        ICommitLog commitLog;
-                        if (m_selectLocalBranch > 0)
-                        {
-                            string includeReachableFrom = m_localBranchs[m_selectLocalBranch];
-                            var filter = new CommitFilter
-                            {
-                                //ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
-                                IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
-                            };
+						string includeReachableFrom = m_selectLocalBranch > 0 ? m_localBranchs[m_selectLocalBranch]: "HEAD";
+						var filter = new CommitFilter
+						{
 
-                            commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
-                        }
-                        else
-                        {
-                            commitLog = m_gitRepo.Repo.Commits;
-                        }
+							//ExcludeReachableFrom = m_gitRepo.Repo.Branches["master"],       // formerly "Since"
+							IncludeReachableFrom = includeReachableFrom,  // formerly "Until"
+						    //CommitSortStrategies.Time和CommitSortStrategies.None时间天差地别
+						    //https://github.com/libgit2/libgit2sharp/issues/1558
+							SortBy = CommitSortStrategies.None
+						};
 
-                        if (string.IsNullOrEmpty(m_searchCommit))
+						ICommitLog commitLog = m_gitRepo.Repo.Commits.QueryBy(filter);
+
+						var stopwatch = Stopwatch.StartNew();
+		
+						if (string.IsNullOrEmpty(m_searchCommit))
                         {
                             m_cacheCommits = commitLog;
                         }
@@ -694,21 +718,16 @@ namespace Wanderer.GitRepository.View
                             });
                         }
 
-                       // m_commitMax = m_cacheCommits.Count();
-                        var dateTimeMiddle = DateTime.Now;
-
-                        m_commitMax = -1;
+						Log.Info("Time to start getting the log: {0}", stopwatch.Elapsed);
 
                         GetCommitTableInfos(true);
 
-                        var dateTimeEnd = DateTime.Now;
-                        double timeMiddle = dateTimeMiddle.Subtract(dateTimeStart).TotalMilliseconds;
-                        double timeEnd = dateTimeEnd.Subtract(dateTimeStart).TotalMilliseconds;
-                        Log.Info($"{m_tableShowCommits.Count} timeMiddle: {timeMiddle / 1000}  timeEnd: {timeEnd / 1000}");
-                    }
-                    catch (System.Exception e)
+						Log.Info("Build imgui table log info: {0}", stopwatch.Elapsed);
+
+					}
+					catch (System.Exception e)
                     {
-                        Log.Warn("++++"+e);
+                        Log.Warn("GetCommitLog exception: {0}",e);
                     }
 				});
 			}
@@ -734,11 +753,11 @@ namespace Wanderer.GitRepository.View
 
         public class CommitTableInfo : IPool
         {
-            public string Sha  => this.Commit.Sha;
+            public string Sha  => this.Commit == null ? string.Empty : this.Commit.Sha;
 
 			public string ShaShort { get; private set; }
-            public string Author => this.Commit.Author.Name;
-            public string Message => this.Commit.MessageShort;
+            public string Author => this.Commit == null ? string.Empty : this.Commit.Author.Name;
+            public string Message => this.Commit == null ? string.Empty : this.Commit.MessageShort;
             public string DateTime { get; private set; }
             public List<string> Parents { get; private set; }
             public Commit Commit { get; private set; }
