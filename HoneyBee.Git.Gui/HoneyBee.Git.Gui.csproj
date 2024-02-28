@@ -55,7 +55,8 @@
 
 	<ItemGroup>
 		<!--<EmbeddedResource Include="lua\style\fonts\wqy-microhei.ttc" LogicalName="wqy-microhei.ttc" />-->
-		<EmbeddedResource Include="Fonts/MaterialIcons-Regular.ttf" LogicalName="MaterialIcons-Regular.ttf" />
+    <EmbeddedResource Include="Fonts/MaterialIcons-Regular.ttf" LogicalName="MaterialIcons-Regular.ttf" />
+    <EmbeddedResource Include="git_head_sha" LogicalName="git_head_sha" />
 	</ItemGroup>
 
 	<ItemGroup>

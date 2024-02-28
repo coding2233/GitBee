@@ -389,16 +389,31 @@ namespace Wanderer.Common
         public int Major;
         public int Minor;
         public int Patch;
+        public string Sha;
         public string PreVersion;
 
-        public override string ToString()
+        public Version()
         {
-            return $"{Major}.{Minor}.{Patch}";
+			using (Stream stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("git_head_sha"))
+			{
+				if (stream.Length > 0)
+				{
+					byte[] buffer = new byte[stream.Length];
+					stream.Read(buffer, 0, buffer.Length);
+					Sha = System.Text.Encoding.UTF8.GetString(buffer).Substring(0,12);
+				}
+			}
+			
+        }
+
+		public override string ToString()
+        {
+            return $"{Major}.{Minor}.{Patch}.{Sha}";
         }
 
         public string ToFullString()
         {
-            return $"{Major}.{Minor}.{Patch}-{PreVersion}";
+            return $"{Major}.{Minor}.{Patch}.{Sha}-{PreVersion}";
         }
 
     }

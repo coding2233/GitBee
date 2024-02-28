@@ -586,22 +586,16 @@ namespace Wanderer.App
 
 
                 string helpText = "Help";
-				if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
-                {
-                    helpText += Icon.Get(Icon.Material_tips_and_updates);
-                }
+				//if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
+    //            {
+    //                helpText += Icon.Get(Icon.Material_tips_and_updates);
+    //            }
 
                 if (ImGui.BeginMenu(helpText))
                 {
-                    if (!string.IsNullOrEmpty(Application.UpdateDownloadURL))
-                    {
-                        if (ImGui.MenuItem("Update" + Icon.Get(Icon.Material_tips_and_updates)))
-                        {
-                            Process.Start("Explorer", Application.UpdateDownloadURL);
-                        }
-                    }
+					
 
-                    if (ImGui.MenuItem("About"))
+					if (ImGui.MenuItem("About"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
                         try
@@ -614,7 +608,20 @@ namespace Wanderer.App
                         }
                     }
 
-                    if (ImGui.BeginMenu("License"))
+					if (ImGui.BeginMenu("Check for Updates..."))
+					{
+						if (ImGui.MenuItem("Develop Channel"))
+						{
+							Process.Start("Explorer", "https://github.com/coding2233/GitBee/releases/tag/develop");
+						}
+						if (ImGui.MenuItem("Stable Channel"))
+						{
+							Process.Start("Explorer", "https://github.com/coding2233/GitBee/releases/tag/develop");
+						}
+						ImGui.EndMenu();
+					}
+
+					if (ImGui.BeginMenu("License"))
                     {
                         //mainModel.CreateTab<AboutTabWindow>();
                         if (ImGui.MenuItem("Icon"))

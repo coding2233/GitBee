@@ -148,17 +148,13 @@ namespace Wanderer.App
 			var context = ImGui.CreateContext();
 			try
 			{
-				string iniFilePath = Path.Combine(Application.TempDataPath, "imgui.ini");
-				fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
-				{
-					ImGui.GetIO().NativePtr->IniFilename = iniFileName;
-				}
-				//string logFilePath = Path.Combine(Application.TempDataPath, "log.ini");
-				//fixed (byte* logFileName = System.Text.Encoding.UTF8.GetBytes(logFilePath))
+				ImGui.GetIO().NativePtr->IniFilename = null;
+				//string iniFilePath = Path.Combine(Application.TempDataPath, "imgui.ini");
+				//fixed (byte* iniFileName = System.Text.Encoding.UTF8.GetBytes(iniFilePath))
 				//{
-				//    ImGui.GetIO().NativePtr->LogFilename = logFileName;
+				//	ImGui.GetIO().NativePtr->IniFilename = iniFileName;
 				//}
-
+				
 				//io->ImeWindowHandle = ofGetWin32Window();
 				////Load default font.
 				//var defaultFont = ImGui.GetIO().Fonts.AddFontDefault();

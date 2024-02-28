@@ -31,9 +31,9 @@ namespace Wanderer.App.Controller
         {
             AppContextView.AddView<HomeView>();
             //检查更新
-#if !DEBUG
-			CheckUpdate();
-#endif
+//#if !DEBUG
+//			CheckUpdate();
+//#endif
 		}
 
         private async void CheckUpdate()
