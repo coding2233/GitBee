@@ -39,7 +39,9 @@ jobs:
       run: |
         cd HoneyBee.Git.Gui/
         git apply patch_windows_release.patch
-        echo $GITHUB_SHA > git_head_sha
+        echo $GITHUB_SHA
+        echo %GITHUB_SHA%
+        echo %GITHUB_SHA% > git_head_sha
         dotnet restore
         dotnet build --no-restore -c Release
         cd ../
