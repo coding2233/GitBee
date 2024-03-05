@@ -75,17 +75,29 @@ namespace Wanderer.GitRepository.View
 
 		public override void OnDraw()
         {
+            if (m_gitRepo == null)
+            {
+                return;
+            }
+
 			if (m_cacheCommits == null || m_tableShowCommits==null || m_tableShowCommits.Count == 0)
             {
                 AppContextView.Spinner();
                 return;
             }
 
-			m_contentSplitView.Begin();
-            DrawHistoryCommits();
-            m_contentSplitView.Separate();
-            DrawSelectCommit();
-            m_contentSplitView.End();
+            if(m_selectCommit==null && m_gitRepo.SelectCommit == null)
+            {
+                DrawHistoryCommits();
+            }
+            else
+            {
+                m_contentSplitView.Begin();
+                DrawHistoryCommits();
+                m_contentSplitView.Separate();
+                DrawSelectCommit();
+                m_contentSplitView.End();
+            }
         }
 
         private void DrawHistoryCommits()
