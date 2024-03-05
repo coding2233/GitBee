@@ -19,7 +19,7 @@ namespace Wanderer.Common
         {
             if (string.IsNullOrEmpty(s_version.PreVersion))
             {
-                s_version= new Version() { Major = 0, Minor = 1, Patch = 22, PreVersion = "alpha" };
+                s_version= new Version() { Major = 0, Minor = 1, PreVersion = "alpha" };
             }
             return s_version;
         }
@@ -388,7 +388,7 @@ namespace Wanderer.Common
     {
         public int Major;
         public int Minor;
-        public int Patch;
+        //public int Patch;
         public string Sha;
         public string PreVersion;
 
@@ -403,17 +403,16 @@ namespace Wanderer.Common
 					Sha = System.Text.Encoding.UTF8.GetString(buffer).Substring(0,12);
 				}
 			}
-			
         }
 
 		public override string ToString()
         {
-            return $"{Major}.{Minor}.{Patch}.{Sha}";
+            return $"{Major}.{Minor}.{Sha}";
         }
 
         public string ToFullString()
         {
-            return $"{Major}.{Minor}.{Patch}.{Sha}-{PreVersion}";
+            return $"{Major}.{Minor}.{Sha}-{PreVersion}";
         }
 
     }
