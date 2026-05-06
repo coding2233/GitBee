@@ -9,6 +9,7 @@ target("gitbee")
     add_packages("libsdl3", "imgui")
     add_files("src/*.cpp")
     add_files("src/app/*.cpp")
+    add_files("src/gitcore/*.cpp")
 
     if is_mode("debug") then
         set_symbols("debug")
