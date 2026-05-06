@@ -29,7 +29,7 @@ static std::string BuildCommand(const std::string& repoPath,
                                 const std::vector<std::string>& args)
 {
     std::string escapedPath = EscapePath(repoPath);
-    std::string cmd = "git --git-dir=\"" + escapedPath + "/.git\" --work-tree=\"" + escapedPath + "\"";
+    std::string cmd = "LC_ALL=C git --git-dir=\"" + escapedPath + "/.git\" --work-tree=\"" + escapedPath + "\"";
     for (const auto& arg : args) {
         cmd += " \"";
         std::string escaped = EscapePath(arg);
@@ -66,8 +66,9 @@ std::pair<bool, std::string> GitProcess::Execute(const std::string& repoPath,
 
     std::string output;
     char buf[4096];
-    while (fgets(buf, sizeof(buf), pipe) != nullptr) {
-        output += buf;
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0) {
+        output.append(buf, n);
     }
 
     int status = pclose(pipe);
