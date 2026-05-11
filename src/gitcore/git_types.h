@@ -42,7 +42,7 @@ struct GitCommit {
     std::string authorEmail;
     std::string date;
     std::string message;
-    std::string body;              // Only populated by GetCommitDetail()
+    std::string body;
     std::vector<std::string> parentHashes;
     std::vector<std::string> refs;
 };
@@ -62,4 +62,32 @@ struct GitLogOptions {
     std::string path;
     std::string author;
     bool showAllBranches = false;
+};
+
+struct GitBranchInfo {
+    std::string name;
+    std::string fullName;
+    std::string sha;
+    bool isHead = false;
+    bool isRemote = false;
+    int aheadBy = 0;
+    int behindBy = 0;
+    std::string upstreamName;
+};
+
+struct GitSignature {
+    std::string name;
+    std::string email;
+};
+
+struct GitTagInfo {
+    std::string name;
+    std::string sha;
+};
+
+struct GitSubmoduleInfo {
+    std::string name;
+    std::string path;
+    std::string sha;
+    std::string url;
 };
