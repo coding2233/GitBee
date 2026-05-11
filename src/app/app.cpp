@@ -33,11 +33,11 @@ void GitBeeApp::SetRepository(std::shared_ptr<GitRepository> repo)
     if (m_statusPanel) m_statusPanel->SetRepository(repo);
     if (m_logPanel) m_logPanel->SetRepository(repo);
     if (m_diffPanel) m_diffPanel->SetRepository(repo);
-    if (repo) {
+    if (m_diffPanel) m_diffPanel->Clear();
+    if (repo)
         m_statusMessage = "Opened: " + repo->GetRootPath();
-    } else {
+    else
         m_statusMessage = "Failed to open repository";
-    }
 }
 
 void GitBeeApp::OnCreate()
@@ -45,7 +45,7 @@ void GitBeeApp::OnCreate()
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
 
-    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    // ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
     Theme::ApplyDark();
     Theme::LoadFonts();
@@ -73,36 +73,41 @@ void GitBeeApp::RenderMenuBar()
         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
         ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
 
-    if (ImGui::BeginMenuBar()) {
-        if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Open Repository...", "Ctrl+O")) {
+    if (ImGui::BeginMenuBar())
+    {
+        if (ImGui::BeginMenu("File"))
+        {
+            if (ImGui::MenuItem("Open Repository...", "Ctrl+O"))
+            {
+                m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+                m_showFileDialog = true;
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Refresh", "F5")) {
+            if (ImGui::MenuItem("Refresh", "F5"))
+            {
                 if (m_statusPanel) m_statusPanel->Refresh();
                 if (m_logPanel) m_logPanel->Refresh();
                 m_statusMessage = "Refreshed";
             }
             ImGui::Separator();
-            if (ImGui::MenuItem("Reset Layout")) {
+            if (ImGui::MenuItem("Reset Layout"))
                 m_layoutMgr->ResetLayout();
-            }
             ImGui::Separator();
-            if (ImGui::MenuItem("Exit", "Alt+F4")) {
+            if (ImGui::MenuItem("Exit", "Alt+F4"))
                 Quit();
-            }
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("View")) {
+        if (ImGui::BeginMenu("View"))
+        {
             ImGui::MenuItem("ImGui Demo", nullptr, &m_showDemoWindow);
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("About GitBee")) {
+        if (ImGui::BeginMenu("Help"))
+        {
+            if (ImGui::MenuItem("About GitBee"))
                 m_statusMessage = "GitBee - Git Repository Browser";
-            }
             ImGui::EndMenu();
         }
 
@@ -132,11 +137,12 @@ void GitBeeApp::RenderStatusBar()
 
     ImGui::TextUnformatted(m_statusMessage.c_str());
 
-    if (m_repository) {
-        std::string branchInfo = "Branch: " + m_repository->GetCurrentBranch();
-        float textWidth = ImGui::CalcTextSize(branchInfo.c_str()).x;
+    if (m_repository)
+    {
+        std::string info = "Branch: " + m_repository->GetCurrentBranch();
+        float textWidth = ImGui::CalcTextSize(info.c_str()).x;
         ImGui::SameLine(ImGui::GetWindowWidth() - textWidth - 10.0f);
-        ImGui::TextUnformatted(branchInfo.c_str());
+        ImGui::TextUnformatted(info.c_str());
     }
 
     ImGui::End();
@@ -145,60 +151,83 @@ void GitBeeApp::RenderStatusBar()
 
 void GitBeeApp::OnRender()
 {
-    if (m_showDemoWindow) {
+    if (m_showDemoWindow)
         ImGui::ShowDemoWindow(&m_showDemoWindow);
-    }
 
     RenderMenuBar();
 
     m_layoutMgr->BeginFrame();
 
-    // Left panel: repo status
-    if (m_repository) {
+    if (m_repository)
+    {
         ImGui::Begin("Repository Status");
-        if (ImGui::Button("Refresh")) {
+        if (ImGui::Button("Refresh"))
+        {
             if (m_statusPanel) m_statusPanel->Refresh();
             if (m_logPanel) m_logPanel->Refresh();
             m_statusMessage = "Refreshed";
         }
         ImGui::SameLine();
-        if (ImGui::Button("Open...")) {
+        if (ImGui::Button("Open..."))
+        {
+            m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+            m_showFileDialog = true;
         }
-        if (m_statusPanel) {
+        if (m_statusPanel)
             m_statusPanel->Render();
+        ImGui::End();
+    }
+    else
+    {
+        if (ImGui::Begin("Repository Status"))
+        {
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No repository opened");
+            ImGui::TextUnformatted("Open a repository via");
+            ImGui::TextUnformatted("File > Open Repository...");
+            ImGui::TextUnformatted("or pass path as CLI arg.");
+            ImGui::Separator();
+            if (ImGui::Button("Open Repository..."))
+            {
+                m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+                m_showFileDialog = true;
+            }
         }
         ImGui::End();
-    } else {
-        ImGui::Begin("Repository Status");
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No repository opened");
-        ImGui::TextUnformatted("Open a repository via");
-        ImGui::TextUnformatted("File > Open Repository...");
-        ImGui::TextUnformatted("or pass path as CLI arg.");
-        ImGui::End();
     }
 
-    // Center panel: commit log
-    if (m_logPanel) {
+    if (m_logPanel)
         m_logPanel->Render();
-    }
 
-    // Right panel: diff view
-    if (m_diffPanel) {
+    if (m_diffPanel)
         m_diffPanel->Render();
-    }
 
     m_layoutMgr->EndFrame();
+
+    // Render file dialog on top
+    if (m_showFileDialog && m_fileDialog.open)
+    {
+        if (m_fileDialog.Render())
+        {
+            std::string result = m_fileDialog.resultBuffer;
+            if (!result.empty())
+            {
+                OpenRepository(result);
+                m_showFileDialog = false;
+            }
+        }
+    }
 
     RenderStatusBar();
 }
 
 void GitBeeApp::OnEvent(const SDL_Event& event)
 {
-    if (event.type == SDL_EVENT_KEY_DOWN) {
-        if (event.key.key == SDLK_ESCAPE) {
+    if (event.type == SDL_EVENT_KEY_DOWN)
+    {
+        if (event.key.key == SDLK_ESCAPE)
             Quit();
-        }
-        if (event.key.key == SDLK_F5) {
+        if (event.key.key == SDLK_F5)
+        {
             if (m_statusPanel) m_statusPanel->Refresh();
             if (m_logPanel) m_logPanel->Refresh();
             m_statusMessage = "Refreshed";

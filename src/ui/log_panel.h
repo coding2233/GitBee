@@ -6,8 +6,17 @@
 #include <memory>
 #include "../gitcore/git_types.h"
 #include "../gitcore/git_repository.h"
+#include "SplitView.h"
 
-class LogPanel {
+struct CommitGraphLine
+{
+    std::string parentSha;
+    ImVec2 childPoint;
+    int laneId = 0;
+};
+
+class LogPanel
+{
 public:
     void Render();
     void SetRepository(std::shared_ptr<GitRepository> repo);
@@ -26,13 +35,30 @@ private:
     std::vector<std::string> m_branches;
     int m_selectedBranch = 0;
 
+    SplitView m_contentSplit{ SplitView::Type::Vertical, 0.6f, 80.0f };
+    bool m_showDetailPanel = false;
+
     static constexpr int LOAD_BATCH_SIZE = 100;
+
+    struct CommitTableRow
+    {
+        std::string sha;
+        std::string shortSha;
+        std::string message;
+        std::string author;
+        std::string date;
+        std::string relativeTime;
+        std::vector<std::string> parentShas;
+    };
+
+    std::vector<CommitTableRow> m_tableRows;
 
     void LoadMoreIfNeeded();
     std::string FormatRelativeTime(const std::string& isoDate);
     void FetchBranches();
-    void RenderCommitRow(int index, const GitCommit& commit);
-    void RenderGraphIndicator(const GitCommit& commit);
     void RenderFilterBar();
-    void RenderCommitList();
+    void RenderCommitTable();
+    void RenderCommitDetail();
+    void DrawGraph(int laneId, const ImVec2& center, bool isMerge, bool isHead);
+    void UpdateGraphLanes(const GitCommit& commit, std::vector<int>& lanes, std::vector<CommitGraphLine>& lines, int& maxLane);
 };

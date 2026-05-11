@@ -3,6 +3,7 @@
 #include <memory>
 #include <string>
 #include <volt-ui/VoltApp.h>
+#include "../ui/FileDialog.h"
 
 class GitRepository;
 class StatusPanel;
@@ -10,7 +11,8 @@ class LogPanel;
 class DiffPanel;
 class LayoutManager;
 
-class GitBeeApp : public volt::App {
+class GitBeeApp : public volt::App
+{
 public:
     GitBeeApp(const volt::AppConfig& config);
     ~GitBeeApp() override;
@@ -36,4 +38,7 @@ private:
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;
+
+    FileDialog m_fileDialog;
+    bool m_showFileDialog = false;
 };
