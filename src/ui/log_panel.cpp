@@ -1,5 +1,8 @@
 #include "log_panel.h"
 #include "../gitcore/git_util.h"
+#include "../gitcore/git_process.h"
+#include <imgui.h>
+#include <misc/cpp/imgui_stdlib.h>
 #include <ctime>
 #include <sstream>
 #include <algorithm>

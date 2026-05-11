@@ -29,7 +29,11 @@ static std::string BuildCommand(const std::string& repoPath,
                                 const std::vector<std::string>& args)
 {
     std::string escapedPath = EscapePath(repoPath);
-    std::string cmd = "LC_ALL=C git --git-dir=\"" + escapedPath + "/.git\" --work-tree=\"" + escapedPath + "\"";
+#ifdef _WIN32
+    std::string cmd = "git -C \"" + escapedPath + "\"";
+#else
+    std::string cmd = "LC_ALL=C git -C \"" + escapedPath + "\"";
+#endif
     for (const auto& arg : args) {
         cmd += " \"";
         std::string escaped = EscapePath(arg);

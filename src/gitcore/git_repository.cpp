@@ -1,6 +1,7 @@
 #include "git_repository.h"
 #include "git_process.h"
 
+#include <memory>
 #include <sstream>
 #include <algorithm>
 #include <cctype>
@@ -254,4 +255,133 @@ std::vector<std::string> GitRepository::GetChangedFiles(const std::string& fromH
         }
     }
     return files;
+}
+
+std::shared_ptr<GitRepository> GitRepository::Open(const std::string& path)
+{
+    std::string resolved = path;
+
+    // Strip trailing slash
+    while (!resolved.empty() && (resolved.back() == '/' || resolved.back() == '\\')) {
+        resolved.pop_back();
+    }
+
+    // If path ends with ".git" preceded by a separator, strip it
+    if (resolved.size() >= 5) {
+        std::string suffix = resolved.substr(resolved.size() - 4);
+        if (suffix == ".git" || suffix == ".GIT") {
+            char sep = resolved[resolved.size() - 5];
+            if (sep == '/' || sep == '\\') {
+                resolved.resize(resolved.size() - 5);
+            }
+        }
+    }
+
+    // Validate and resolve to the actual git working tree root
+    auto tmp = std::make_shared<GitRepository>(resolved);
+    if (!tmp->IsValid()) {
+        return nullptr;
+    }
+    std::string root = tmp->GetRootPath();
+    if (!root.empty()) {
+        resolved = root;
+    }
+
+    auto repo = std::make_shared<GitRepository>(resolved);
+    return repo;
+}
+
+GitStatus GitRepository::GetStatus() const
+{
+    GitStatus status;
+
+    auto [ok, branchOutput] = GitProcess::Execute(m_path, {"rev-parse", "--abbrev-ref", "HEAD"});
+    if (ok) status.currentBranch = branchOutput;
+
+    auto [ok2, upstreamOutput] = GitProcess::Execute(m_path, {
+        "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"
+    });
+    if (ok2) status.upstreamBranch = upstreamOutput;
+
+    auto [ok3, countOutput] = GitProcess::Execute(m_path, {
+        "rev-list", "--left-right", "--count", "HEAD...@{upstream}"
+    });
+    if (ok3) {
+        auto space = countOutput.find('\t');
+        if (space != std::string::npos) {
+            status.aheadCount = std::stoi(countOutput.substr(0, space));
+            status.behindCount = std::stoi(countOutput.substr(space + 1));
+        }
+    }
+
+    auto [ok4, porcelain] = GitProcess::Execute(m_path, {
+        "status", "--porcelain", "-u"
+    });
+
+    if (!ok4) return status;
+
+    std::istringstream stream(porcelain);
+    std::string line;
+    while (std::getline(stream, line)) {
+        if (line.size() < 3) continue;
+
+        GitFileEntry entry;
+        entry.filename = line.substr(3);
+
+        char x = line[0];
+        char y = line[1];
+
+        if (x == '?' && y == '?') {
+            entry.status = GitFileStatus::Untracked;
+            entry.isStaged = false;
+            status.untrackedFiles.push_back(entry);
+            status.totalChanges++;
+            continue;
+        }
+
+        if (x == 'U' || y == 'U') {
+            status.hasMergeConflict = true;
+        }
+
+        if (x != ' ' && x != '?') {
+            entry.isStaged = true;
+            switch (x) {
+                case 'M': entry.status = GitFileStatus::StagedModified; break;
+                case 'A': entry.status = GitFileStatus::StagedAdded; break;
+                case 'D': entry.status = GitFileStatus::StagedDeleted; break;
+                case 'R': entry.status = GitFileStatus::Renamed; break;
+                default: entry.status = GitFileStatus::Unknown; break;
+            }
+            if (entry.status == GitFileStatus::Renamed) {
+                auto arrow = entry.filename.find(" -> ");
+                if (arrow != std::string::npos) {
+                    entry.oldFilename = entry.filename.substr(0, arrow);
+                    entry.filename = entry.filename.substr(arrow + 4);
+                }
+            }
+            status.stagedFiles.push_back(entry);
+            status.totalChanges++;
+        }
+
+        if (y != ' ' && x != '?' && x != '!') {
+            entry.isStaged = false;
+            switch (y) {
+                case 'M': entry.status = GitFileStatus::Modified; break;
+                case 'A': entry.status = GitFileStatus::Added; break;
+                case 'D': entry.status = GitFileStatus::Deleted; break;
+                default: entry.status = GitFileStatus::Unknown; break;
+            }
+            if (x == ' ' || x == 'R') {
+                auto arrow = entry.filename.find(" -> ");
+                if (arrow != std::string::npos) {
+                    entry.oldFilename = entry.filename.substr(0, arrow);
+                    entry.filename = entry.filename.substr(arrow + 4);
+                }
+            }
+            status.unstagedFiles.push_back(entry);
+            status.totalChanges++;
+        }
+    }
+
+    return status;
 }

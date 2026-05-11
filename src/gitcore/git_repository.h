@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -9,6 +10,8 @@ class GitRepository {
 public:
     explicit GitRepository(const std::string& path);
     virtual ~GitRepository() = default;
+
+    static std::shared_ptr<GitRepository> Open(const std::string& path);
 
     bool IsValid() const;
 
@@ -26,6 +29,8 @@ public:
 
     std::vector<std::string> GetChangedFiles(const std::string& fromHash,
                                              const std::string& toHash) const;
+
+    GitStatus GetStatus() const;
 
 private:
     std::string m_path;

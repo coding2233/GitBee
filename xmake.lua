@@ -5,7 +5,7 @@ if has_volt then
     includes("volt-ui")
 end
 
-target("gitbee")
+target("GitBee")
     set_kind("binary")
     set_languages("c++17")
     add_files("src/*.cpp")
@@ -14,7 +14,9 @@ target("gitbee")
     if has_volt then
         add_deps("volt-ui")
         add_packages("libsdl3", "imgui")
+        add_includedirs("src")
         add_files("src/app/*.cpp")
+        add_files("src/ui/*.cpp")
     end
 
     if is_mode("debug") then

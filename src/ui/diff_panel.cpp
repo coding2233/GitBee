@@ -1,5 +1,7 @@
 #include "diff_panel.h"
 #include "../gitcore/git_util.h"
+#include "../gitcore/git_process.h"
+#include <imgui.h>
 #include <sstream>
 #include <algorithm>
 #include <cstring>
