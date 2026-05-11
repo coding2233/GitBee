@@ -8,6 +8,7 @@ class GitRepository;
 class StatusPanel;
 class LogPanel;
 class DiffPanel;
+class LayoutManager;
 
 class GitBeeApp : public volt::App {
 public:
@@ -21,21 +22,17 @@ protected:
     void OnCreate() override;
     void OnRender() override;
     void OnEvent(const SDL_Event& event) override;
+    void OnDestroy() override;
 
 private:
     void RenderMenuBar();
     void RenderStatusBar();
-    void RenderLeftPanel();
-    void RenderCenterPanel();
-    void RenderRightPanel();
 
     std::shared_ptr<GitRepository> m_repository;
     std::unique_ptr<StatusPanel> m_statusPanel;
     std::unique_ptr<LogPanel> m_logPanel;
     std::unique_ptr<DiffPanel> m_diffPanel;
-
-    float m_leftPanelWidth = 280.0f;
-    float m_rightPanelWidth = 380.0f;
+    std::unique_ptr<LayoutManager> m_layoutMgr;
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;

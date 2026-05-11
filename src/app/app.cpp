@@ -2,15 +2,17 @@
 #include "../ui/status_panel.h"
 #include "../ui/log_panel.h"
 #include "../ui/diff_panel.h"
+#include "../ui/LayoutManager.h"
+#include "../ui/Theme.h"
 #include "../gitcore/git_repository.h"
 #include <imgui.h>
-#include <algorithm>
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
     m_statusPanel = std::make_unique<StatusPanel>();
     m_logPanel = std::make_unique<LogPanel>();
     m_diffPanel = std::make_unique<DiffPanel>();
+    m_layoutMgr = std::make_unique<LayoutManager>();
 
     m_logPanel->OnCommitSelected = [this](const GitCommit& commit) {
         m_diffPanel->ShowCommitDetail(commit);
@@ -42,11 +44,36 @@ void GitBeeApp::OnCreate()
 {
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
+
+    ImGui::GetIO().ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+    Theme::ApplyDark();
+    Theme::LoadFonts();
+
+    m_layoutMgr->Init();
+}
+
+void GitBeeApp::OnDestroy()
+{
+    m_layoutMgr->Shutdown();
 }
 
 void GitBeeApp::RenderMenuBar()
 {
-    if (ImGui::BeginMainMenuBar()) {
+    auto* viewport = ImGui::GetMainViewport();
+    float topbar_h = GetTopbarHeight();
+
+    ImGui::SetNextWindowPos(ImVec2(viewport->Pos.x, viewport->Pos.y + topbar_h));
+    ImGui::SetNextWindowSize(ImVec2(viewport->Size.x, ImGui::GetFrameHeight()));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
+
+    ImGui::Begin("##MenuBar", nullptr,
+        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_MenuBar);
+
+    if (ImGui::BeginMenuBar()) {
         if (ImGui::BeginMenu("File")) {
             if (ImGui::MenuItem("Open Repository...", "Ctrl+O")) {
             }
@@ -55,6 +82,10 @@ void GitBeeApp::RenderMenuBar()
                 if (m_statusPanel) m_statusPanel->Refresh();
                 if (m_logPanel) m_logPanel->Refresh();
                 m_statusMessage = "Refreshed";
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Reset Layout")) {
+                m_layoutMgr->ResetLayout();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4")) {
@@ -75,8 +106,12 @@ void GitBeeApp::RenderMenuBar()
             ImGui::EndMenu();
         }
 
-        ImGui::EndMainMenuBar();
+        ImGui::EndMenuBar();
     }
+
+    m_layoutMgr->SetMenuBarHeight(ImGui::GetWindowHeight());
+    ImGui::End();
+    ImGui::PopStyleVar(2);
 }
 
 void GitBeeApp::RenderStatusBar()
@@ -108,12 +143,19 @@ void GitBeeApp::RenderStatusBar()
     ImGui::PopStyleVar(2);
 }
 
-void GitBeeApp::RenderLeftPanel()
+void GitBeeApp::OnRender()
 {
-    ImGui::Begin("Repository Status", nullptr,
-        ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize);
+    if (m_showDemoWindow) {
+        ImGui::ShowDemoWindow(&m_showDemoWindow);
+    }
 
+    RenderMenuBar();
+
+    m_layoutMgr->BeginFrame();
+
+    // Left panel: repo status
     if (m_repository) {
+        ImGui::Begin("Repository Status");
         if (ImGui::Button("Refresh")) {
             if (m_statusPanel) m_statusPanel->Refresh();
             if (m_logPanel) m_logPanel->Refresh();
@@ -125,93 +167,28 @@ void GitBeeApp::RenderLeftPanel()
         if (m_statusPanel) {
             m_statusPanel->Render();
         }
+        ImGui::End();
     } else {
+        ImGui::Begin("Repository Status");
         ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No repository opened");
         ImGui::TextUnformatted("Open a repository via");
         ImGui::TextUnformatted("File > Open Repository...");
         ImGui::TextUnformatted("or pass path as CLI arg.");
+        ImGui::End();
     }
-    ImGui::End();
-}
 
-void GitBeeApp::RenderCenterPanel()
-{
+    // Center panel: commit log
     if (m_logPanel) {
         m_logPanel->Render();
     }
-}
 
-void GitBeeApp::RenderRightPanel()
-{
+    // Right panel: diff view
     if (m_diffPanel) {
         m_diffPanel->Render();
     }
-}
 
-void GitBeeApp::OnRender()
-{
-    if (m_showDemoWindow) {
-        ImGui::ShowDemoWindow(&m_showDemoWindow);
-    }
+    m_layoutMgr->EndFrame();
 
-    if (GetConfig().use_topbar) {
-        ImGui::SetNextWindowPos(ImVec2(0, GetTopbarHeight()), ImGuiCond_Once);
-        ImGui::SetNextWindowSize(
-            ImVec2(GetConfig().width, GetConfig().height - GetTopbarHeight()), ImGuiCond_Once);
-    }
-
-    RenderMenuBar();
-
-    ImGuiViewport* viewport = ImGui::GetMainViewport();
-    float menuBarHeight = ImGui::GetFrameHeight();
-    float statusBarHeight = ImGui::GetFrameHeight();
-    float availableHeight = viewport->Size.y - menuBarHeight - statusBarHeight;
-    float availableWidth = viewport->Size.x;
-
-    float leftW = m_leftPanelWidth;
-    float rightW = m_rightPanelWidth;
-    float centerW = availableWidth - leftW - rightW;
-
-    float yStart = menuBarHeight;
-
-    // --- Left Panel ---
-    ImGui::SetNextWindowPos(ImVec2(0, yStart));
-    ImGui::SetNextWindowSize(ImVec2(leftW, availableHeight));
-    RenderLeftPanel();
-
-    // --- Splitter 1 (left/center) ---
-    float splitterX1 = leftW;
-    ImGui::SetCursorScreenPos(ImVec2(splitterX1 - 3.0f, yStart));
-    ImGui::InvisibleButton("##Splitter1Btn", ImVec2(6.0f, availableHeight));
-    if (ImGui::IsItemActive()) {
-        m_leftPanelWidth += ImGui::GetIO().MouseDelta.x;
-    }
-    m_leftPanelWidth = std::clamp(m_leftPanelWidth, 100.0f, availableWidth - 300.0f);
-    if (ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-
-    // --- Center Panel ---
-    float centerX = splitterX1;
-    ImGui::SetNextWindowPos(ImVec2(centerX, yStart));
-    ImGui::SetNextWindowSize(ImVec2(centerW, availableHeight));
-    RenderCenterPanel();
-
-    // --- Splitter 2 (center/right) ---
-    float splitterX2 = centerX + centerW;
-    ImGui::SetCursorScreenPos(ImVec2(splitterX2 - 3.0f, yStart));
-    ImGui::InvisibleButton("##Splitter2Btn", ImVec2(6.0f, availableHeight));
-    if (ImGui::IsItemActive()) {
-        m_rightPanelWidth -= ImGui::GetIO().MouseDelta.x;
-    }
-    m_rightPanelWidth = std::clamp(m_rightPanelWidth, 200.0f, availableWidth - 300.0f);
-    if (ImGui::IsItemHovered()) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
-
-    // --- Right Panel ---
-    float rightX = splitterX2;
-    ImGui::SetNextWindowPos(ImVec2(rightX, yStart));
-    ImGui::SetNextWindowSize(ImVec2(rightW, availableHeight));
-    RenderRightPanel();
-
-    // --- Status Bar ---
     RenderStatusBar();
 }
 
