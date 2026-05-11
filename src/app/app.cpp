@@ -6,7 +6,17 @@
 #include <imgui.h>
 #include <algorithm>
 
-GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config) {}
+GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
+{
+    m_statusPanel = std::make_unique<StatusPanel>();
+    m_logPanel = std::make_unique<LogPanel>();
+    m_diffPanel = std::make_unique<DiffPanel>();
+
+    m_logPanel->OnCommitSelected = [this](const GitCommit& commit) {
+        m_diffPanel->ShowCommitDetail(commit);
+        m_statusMessage = "Selected: " + commit.shortHash + " - " + commit.message;
+    };
+}
 GitBeeApp::~GitBeeApp() = default;
 
 void GitBeeApp::OpenRepository(const std::string& path)
@@ -32,15 +42,6 @@ void GitBeeApp::OnCreate()
 {
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
-
-    m_statusPanel = std::make_unique<StatusPanel>();
-    m_logPanel = std::make_unique<LogPanel>();
-    m_diffPanel = std::make_unique<DiffPanel>();
-
-    m_logPanel->OnCommitSelected = [this](const GitCommit& commit) {
-        m_diffPanel->ShowCommitDetail(commit);
-        m_statusMessage = "Selected: " + commit.shortHash + " - " + commit.message;
-    };
 }
 
 void GitBeeApp::RenderMenuBar()

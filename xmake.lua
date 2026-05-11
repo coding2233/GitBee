@@ -11,6 +11,10 @@ target("GitBee")
     add_files("src/*.cpp")
     add_files("src/gitcore/*.cpp")
 
+    after_build(function (target)
+        os.cp("fonts", target:targetdir())
+    end)
+
     if has_volt then
         add_deps("volt-ui")
         add_packages("libsdl3", "imgui")
