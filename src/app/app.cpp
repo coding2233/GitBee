@@ -20,15 +20,25 @@ GitBeeApp::~GitBeeApp() = default;
 
 void GitBeeApp::OpenRepository(const std::string& path)
 {
+    for (auto& tab : m_repoTabs)
+    {
+        if (tab.view && tab.view->GetPath() == path)
+        {
+            m_activeTabIndex = (int)(&tab - &m_repoTabs[0]) + 1;
+            m_statusMessage = "Already opened: " + path;
+            return;
+        }
+    }
+
     auto repo = GitRepository::Open(path);
     if (!repo) { m_statusMessage = "Failed to open: " + path; return; }
 
     auto view = std::make_shared<RepoView>(repo);
     m_repoTabs.push_back({view, view->GetName()});
-
-    // Switch to the new tab
     m_activeTabIndex = (int)m_repoTabs.size();
     m_statusMessage = "Opened: " + repo->GetRootPath();
+
+    if (m_homeView) m_homeView->AddRecent(repo->GetRootPath());
 }
 
 void GitBeeApp::OnCreate()
@@ -62,8 +72,6 @@ void GitBeeApp::RenderMenuBar()
         {
             if (ImGui::MenuItem("Open Repository...", "Ctrl+O"))
                 m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
-            if (ImGui::MenuItem("Home"))
-                m_activeTabIndex = 0;
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4"))
                 Quit();
@@ -81,67 +89,6 @@ void GitBeeApp::RenderMenuBar()
             ImGui::EndMenu();
         }
         ImGui::EndMenuBar();
-    }
-
-    ImGui::End();
-    ImGui::PopStyleVar(2);
-}
-
-void GitBeeApp::RenderTabBar()
-{
-    if (m_repoTabs.empty()) return;
-
-    float menuH = ImGui::GetFrameHeight();
-    float topbarH = GetTopbarHeight();
-    float y = topbarH + menuH;
-
-    auto* vp = ImGui::GetMainViewport();
-    ImGui::SetNextWindowPos(ImVec2(vp->Pos.x, y));
-    ImGui::SetNextWindowSize(ImVec2(vp->Size.x, ImGui::GetFrameHeight()));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
-
-    ImGui::Begin("##TabBar", nullptr,
-        ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoSavedSettings);
-
-    if (ImGui::BeginTabBar("##MainTabs", ImGuiTabBarFlags_FittingPolicyScroll |
-        ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_Reorderable))
-    {
-        // Home tab
-        ImGuiTabItemFlags homeFlags = (m_activeTabIndex == 0)
-            ? ImGuiTabItemFlags_SetSelected : 0;
-        bool homeOpen = true;
-        if (ImGui::BeginTabItem("Home", &homeOpen, homeFlags))
-        {
-            m_activeTabIndex = 0;
-            ImGui::EndTabItem();
-        }
-
-        // Repo tabs
-        for (int i = 0; i < (int)m_repoTabs.size(); i++)
-        {
-            auto& tab = m_repoTabs[i];
-            bool open = true;
-            ImGuiTabItemFlags flags = (m_activeTabIndex == i + 1)
-                ? ImGuiTabItemFlags_SetSelected : 0;
-
-            if (ImGui::BeginTabItem(tab.name.c_str(), &open, flags))
-            {
-                m_activeTabIndex = i + 1;
-                ImGui::EndTabItem();
-            }
-
-            if (!open)
-            {
-                m_repoTabs.erase(m_repoTabs.begin() + i);
-                if (m_activeTabIndex >= (int)m_repoTabs.size() + 1)
-                    m_activeTabIndex = 0;
-                i--;
-            }
-        }
-        ImGui::EndTabBar();
     }
 
     ImGui::End();
@@ -171,40 +118,67 @@ void GitBeeApp::OnRender()
         ImGui::ShowDemoWindow(&m_showDemoWindow);
 
     RenderMenuBar();
-    RenderTabBar();
 
     auto* vp = ImGui::GetMainViewport();
     float topbarH = GetTopbarHeight();
     float menuH = ImGui::GetFrameHeight();
-    float tabH = m_repoTabs.empty() ? 0.0f : ImGui::GetFrameHeight();
     float statusH = ImGui::GetFrameHeight();
-    float y = topbarH + menuH + tabH;
+    float y = topbarH + menuH;
 
     ImGui::SetNextWindowPos(ImVec2(vp->Pos.x, y));
     ImGui::SetNextWindowSize(ImVec2(vp->Size.x, vp->Size.y - y - statusH));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
+    // Main window with embedded tab bar + content
     ImGui::Begin("##MainContent", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
-        ImGuiWindowFlags_NoSavedSettings);
+        ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
-    if (m_activeTabIndex == 0)
+    ImGuiTabBarFlags tabFlags = ImGuiTabBarFlags_FittingPolicyScroll |
+        ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_Reorderable;
+
+    if (ImGui::BeginTabBar("##MainTabs", tabFlags))
     {
-        m_homeView->Render();
-    }
-    else
-    {
-        int idx = m_activeTabIndex - 1;
-        if (idx >= 0 && idx < (int)m_repoTabs.size() && m_repoTabs[idx].view)
+        int realActive = 0;
+
+        // Home tab (always present, non-closable)
         {
-            m_repoTabs[idx].view->Render();
+            bool homeOpen = true;
+            if (ImGui::BeginTabItem("Home", &homeOpen))
+            {
+                realActive = 0;
+                m_homeView->Render();
+                ImGui::EndTabItem();
+            }
         }
-        else
+
+        // Repo tabs
+        int closeIdx = -1;
+        for (int i = 0; i < (int)m_repoTabs.size(); i++)
         {
-            m_activeTabIndex = 0;
+            auto& tab = m_repoTabs[i];
+            bool open = true;
+
+            if (ImGui::BeginTabItem(tab.name.c_str(), &open))
+            {
+                realActive = i + 1;
+                if (tab.view) tab.view->Render();
+                ImGui::EndTabItem();
+            }
+
+            if (!open) closeIdx = i;
         }
+
+        // Handle tab close after iteration
+        if (closeIdx >= 0)
+            m_repoTabs.erase(m_repoTabs.begin() + closeIdx);
+
+        // Remember which tab was active
+        m_activeTabIndex = realActive;
+
+        ImGui::EndTabBar();
     }
 
     ImGui::End();

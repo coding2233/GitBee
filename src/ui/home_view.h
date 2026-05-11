@@ -18,10 +18,8 @@ public:
         std::string name;
     };
 
+    void AddRecent(const std::string& path);
+
 private:
     std::vector<RecentRepo> m_recentRepos;
-
-    void RenderWelcome();
-    void RenderRecentRepos();
-    void RenderQuickStart();
 };
