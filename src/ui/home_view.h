@@ -3,6 +3,8 @@
 #include <string>
 #include <vector>
 #include <functional>
+#include "SplitView.h"
+#include "imgui_markdown.h"
 
 class HomeView
 {
@@ -11,6 +13,7 @@ public:
 
     std::function<void()> OnOpenRepository;
     std::function<void(const std::string& path)> OnOpenRecent;
+    std::function<void()> OnScanFolder;
 
     struct RecentRepo
     {
@@ -24,4 +27,12 @@ public:
 
 private:
     std::vector<RecentRepo> m_recentRepos;
+    int m_selectedRepoIndex = -1;
+    SplitView m_splitView{ SplitView::Type::Horizontal, 220, 80 };
+    std::string m_readmeContent;
+
+    void RenderLeftPanel();
+    void RenderRightPanel();
+    void LoadReadme(const std::string& repoPath);
+    static void LinkCallback(ImGui::MarkdownLinkCallbackData data);
 };

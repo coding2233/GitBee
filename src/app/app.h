@@ -3,6 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <thread>
+#include <mutex>
+#include <atomic>
 #include <volt-ui/VoltApp.h>
 #include "../ui/FileDialog.h"
 
@@ -24,9 +27,12 @@ protected:
     void OnDestroy() override;
 
 private:
+    enum class DialogMode { None, OpenRepo, ScanFolder };
+
     void RenderMenuBar();
     void RenderTabBar();
     void RenderStatusBar();
+    void ScanForRepositories(const std::string& rootPath);
 
     // Tabs
     struct RepoTab
@@ -39,8 +45,17 @@ private:
 
     std::unique_ptr<HomeView> m_homeView;
     FileDialog m_fileDialog;
+    DialogMode m_dialogMode = DialogMode::None;
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;
     std::string m_recentFilePath;
+
+    // Async scan state
+    std::atomic<bool> m_scanning{ false };
+    std::thread m_scanThread;
+    std::mutex m_scanMutex;
+    std::vector<std::string> m_scanResults;
+
+    void ProcessScanResults();
 };

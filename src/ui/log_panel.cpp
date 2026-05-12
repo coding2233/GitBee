@@ -179,6 +179,7 @@ void LogPanel::RenderCommitTable()
 
             bool isSelected = (i == m_selectedIndex);
             ImGui::TableNextRow();
+            ImGui::PushID(i);
             ImGui::TableNextColumn();
 
             int laneId = 0;
@@ -255,6 +256,7 @@ void LogPanel::RenderCommitTable()
             ImGui::PopStyleColor();
             ImGui::TableNextColumn();
             ImGui::TextUnformatted(commit.shortHash.c_str());
+            ImGui::PopID();
         }
         ImGui::EndTable();
     }
@@ -314,12 +316,14 @@ void LogPanel::RenderFileList()
         auto& entry = m_fileDiffs[i];
         bool selected = (i == m_selectedFileIndex);
 
+        ImGui::PushID(i);
         if (ImGui::Selectable(entry.filePath.c_str(), selected))
         {
             m_selectedFileIndex = i;
             if (entry.diffContent.empty())
                 FetchDiff(entry);
         }
+        ImGui::PopID();
     }
 
     if (m_fileDiffs.empty())

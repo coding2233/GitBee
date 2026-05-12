@@ -17,10 +17,15 @@ GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
     m_homeView = std::make_unique<HomeView>();
     m_homeView->LoadRecents(m_recentFilePath);
     m_homeView->OnOpenRepository = [this]() {
+        m_dialogMode = DialogMode::OpenRepo;
         m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
     };
     m_homeView->OnOpenRecent = [this](const std::string& path) {
         OpenRepository(path);
+    };
+    m_homeView->OnScanFolder = [this]() {
+        m_dialogMode = DialogMode::ScanFolder;
+        m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
     };
 }
 
@@ -63,6 +68,13 @@ void GitBeeApp::OnCreate()
 
 void GitBeeApp::OnDestroy()
 {
+    if (m_scanning)
+    {
+        m_scanning = false;
+        if (m_scanThread.joinable())
+            m_scanThread.join();
+    }
+
     if (m_homeView)
         m_homeView->SaveRecents(m_recentFilePath);
 }
@@ -87,7 +99,15 @@ void GitBeeApp::RenderMenuBar()
         if (ImGui::BeginMenu("File"))
         {
             if (ImGui::MenuItem("Open Repository...", "Ctrl+O"))
+            {
+                m_dialogMode = DialogMode::OpenRepo;
                 m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+            }
+            if (ImGui::MenuItem("Scan for Repositories..."))
+            {
+                m_dialogMode = DialogMode::ScanFolder;
+                m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4"))
                 Quit();
@@ -133,6 +153,7 @@ void GitBeeApp::OnRender()
     if (m_showDemoWindow)
         ImGui::ShowDemoWindow(&m_showDemoWindow);
 
+    ProcessScanResults();
     RenderMenuBar();
 
     auto* vp = ImGui::GetMainViewport();
@@ -210,10 +231,111 @@ void GitBeeApp::OnRender()
             std::string result = m_fileDialog.resultBuffer;
             if (!result.empty())
             {
-                OpenRepository(result);
+                if (m_dialogMode == DialogMode::ScanFolder)
+                    ScanForRepositories(result);
+                else
+                    OpenRepository(result);
             }
+            m_dialogMode = DialogMode::None;
         }
     }
+
+
+}
+
+void GitBeeApp::ScanForRepositories(const std::string& rootPath)
+{
+    if (m_scanning) return;
+
+    m_scanning = true;
+    m_statusMessage = "Scanning for repositories...";
+
+    m_scanThread = std::thread([this, rootPath]()
+    {
+        std::vector<std::string> found;
+        constexpr int MAX_DEPTH = 10;
+
+        try
+        {
+            std::error_code ec;
+            auto it = std::filesystem::recursive_directory_iterator(
+                rootPath,
+                std::filesystem::directory_options::skip_permission_denied,
+                ec);
+            auto end = std::filesystem::recursive_directory_iterator{};
+            for (; it != end; it.increment(ec))
+            {
+                if (m_scanning.load() == false)
+                    return;
+
+                if (ec)
+                {
+                    ec.clear();
+                    continue;
+                }
+
+                if (it.depth() >= MAX_DEPTH)
+                {
+                    it.disable_recursion_pending();
+                    continue;
+                }
+
+                auto filename = it->path().filename().string();
+                if (filename == ".git")
+                {
+                    found.push_back(it->path().parent_path().string());
+                    it.disable_recursion_pending();
+                    continue;
+                }
+
+                // Skip common system dirs to speed up scan
+                if (it.depth() == 0 && (filename == "Windows" || filename == "$Recycle.Bin"
+                    || filename == "System Volume Information" || filename == "Program Files"
+                    || filename == "Program Files (x86)" || filename == "WinSxS"))
+                {
+                    it.disable_recursion_pending();
+                    continue;
+                }
+            }
+        }
+        catch (...) {}
+
+        {
+            std::lock_guard<std::mutex> lock(m_scanMutex);
+            m_scanResults = std::move(found);
+        }
+        m_scanning = false;
+    });
+    m_scanThread.detach();
+}
+
+void GitBeeApp::ProcessScanResults()
+{
+    if (m_scanning) return;
+
+    std::vector<std::string> results;
+    {
+        std::lock_guard<std::mutex> lock(m_scanMutex);
+        results.swap(m_scanResults);
+    }
+
+    if (results.empty())
+    {
+        if (m_statusMessage == "Scanning for repositories...")
+            m_statusMessage = "No repositories found";
+        return;
+    }
+
+    for (auto& path : results)
+    {
+        if (m_homeView)
+            m_homeView->AddRecent(path);
+    }
+
+    if (m_homeView)
+        m_homeView->SaveRecents(m_recentFilePath);
+
+    m_statusMessage = "Scan complete: found " + std::to_string(results.size()) + " repositories";
 }
 
 void GitBeeApp::OnEvent(const SDL_Event& event)
