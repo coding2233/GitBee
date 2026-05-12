@@ -1,4 +1,3 @@
-add_requires("libgit2cpp")
 add_rules("mode.debug", "mode.release")
 
 local has_volt = os.isfile("volt-ui/xmake.lua")
@@ -11,7 +10,6 @@ target("GitBee")
     set_languages("c++17")
     add_files("src/*.cpp")
     add_files("src/gitcore/*.cpp")
-    add_packages("libgit2cpp")
 
     after_build(function (target)
         os.cp("fonts", target:targetdir())

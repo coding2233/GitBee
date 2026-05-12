@@ -22,7 +22,7 @@ static fs::path CreateTempGitRepo() {
     }
     fs::create_directories(tmpDir);
     auto result = GitProcess::Execute(tmpDir.string(), {"init"});
-    if (!result.first) {
+    if (!result.ok) {
         fs::remove_all(tmpDir);
         return {};
     }
@@ -33,9 +33,9 @@ static void TestGitProcess() {
     std::cout << "[TEST] GitProcess::Execute ... ";
 
     auto result = GitProcess::Execute(".", {"--version"});
-    assert(result.first);
-    assert(!result.second.empty());
-    assert(result.second.find("git") != std::string::npos);
+    assert(result.ok);
+    assert(!result.out.empty());
+    assert(result.out.find("git") != std::string::npos);
 
     std::cout << "PASSED" << std::endl;
 }

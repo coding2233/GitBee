@@ -3,16 +3,18 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
+#include <fstream>
+#include <cstdlib>
 
 #ifdef _WIN32
 #define popen _popen
 #define pclose _pclose
+#include <io.h>
+#include <process.h>
 #else
 #include <sys/wait.h>
 #include <unistd.h>
 #endif
-
-std::string GitProcess::m_lastError;
 
 static std::string EscapePath(const std::string& path)
 {
@@ -25,8 +27,38 @@ static std::string EscapePath(const std::string& path)
     return escaped;
 }
 
+static std::string GetTempDir()
+{
+#ifdef _WIN32
+    char* tmp = nullptr;
+    size_t len = 0;
+    if (_dupenv_s(&tmp, &len, "TEMP") == 0 && tmp) {
+        std::string result(tmp);
+        free(tmp);
+        return result;
+    }
+    return "C:\\Windows\\Temp";
+#else
+    const char* tmp = std::getenv("TMPDIR");
+    if (!tmp) tmp = "/tmp";
+    return tmp;
+#endif
+}
+
+static std::string MakeErrorPath()
+{
+    static int counter = 0;
+    counter++;
+#ifdef _WIN32
+    return GetTempDir() + "\\gitbee_err_" + std::to_string(_getpid()) + "_" + std::to_string(counter) + ".txt";
+#else
+    return GetTempDir() + "/gitbee_err_" + std::to_string(getpid()) + "_" + std::to_string(counter) + ".txt";
+#endif
+}
+
 static std::string BuildCommand(const std::string& repoPath,
-                                const std::vector<std::string>& args)
+                                const std::vector<std::string>& args,
+                                const std::string& errPath)
 {
     std::string escapedPath = EscapePath(repoPath);
 #ifdef _WIN32
@@ -40,32 +72,31 @@ static std::string BuildCommand(const std::string& repoPath,
         cmd += escaped;
         cmd += "\"";
     }
-#ifdef _WIN32
-    cmd += " 2>NUL";
-#else
-    cmd += " 2>/dev/null";
-#endif
+    cmd += " 2>\"" + errPath + "\"";
     return cmd;
 }
 
-std::pair<bool, std::string> GitProcess::Execute(const std::string& repoPath,
-                                                  const std::vector<std::string>& args)
+GitResult GitProcess::Execute(const std::string& repoPath,
+                              const std::vector<std::string>& args)
 {
-    std::string cmd = BuildCommand(repoPath, args);
+    GitResult result;
+    std::string errPath = MakeErrorPath();
+
+    std::string cmd = BuildCommand(repoPath, args, errPath);
 
     FILE* pipe = popen(cmd.c_str(), "r");
 
     if (!pipe) {
 #ifdef _WIN32
-        m_lastError = "Git is not installed or not found in PATH";
+        result.err = "Git is not installed or not found in PATH";
 #else
         if (errno == ENOENT) {
-            m_lastError = "Git is not installed or not found in PATH";
+            result.err = "Git is not installed or not found in PATH";
         } else {
-            m_lastError = "Failed to execute command: " + std::string(strerror(errno));
+            result.err = "Failed to execute command: " + std::string(strerror(errno));
         }
 #endif
-        return {false, {}};
+        return result;
     }
 
     std::string output;
@@ -77,27 +108,26 @@ std::pair<bool, std::string> GitProcess::Execute(const std::string& repoPath,
 
     int status = pclose(pipe);
 
-    bool success;
 #ifdef _WIN32
-    success = (status == 0);
+    result.ok = (status == 0);
 #else
-    success = (status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0);
+    result.ok = (status != -1 && WIFEXITED(status) && WEXITSTATUS(status) == 0);
 #endif
 
-    if (!success) {
-        m_lastError = "Git command failed (exit code " + std::to_string(status) + ")";
-    } else {
-        m_lastError.clear();
+    // Read stderr from temp file
+    std::ifstream errFile(errPath);
+    if (errFile.is_open()) {
+        std::stringstream errBuf;
+        errBuf << errFile.rdbuf();
+        result.err = errBuf.str();
+        errFile.close();
     }
+    remove(errPath.c_str());
 
     while (!output.empty() && (output.back() == '\n' || output.back() == '\r')) {
         output.pop_back();
     }
+    result.out = std::move(output);
 
-    return {success, output};
-}
-
-std::string GitProcess::GetLastError()
-{
-    return m_lastError;
+    return result;
 }

@@ -3,6 +3,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <thread>
+#include <functional>
 #include "../ui/SplitView.h"
 #include "../gitcore/git_types.h"
 
@@ -22,6 +25,8 @@ public:
     std::string GetName() const;
     const std::string& GetPath() const { return m_repoPath; }
 
+    std::function<void(const std::string&)> OnStatusMessage;
+
 private:
     enum class Section {
         Workspace,
@@ -39,6 +44,18 @@ private:
 
     void RefreshBranchData();
     void RefreshAll();
+    void ProcessAsyncResult();
+
+    struct AsyncTask {
+        std::atomic<bool> running{false};
+        bool result = false;
+        std::string error;
+        std::string name;
+        std::thread thread;
+    };
+
+    AsyncTask m_asyncTask;
+    bool m_processingAsyncResult = false;
 
     std::shared_ptr<GitRepository> m_repository;
     std::string m_repoPath;

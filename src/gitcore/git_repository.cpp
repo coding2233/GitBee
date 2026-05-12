@@ -20,7 +20,7 @@ static std::string extractField(const std::string& output, size_t& pos)
     return result;
 }
 
-std::pair<bool, std::string> GitRepository::Git(const std::string& path,
+GitResult GitRepository::Git(const std::string& path,
     const std::vector<std::string>& args)
 {
     return GitProcess::Execute(path, args);
@@ -30,37 +30,38 @@ GitRepository::GitRepository(const std::string& path) : m_path(path) {}
 
 bool GitRepository::IsValid() const
 {
-    auto [s, o] = Git(m_path, {"rev-parse", "--git-dir"});
-    return s && !o.empty();
+    auto r = Git(m_path, {"rev-parse", "--git-dir"});
+    return r.ok && !r.out.empty();
 }
 
 std::string GitRepository::GetRootPath() const
 {
-    auto [s, o] = Git(m_path, {"rev-parse", "--show-toplevel"});
-    return s ? o : "";
+    auto r = Git(m_path, {"rev-parse", "--show-toplevel"});
+    return r.ok ? r.out : "";
 }
 
 std::string GitRepository::GetCurrentBranch() const
 {
-    auto [s, o] = Git(m_path, {"rev-parse", "--abbrev-ref", "HEAD"});
-    return s ? o : "";
+    auto r = Git(m_path, {"rev-parse", "--abbrev-ref", "HEAD"});
+    return r.ok ? r.out : "";
 }
 
 GitSignature GitRepository::GetSignature() const
 {
     GitSignature sig;
-    auto [s1, name] = Git(m_path, {"config", "user.name"});
-    auto [s2, email] = Git(m_path, {"config", "user.email"});
-    if (s1) sig.name = name;
-    if (s2) sig.email = email;
+    auto r1 = Git(m_path, {"config", "user.name"});
+    auto r2 = Git(m_path, {"config", "user.email"});
+    if (r1.ok) sig.name = r1.out;
+    if (r2.ok) sig.email = r2.out;
     return sig;
 }
 
 bool GitRepository::Commit(const std::string& message)
 {
     if (message.empty()) return false;
-    auto [s, o] = Git(m_path, {"commit", "-m", message});
-    return s;
+    auto r = Git(m_path, {"commit", "-m", message});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Stage(const std::vector<std::string>& files)
@@ -70,8 +71,9 @@ bool GitRepository::Stage(const std::vector<std::string>& files)
         args.push_back(".");
     else
         for (auto& f : files) args.push_back(f);
-    auto [s, o] = Git(m_path, args);
-    return s;
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Unstage(const std::vector<std::string>& files)
@@ -81,49 +83,55 @@ bool GitRepository::Unstage(const std::vector<std::string>& files)
         args.push_back(".");
     else
         for (auto& f : files) args.push_back(f);
-    auto [s, o] = Git(m_path, args);
-    return s;
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Restore(const std::vector<std::string>& files)
 {
     std::vector<std::string> args = {"checkout", "--"};
     for (auto& f : files) args.push_back(f);
-    auto [s, o] = Git(m_path, args);
-    return s;
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Discard(const std::vector<std::string>& files)
 {
     std::vector<std::string> args = {"restore"};
     for (auto& f : files) args.push_back(f);
-    auto [s, o] = Git(m_path, args);
-    if (!s)
+    auto r = Git(m_path, args);
+    if (!r.ok)
     {
         args = {"checkout", "--"};
         for (auto& f : files) args.push_back(f);
-        auto [s2, o2] = Git(m_path, args);
-        return s2;
+        auto r2 = Git(m_path, args);
+        if (!r2.ok) { m_lastError = r2.err; return false; }
+        return true;
     }
-    return s;
+    return true;
 }
 
 bool GitRepository::Pull()
 {
-    auto [s, o] = Git(m_path, {"pull"});
-    return s;
+    auto r = Git(m_path, {"pull"});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Push()
 {
-    auto [s, o] = Git(m_path, {"push"});
-    return s;
+    auto r = Git(m_path, {"push"});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::Fetch()
 {
-    auto [s, o] = Git(m_path, {"fetch", "--all"});
-    return s;
+    auto r = Git(m_path, {"fetch", "--all"});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 GitBranchInfo GitRepository::ParseBranchLine(const std::string& line) const
@@ -172,14 +180,14 @@ GitBranchInfo GitRepository::ParseBranchLine(const std::string& line) const
 std::vector<GitBranchInfo> GitRepository::GetBranches() const
 {
     std::vector<GitBranchInfo> result;
-    auto [s, output] = Git(m_path, {"branch", "-vv", "--format=%(refname:short)%00%(objectname:short)%00%(upstream:track)"});
-    if (!s || output.empty())
+    auto r = Git(m_path, {"branch", "-vv", "--format=%(refname:short)%00%(objectname:short)%00%(upstream:track)"});
+    if (!r.ok || r.out.empty())
     {
         // Fallback
-        auto [s2, o2] = Git(m_path, {"branch"});
-        if (!s2) return result;
+        auto r2 = Git(m_path, {"branch"});
+        if (!r2.ok) return result;
 
-        std::istringstream ss(o2);
+        std::istringstream ss(r2.out);
         std::string line;
         while (std::getline(ss, line))
         {
@@ -190,7 +198,7 @@ std::vector<GitBranchInfo> GitRepository::GetBranches() const
         return result;
     }
 
-    std::istringstream ss(output);
+    std::istringstream ss(r.out);
     std::string line;
     while (std::getline(ss, line))
     {
@@ -208,10 +216,10 @@ std::vector<GitBranchInfo> GitRepository::GetBranches() const
 std::vector<GitBranchInfo> GitRepository::GetRemoteBranches() const
 {
     std::vector<GitBranchInfo> result;
-    auto [s, output] = Git(m_path, {"branch", "-r"});
-    if (!s) return result;
+    auto r = Git(m_path, {"branch", "-r"});
+    if (!r.ok) return result;
 
-    std::istringstream ss(output);
+    std::istringstream ss(r.out);
     std::string line;
     while (std::getline(ss, line))
     {
@@ -227,30 +235,32 @@ std::vector<GitBranchInfo> GitRepository::GetRemoteBranches() const
 
 bool GitRepository::CheckoutBranch(const std::string& name)
 {
-    auto [s, o] = Git(m_path, {"checkout", name});
-    return s;
+    auto r = Git(m_path, {"checkout", name});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 bool GitRepository::CreateBranch(const std::string& name, const std::string& from)
 {
     std::vector<std::string> args = {"branch", name};
     if (!from.empty()) args.push_back(from);
-    auto [s, o] = Git(m_path, args);
-    return s;
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
 }
 
 std::vector<GitTagInfo> GitRepository::GetTags() const
 {
     std::vector<GitTagInfo> result;
-    auto [s, output] = Git(m_path, {"tag", "--format=%(refname:short)%00%(objectname:short)"});
-    if (!s) return result;
+    auto r = Git(m_path, {"tag", "--format=%(refname:short)%00%(objectname:short)"});
+    if (!r.ok) return result;
 
     size_t pos = 0;
-    while (pos < output.size())
+    while (pos < r.out.size())
     {
-        auto name = extractField(output, pos);
+        auto name = extractField(r.out, pos);
         if (name.empty()) break;
-        auto sha = extractField(output, pos);
+        auto sha = extractField(r.out, pos);
         result.push_back({name, sha});
     }
     return result;
@@ -259,10 +269,10 @@ std::vector<GitTagInfo> GitRepository::GetTags() const
 std::vector<GitSubmoduleInfo> GitRepository::GetSubmodules() const
 {
     std::vector<GitSubmoduleInfo> result;
-    auto [s, output] = Git(m_path, {"submodule", "status", "--recursive"});
-    if (!s) return result;
+    auto r = Git(m_path, {"submodule", "status", "--recursive"});
+    if (!r.ok) return result;
 
-    std::istringstream ss(output);
+    std::istringstream ss(r.out);
     std::string line;
     while (std::getline(ss, line))
     {
@@ -307,22 +317,22 @@ std::vector<GitCommit> GitRepository::GetLog(const GitLogOptions& options) const
     else args.push_back(options.branch);
     if (!options.path.empty()) { args.push_back("--"); args.push_back(options.path); }
 
-    auto [ok, output] = Git(m_path, args);
-    if (!ok || output.empty()) return {};
+    auto r = Git(m_path, args);
+    if (!r.ok || r.out.empty()) return {};
 
     std::vector<GitCommit> commits;
     size_t pos = 0;
-    while (pos < output.size()) {
+    while (pos < r.out.size()) {
         GitCommit commit;
-        commit.hash = extractField(output, pos);
+        commit.hash = extractField(r.out, pos);
         if (commit.hash.empty()) break;
-        commit.shortHash = extractField(output, pos);
-        commit.author = extractField(output, pos);
-        commit.authorEmail = extractField(output, pos);
-        commit.date = extractField(output, pos);
-        commit.message = extractField(output, pos);
+        commit.shortHash = extractField(r.out, pos);
+        commit.author = extractField(r.out, pos);
+        commit.authorEmail = extractField(r.out, pos);
+        commit.date = extractField(r.out, pos);
+        commit.message = extractField(r.out, pos);
 
-        std::string refs = extractField(output, pos);
+        std::string refs = extractField(r.out, pos);
         if (!refs.empty()) {
             std::istringstream refStream(refs);
             std::string ref;
@@ -333,7 +343,7 @@ std::vector<GitCommit> GitRepository::GetLog(const GitLogOptions& options) const
             }
         }
 
-        std::string parents = extractField(output, pos);
+        std::string parents = extractField(r.out, pos);
         if (!parents.empty()) {
             std::istringstream parentStream(parents);
             std::string parentHash;
@@ -342,7 +352,7 @@ std::vector<GitCommit> GitRepository::GetLog(const GitLogOptions& options) const
         }
 
         commits.push_back(std::move(commit));
-        while (pos < output.size() && output[pos] == '\n') pos++;
+        while (pos < r.out.size() && r.out[pos] == '\n') pos++;
     }
     return commits;
 }
@@ -350,30 +360,30 @@ std::vector<GitCommit> GitRepository::GetLog(const GitLogOptions& options) const
 GitCommitDetail GitRepository::GetCommitDetail(const std::string& hash) const
 {
     GitCommitDetail detail;
-    auto [ok, output] = Git(m_path, {
+    auto r = Git(m_path, {
         "show", "--format=%H%x00%an%x00%ae%x00%aI%x00%s%x00%B%x00", "--stat", hash});
-    if (!ok || output.empty()) return detail;
+    if (!r.ok || r.out.empty()) return detail;
 
     size_t pos = 0;
-    detail.hash = extractField(output, pos);
+    detail.hash = extractField(r.out, pos);
     if (detail.hash.empty()) return detail;
     detail.shortHash = detail.hash.substr(0, 7);
-    detail.author = extractField(output, pos);
-    detail.authorEmail = extractField(output, pos);
-    detail.date = extractField(output, pos);
-    detail.message = extractField(output, pos);
+    detail.author = extractField(r.out, pos);
+    detail.authorEmail = extractField(r.out, pos);
+    detail.date = extractField(r.out, pos);
+    detail.message = extractField(r.out, pos);
 
-    std::string fullBody = extractField(output, pos);
+    std::string fullBody = extractField(r.out, pos);
     auto newlinePos = fullBody.find('\n');
     if (newlinePos != std::string::npos) {
         size_t bodyStart = newlinePos + 1;
         while (bodyStart < fullBody.size() && fullBody[bodyStart] == '\n') bodyStart++;
         detail.body = fullBody.substr(bodyStart);
     }
-    while (pos < output.size() && (output[pos] == '\0' || output[pos] == '\n')) pos++;
-    if (pos >= output.size()) return detail;
+    while (pos < r.out.size() && (r.out[pos] == '\0' || r.out[pos] == '\n')) pos++;
+    if (pos >= r.out.size()) return detail;
 
-    std::string statSection = output.substr(pos);
+    std::string statSection = r.out.substr(pos);
     std::istringstream stream(statSection);
     std::string line;
     while (std::getline(stream, line)) {
@@ -427,10 +437,10 @@ std::vector<GitCommit> GitRepository::GetFileLog(const std::string& filePath, in
 
 std::vector<std::string> GitRepository::GetChangedFiles(const std::string& fromHash, const std::string& toHash) const
 {
-    auto [ok, output] = Git(m_path, {"diff", "--name-only", fromHash, toHash});
-    if (!ok || output.empty()) return {};
+    auto r = Git(m_path, {"diff", "--name-only", fromHash, toHash});
+    if (!r.ok || r.out.empty()) return {};
     std::vector<std::string> files;
-    std::istringstream stream(output);
+    std::istringstream stream(r.out);
     std::string line;
     while (std::getline(stream, line))
         if (!line.empty()) files.push_back(line);
@@ -460,25 +470,25 @@ GitStatus GitRepository::GetStatus() const
 {
     GitStatus status;
 
-    auto [ok, branchOutput] = Git(m_path, {"rev-parse", "--abbrev-ref", "HEAD"});
-    if (ok) status.currentBranch = branchOutput;
+    auto r1 = Git(m_path, {"rev-parse", "--abbrev-ref", "HEAD"});
+    if (r1.ok) status.currentBranch = r1.out;
 
-    auto [ok2, upstreamOutput] = Git(m_path, {"rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"});
-    if (ok2) status.upstreamBranch = upstreamOutput;
+    auto r2 = Git(m_path, {"rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"});
+    if (r2.ok) status.upstreamBranch = r2.out;
 
-    auto [ok3, countOutput] = Git(m_path, {"rev-list", "--left-right", "--count", "HEAD...@{upstream}"});
-    if (ok3) {
-        auto space = countOutput.find('\t');
+    auto r3 = Git(m_path, {"rev-list", "--left-right", "--count", "HEAD...@{upstream}"});
+    if (r3.ok) {
+        auto space = r3.out.find('\t');
         if (space != std::string::npos) {
-            status.aheadCount = std::stoi(countOutput.substr(0, space));
-            status.behindCount = std::stoi(countOutput.substr(space + 1));
+            status.aheadCount = std::stoi(r3.out.substr(0, space));
+            status.behindCount = std::stoi(r3.out.substr(space + 1));
         }
     }
 
-    auto [ok4, porcelain] = Git(m_path, {"status", "--porcelain", "-u"});
-    if (!ok4) return status;
+    auto r4 = Git(m_path, {"status", "--porcelain", "-u"});
+    if (!r4.ok) return status;
 
-    std::istringstream stream(porcelain);
+    std::istringstream stream(r4.out);
     std::string line;
     while (std::getline(stream, line)) {
         if (line.size() < 3) continue;

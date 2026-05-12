@@ -47,6 +47,9 @@ void GitBeeApp::OpenRepository(const std::string& path)
     if (!repo) { m_statusMessage = "Failed to open: " + path; return; }
 
     auto view = std::make_shared<RepoView>(repo);
+    view->OnStatusMessage = [this](const std::string& msg) {
+        m_statusMessage = msg;
+    };
     m_repoTabs.push_back({view, view->GetName()});
     m_activeTabIndex = (int)m_repoTabs.size();
     m_statusMessage = "Opened: " + repo->GetRootPath();

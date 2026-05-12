@@ -50,11 +50,11 @@ void LogPanel::FetchBranches()
     m_branches.clear();
     m_branches.push_back("All Branches");
 
-    auto [ok, output] = GitProcess::Execute(
+    auto r = GitProcess::Execute(
         m_repository->GetPath(), {"branch", "--format=%(refname:short)"});
-    if (ok && !output.empty())
+    if (r.ok && !r.out.empty())
     {
-        std::istringstream stream(output);
+        std::istringstream stream(r.out);
         std::string branch;
         while (std::getline(stream, branch))
             if (!branch.empty())
@@ -399,38 +399,38 @@ void LogPanel::RenderDiffContent(const std::string& diff)
 
 void LogPanel::FetchDiff(FileDiffEntry& entry)
 {
-    auto [ok, output] = GitProcess::Execute(
+    auto r = GitProcess::Execute(
         m_repository->GetPath(),
         {"diff", m_selectedCommit.hash + "^!", "--", entry.filePath});
 
-    if (!ok)
+    if (!r.ok)
     {
-        entry.diffContent = "Error fetching diff for: " + entry.filePath;
+        entry.diffContent = "Error: " + r.err;
         entry.expanded = false;
         return;
     }
 
     size_t totalLines = 0;
-    for (char c : output) { if (c == '\n') totalLines++; }
+    for (char c : r.out) { if (c == '\n') totalLines++; }
 
     constexpr int MAX_DIFF_LINES = 5000;
     if (totalLines > MAX_DIFF_LINES)
     {
         size_t cutoff = 0;
         int lines = 0;
-        for (size_t i = 0; i < output.size(); i++)
+        for (size_t i = 0; i < r.out.size(); i++)
         {
-            if (output[i] == '\n') { lines++; if (lines >= MAX_DIFF_LINES) break; }
+            if (r.out[i] == '\n') { lines++; if (lines >= MAX_DIFF_LINES) break; }
             cutoff = i;
         }
-        entry.diffContent = output.substr(0, cutoff + 1);
+        entry.diffContent = r.out.substr(0, cutoff + 1);
         char buf[128];
         snprintf(buf, sizeof(buf), "\n... Output truncated (%zu lines omitted)", totalLines - MAX_DIFF_LINES);
         entry.diffContent += buf;
     }
     else
     {
-        entry.diffContent = output;
+        entry.diffContent = r.out;
     }
 
     entry.addedLines = 0;
@@ -452,22 +452,22 @@ void LogPanel::BuildSelectCommitPatch()
     m_selectedFileIndex = -1;
     m_currentCommitDetail = GitCommitDetail{};
 
-    auto [ok, output] = GitProcess::Execute(
+    auto r = GitProcess::Execute(
         m_repository->GetPath(),
         {"show", "--stat", "--format=%H%x00%an%x00%ae%x00%aI%x00%s%x00%B%x00", m_selectedCommit.hash});
 
-    if (!ok || output.empty()) return;
+    if (!r.ok || r.out.empty()) return;
 
     size_t pos = 0;
-    m_currentCommitDetail.hash = git::ExtractField(output, pos);
+    m_currentCommitDetail.hash = git::ExtractField(r.out, pos);
     m_currentCommitDetail.shortHash = m_selectedCommit.shortHash;
-    m_currentCommitDetail.author = git::ExtractField(output, pos);
-    m_currentCommitDetail.authorEmail = git::ExtractField(output, pos);
-    m_currentCommitDetail.date = git::ExtractField(output, pos);
-    m_currentCommitDetail.message = git::ExtractField(output, pos);
-    m_currentCommitDetail.body = git::ExtractField(output, pos);
+    m_currentCommitDetail.author = git::ExtractField(r.out, pos);
+    m_currentCommitDetail.authorEmail = git::ExtractField(r.out, pos);
+    m_currentCommitDetail.date = git::ExtractField(r.out, pos);
+    m_currentCommitDetail.message = git::ExtractField(r.out, pos);
+    m_currentCommitDetail.body = git::ExtractField(r.out, pos);
 
-    std::string statOutput = output.substr(pos);
+    std::string statOutput = r.out.substr(pos);
 
     m_currentCommitDetail.addedFiles.clear();
     m_currentCommitDetail.modifiedFiles.clear();
@@ -619,7 +619,7 @@ void LogPanel::LoadMoreIfNeeded()
 
     m_loading = true;
 
-    auto [ok, output] = GitProcess::Execute(
+    auto r = GitProcess::Execute(
         m_repository->GetPath(),
         {"log",
          "--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%D%x00%P%x00",
@@ -628,9 +628,9 @@ void LogPanel::LoadMoreIfNeeded()
          m_logOptions.branch == "--all" ? "--all" : m_logOptions.branch.c_str(),
          "--date-order"});
 
-    if (ok && !output.empty())
+    if (r.ok && !r.out.empty())
     {
-        auto parsed = git::ParseLogOutput(output, LOAD_BATCH_SIZE);
+        auto parsed = git::ParseLogOutput(r.out, LOAD_BATCH_SIZE);
         m_hasMore = ((int)parsed.size() >= LOAD_BATCH_SIZE);
         for (auto& c : parsed)
             m_commits.push_back(std::move(c));

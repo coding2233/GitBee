@@ -31,12 +31,41 @@ std::string RepoView::GetName() const
 
 void RepoView::Render()
 {
+    ProcessAsyncResult();
     RenderToolbar();
     m_splitView.Begin();
     RenderSidebar();
     m_splitView.Separate();
     RenderContent();
     m_splitView.End();
+}
+
+void RepoView::ProcessAsyncResult()
+{
+    if (m_processingAsyncResult) return;
+    if (m_asyncTask.running) return;
+    if (m_asyncTask.name.empty()) return;
+
+    m_processingAsyncResult = true;
+
+    if (m_asyncTask.result)
+    {
+        if (OnStatusMessage)
+            OnStatusMessage(m_asyncTask.name + " completed");
+    }
+    else
+    {
+        std::string errMsg = m_asyncTask.name + " failed";
+        if (!m_asyncTask.error.empty())
+            errMsg += ": " + m_asyncTask.error;
+        if (OnStatusMessage)
+            OnStatusMessage(errMsg);
+    }
+
+    RefreshAll();
+    m_asyncTask.running = false;
+    m_asyncTask.name.clear();
+    m_processingAsyncResult = false;
 }
 
 void RepoView::RenderToolbar()
@@ -54,10 +83,18 @@ void RepoView::RenderToolbar()
 
     for (int i = 0; i < 6; i++)
     {
+        bool isGitAction = (i <= 3);
+        bool disabled = isGitAction && m_asyncTask.running;
+
+        if (disabled) { ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true); ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f); }
+
         if (ImGui::Button(tools[i].label))
             DoGitAction(tools[i].label);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", tools[i].tip);
+
+        if (disabled) { ImGui::PopStyleVar(); ImGui::PopItemFlag(); }
+
         if (i < 5) ImGui::SameLine();
     }
 
@@ -69,19 +106,43 @@ void RepoView::DoGitAction(const char* action)
 {
     std::string act = action;
 
-    if (act == "Sync") RefreshAll();
-    else if (act == "Pull") { m_repository->Pull(); RefreshAll(); }
-    else if (act == "Push") { m_repository->Push(); RefreshAll(); }
-    else if (act == "Fetch") { m_repository->Fetch(); RefreshAll(); m_branchDataDirty = true; }
-    else if (act == "Terminal")
+    if (act == "Sync") { RefreshAll(); return; }
+    if (act == "Terminal")
     {
         std::string cmd = "start cmd /K cd /D \"" + m_repoPath + "\"";
         system(cmd.c_str());
+        return;
     }
-    else if (act == "Explorer")
+    if (act == "Explorer")
     {
         std::string cmd = "explorer \"" + m_repoPath + "\"";
         system(cmd.c_str());
+        return;
+    }
+
+    if (m_asyncTask.running) return;
+
+    m_asyncTask.running = true;
+    m_asyncTask.result = false;
+    m_asyncTask.error.clear();
+    m_asyncTask.name = act;
+
+    if (act == "Pull" || act == "Push" || act == "Fetch")
+    {
+        if (OnStatusMessage) OnStatusMessage(act + "ing...");
+
+        auto repo = m_repository;
+        m_asyncTask.thread = std::thread([this, repo, act]() {
+            bool ok = false;
+            if (act == "Pull") ok = repo->Pull();
+            else if (act == "Push") ok = repo->Push();
+            else if (act == "Fetch") ok = repo->Fetch();
+
+            m_asyncTask.result = ok;
+            m_asyncTask.error = repo->GetLastGitError();
+            m_asyncTask.running = false;
+        });
+        m_asyncTask.thread.detach();
     }
 }
 

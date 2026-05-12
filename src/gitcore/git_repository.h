@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include "git_types.h"
+#include "git_process.h"
 
 class GitRepository {
 public:
@@ -54,11 +55,14 @@ public:
     bool Push();
     bool Fetch();
 
+    std::string GetLastGitError() const { return m_lastError; }
+
 private:
     std::string m_path;
+    std::string m_lastError;
 
-    static std::pair<bool, std::string> Git(const std::string& path,
-        const std::vector<std::string>& args);
+    static GitResult Git(const std::string& path,
+                         const std::vector<std::string>& args);
 
     GitBranchInfo ParseBranchLine(const std::string& line) const;
 };
