@@ -2,7 +2,6 @@
 #include "../ui/workspace_panel.h"
 #include "../ui/worktree_panel.h"
 #include "../ui/log_panel.h"
-#include "../ui/diff_panel.h"
 #include "../gitcore/git_repository.h"
 #include <imgui.h>
 
@@ -13,17 +12,10 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     m_workspacePanel = std::make_unique<WorkspacePanel>();
     m_worktreePanel = std::make_unique<WorkTreePanel>();
     m_logPanel = std::make_unique<LogPanel>();
-    m_diffPanel = std::make_unique<DiffPanel>();
 
     m_workspacePanel->SetRepository(m_repository);
     m_worktreePanel->SetRepository(m_repository);
     m_logPanel->SetRepository(m_repository);
-    m_diffPanel->SetRepository(m_repository);
-
-    m_logPanel->OnCommitSelected = [this](const GitCommit& commit) {
-        m_diffPanel->ShowCommitDetail(commit);
-        m_activeSection = Section::Changes;
-    };
 }
 
 RepoView::~RepoView() = default;
@@ -100,7 +92,6 @@ void RepoView::RenderSidebar()
 
     RenderSidebarSection("Workspace", Section::Workspace);
     RenderSidebarSection("Files", Section::Files);
-    RenderSidebarSection("Changes", Section::Changes);
     RenderSidebarSection("History", Section::History);
 
     if (m_branchDataDirty) RefreshBranchData();
@@ -184,9 +175,6 @@ void RepoView::RenderContent()
             break;
         case Section::Files:
             if (m_worktreePanel) m_worktreePanel->Render();
-            break;
-        case Section::Changes:
-            if (m_diffPanel) m_diffPanel->Render();
             break;
         case Section::History:
             if (m_logPanel) m_logPanel->Render();

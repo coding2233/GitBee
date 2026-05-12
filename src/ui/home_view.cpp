@@ -1,9 +1,95 @@
 #include "home_view.h"
 #include <imgui.h>
 #include <algorithm>
+#include <fstream>
+#include <sstream>
 
 static const char* APP_VERSION = "v0.2.0";
 static const char* APP_DESC = "A Lightweight Git Interface Management Tool";
+
+void HomeView::SaveRecents(const std::string& filePath)
+{
+    std::ofstream file(filePath);
+    if (!file.is_open()) return;
+    file << "[\n";
+    for (size_t i = 0; i < m_recentRepos.size(); i++)
+    {
+        file << "  {\"path\":\"";
+        for (char c : m_recentRepos[i].path)
+        {
+            if (c == '\\') file << "\\\\";
+            else if (c == '"') file << "\\\"";
+            else file << c;
+        }
+        file << "\",\"name\":\"";
+        for (char c : m_recentRepos[i].name)
+        {
+            if (c == '\\') file << "\\\\";
+            else if (c == '"') file << "\\\"";
+            else file << c;
+        }
+        file << "\"}";
+        if (i < m_recentRepos.size() - 1) file << ",";
+        file << "\n";
+    }
+    file << "]\n";
+}
+
+void HomeView::LoadRecents(const std::string& filePath)
+{
+    m_recentRepos.clear();
+    std::ifstream file(filePath);
+    if (!file.is_open()) return;
+
+    std::stringstream buf;
+    buf << file.rdbuf();
+    std::string content = buf.str();
+
+    size_t pos = 0;
+    while ((pos = content.find("\"path\":\"", pos)) != std::string::npos)
+    {
+        pos += 8;
+        std::string path;
+        while (pos < content.size() && content[pos] != '"')
+        {
+            if (content[pos] == '\\' && pos + 1 < content.size())
+            {
+                if (content[pos + 1] == '\\') path += '\\';
+                else if (content[pos + 1] == '"') path += '"';
+                else path += content[pos];
+                pos += 2;
+            }
+            else
+            {
+                path += content[pos];
+                pos++;
+            }
+        }
+
+        auto namePos = content.find("\"name\":\"", pos);
+        if (namePos == std::string::npos) break;
+        namePos += 8;
+        std::string name;
+        while (namePos < content.size() && content[namePos] != '"')
+        {
+            if (content[namePos] == '\\' && namePos + 1 < content.size())
+            {
+                if (content[namePos + 1] == '\\') name += '\\';
+                else if (content[namePos + 1] == '"') name += '"';
+                else name += content[namePos];
+                namePos += 2;
+            }
+            else
+            {
+                name += content[namePos];
+                namePos++;
+            }
+        }
+
+        if (!path.empty())
+            m_recentRepos.push_back({path, name.empty() ? path : name});
+    }
+}
 
 void HomeView::AddRecent(const std::string& path)
 {
@@ -36,6 +122,7 @@ void HomeView::Render()
     ImVec2 titleSize = ImGui::CalcTextSize("GitBee");
     ImGui::SetCursorPosX((cardW - titleSize.x) * 0.5f);
     ImGui::TextUnformatted("GitBee");
+    ImGui::PopFont();
     ImGui::PopStyleColor();
 
     ImVec2 descSize = ImGui::CalcTextSize(APP_DESC);

@@ -9,6 +9,7 @@
 #include <cctype>
 #include <chrono>
 #include <iomanip>
+#include <cstdio>
 
 static const ImU32 GRAPH_LANE_COLORS[] = {
     IM_COL32(100, 200, 100, 220),
@@ -63,11 +64,7 @@ void LogPanel::FetchBranches()
 
 void LogPanel::Render()
 {
-    if (!ImGui::Begin("Commits"))
-    {
-        ImGui::End();
-        return;
-    }
+    ImGui::BeginChild("##log_panel", ImVec2(0, 0), true);
 
     RenderFilterBar();
     ImGui::Separator();
@@ -77,7 +74,29 @@ void LogPanel::Render()
     m_contentSplit.Separate();
 
     if (m_showDetailPanel && m_selectedIndex >= 0 && m_selectedIndex < (int)m_commits.size())
-        RenderCommitDetail();
+    {
+        m_detailSplit.Begin();
+
+        m_infoFileSplit.Begin();
+        RenderCommitHeader();
+        m_infoFileSplit.Separate();
+        RenderFileList();
+        m_infoFileSplit.End();
+
+        m_detailSplit.Separate();
+
+        if (m_selectedFileIndex >= 0 && m_selectedFileIndex < (int)m_fileDiffs.size() &&
+            !m_fileDiffs[m_selectedFileIndex].diffContent.empty())
+            RenderDiffContent(m_fileDiffs[m_selectedFileIndex].diffContent);
+        else
+        {
+            ImGui::BeginChild("##diff_placeholder");
+            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Select a file to view diff");
+            ImGui::EndChild();
+        }
+
+        m_detailSplit.End();
+    }
     else
     {
         ImGui::BeginChild("##detail_placeholder");
@@ -86,7 +105,7 @@ void LogPanel::Render()
     }
     m_contentSplit.End();
 
-    ImGui::End();
+    ImGui::EndChild();
 }
 
 void LogPanel::RenderFilterBar()
@@ -210,12 +229,9 @@ void LogPanel::RenderCommitTable()
             }
             DrawGraph(laneId, center, isMerge, isHead);
 
-            ImGui::SetCursorPosX(ImGui::GetCursorPosX() + lineHeight * 0.5f);
-
-            // Ref tags
+            ImGui::TableNextColumn();
             for (auto& ref : commit.refs)
             {
-                ImGui::SameLine();
                 bool isTag = ref.find("tag:") != std::string::npos;
                 ImVec4 tagColor = isTag ? ImVec4(0.6f, 0.8f, 0.3f, 1.0f) : ImVec4(0.8f, 0.6f, 0.2f, 1.0f);
                 ImGui::PushStyleColor(ImGuiCol_Text, tagColor);
@@ -223,16 +239,12 @@ void LogPanel::RenderCommitTable()
                 ImGui::PopStyleColor();
                 ImGui::SameLine();
             }
-
-            ImGui::TableNextColumn();
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
-            ImGui::TextUnformatted(commit.shortHash.c_str());
-            ImGui::PopStyleColor();
-            ImGui::SameLine();
             if (ImGui::Selectable(commit.message.c_str(), isSelected, ImGuiSelectableFlags_SpanAllColumns))
             {
                 m_selectedIndex = i;
                 m_showDetailPanel = true;
+                m_selectedCommit = commit;
+                BuildSelectCommitPatch();
                 if (OnCommitSelected) OnCommitSelected(commit);
             }
             ImGui::TableNextColumn();
@@ -253,27 +265,24 @@ void LogPanel::RenderCommitTable()
     ImGui::EndChild();
 }
 
-void LogPanel::RenderCommitDetail()
+void LogPanel::RenderCommitHeader()
 {
-    if (m_selectedIndex < 0 || m_selectedIndex >= (int)m_commits.size()) return;
-    const auto& commit = m_commits[m_selectedIndex];
-
-    ImGui::BeginChild("##commit_detail", ImVec2(0, 0), false);
+    ImGui::BeginChild("##commit_header", ImVec2(0, 0), false);
 
     ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
-    ImGui::TextUnformatted(commit.shortHash.c_str());
+    ImGui::TextUnformatted(m_selectedCommit.shortHash.c_str());
     ImGui::PopStyleColor();
     ImGui::SameLine();
-    ImGui::TextUnformatted(commit.message.c_str());
+    ImGui::TextUnformatted(m_selectedCommit.message.c_str());
 
-    ImGui::Text("Author: %s <%s>", commit.author.c_str(), commit.authorEmail.c_str());
-    ImGui::Text("Date:   %s", commit.date.c_str());
+    ImGui::Text("Author: %s <%s>", m_selectedCommit.author.c_str(), m_selectedCommit.authorEmail.c_str());
+    ImGui::Text("Date:   %s", m_selectedCommit.date.c_str());
 
-    if (!commit.parentHashes.empty())
+    if (!m_selectedCommit.parentHashes.empty())
     {
         ImGui::Text("Parents:");
         ImGui::SameLine();
-        for (auto& ph : commit.parentHashes)
+        for (auto& ph : m_selectedCommit.parentHashes)
         {
             ImGui::SameLine();
             ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.6f, 1.0f, 1.0f));
@@ -283,13 +292,283 @@ void LogPanel::RenderCommitDetail()
         }
     }
 
-    if (!commit.body.empty())
+    if (!m_selectedCommit.body.empty())
     {
         ImGui::Separator();
-        ImGui::TextWrapped("%s", commit.body.c_str());
+        ImGui::TextWrapped("%s", m_selectedCommit.body.c_str());
+    }
+
+    char stats[128];
+    snprintf(stats, sizeof(stats), "+%d additions, -%d deletions", m_currentCommitDetail.additions, m_currentCommitDetail.deletions);
+    ImGui::TextUnformatted(stats);
+
+    ImGui::EndChild();
+}
+
+void LogPanel::RenderFileList()
+{
+    ImGui::BeginChild("##file_list", ImVec2(0, 0), true);
+
+    for (int i = 0; i < (int)m_fileDiffs.size(); i++)
+    {
+        auto& entry = m_fileDiffs[i];
+        bool selected = (i == m_selectedFileIndex);
+
+        if (ImGui::Selectable(entry.filePath.c_str(), selected))
+        {
+            m_selectedFileIndex = i;
+            if (entry.diffContent.empty())
+                FetchDiff(entry);
+        }
+    }
+
+    if (m_fileDiffs.empty())
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No file changes");
+
+    ImGui::EndChild();
+}
+
+void LogPanel::RenderDiffContent(const std::string& diff)
+{
+    auto lines = ParseDiffLines(diff);
+
+    int numWidth = 40;
+    ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.Size > 1
+        ? ImGui::GetIO().Fonts->Fonts[1]
+        : ImGui::GetIO().Fonts->Fonts[0]);
+
+    ImGui::BeginChild("##diff_full", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    ImVec2 startPos = ImGui::GetCursorScreenPos();
+    float lineHeight = ImGui::GetTextLineHeightWithSpacing();
+    float textHeight = ImGui::GetTextLineHeight();
+
+    ImGui::SetCursorPosX(numWidth * 2 + 8);
+
+    for (int i = 0; i < (int)lines.size(); i++)
+    {
+        auto& dlInfo = lines[i];
+        ImVec2 lineStart(startPos.x, startPos.y + i * lineHeight);
+        ImVec2 lineEnd(startPos.x + ImGui::GetWindowWidth(), lineStart.y + textHeight);
+
+        if (dlInfo.type == DiffLineInfo::Added)
+            dl->AddRectFilled(lineStart, lineEnd, IM_COL32(40, 70, 40, 180));
+        else if (dlInfo.type == DiffLineInfo::Removed)
+            dl->AddRectFilled(lineStart, lineEnd, IM_COL32(70, 40, 40, 180));
+        else if (dlInfo.type == DiffLineInfo::Hunk)
+            dl->AddRectFilled(lineStart, lineEnd, IM_COL32(30, 50, 80, 120));
+    }
+
+    for (int i = 0; i < (int)lines.size(); i++)
+    {
+        auto& dlInfo = lines[i];
+
+        char oldNo[16] = "-", newNo[16] = "-";
+        if (dlInfo.newLineNo >= 0) snprintf(newNo, sizeof(newNo), "%d", dlInfo.newLineNo);
+        if (dlInfo.oldLineNo >= 0) snprintf(oldNo, sizeof(oldNo), "%d", dlInfo.oldLineNo);
+
+        ImVec2 pos = ImGui::GetCursorScreenPos();
+        ImGui::SetCursorScreenPos(ImVec2(pos.x, pos.y));
+
+        ImGui::TextUnformatted(oldNo);
+        ImGui::SameLine(0, 4);
+        ImGui::TextUnformatted(newNo);
+        ImGui::SameLine(0, 4);
+
+        ImVec4 color(1, 1, 1, 1);
+        if (dlInfo.type == DiffLineInfo::Added)
+            color = ImVec4(0.3f, 0.8f, 0.3f, 1.0f);
+        else if (dlInfo.type == DiffLineInfo::Removed)
+            color = ImVec4(0.8f, 0.3f, 0.3f, 1.0f);
+        else if (dlInfo.type == DiffLineInfo::Hunk)
+            color = ImVec4(0.3f, 0.6f, 1.0f, 1.0f);
+
+        ImGui::PushStyleColor(ImGuiCol_Text, color);
+        ImGui::TextUnformatted(dlInfo.content.c_str());
+        ImGui::PopStyleColor();
     }
 
     ImGui::EndChild();
+    ImGui::PopFont();
+}
+
+void LogPanel::FetchDiff(FileDiffEntry& entry)
+{
+    auto [ok, output] = GitProcess::Execute(
+        m_repository->GetPath(),
+        {"diff", m_selectedCommit.hash + "^!", "--", entry.filePath});
+
+    if (!ok)
+    {
+        entry.diffContent = "Error fetching diff for: " + entry.filePath;
+        entry.expanded = false;
+        return;
+    }
+
+    size_t totalLines = 0;
+    for (char c : output) { if (c == '\n') totalLines++; }
+
+    constexpr int MAX_DIFF_LINES = 5000;
+    if (totalLines > MAX_DIFF_LINES)
+    {
+        size_t cutoff = 0;
+        int lines = 0;
+        for (size_t i = 0; i < output.size(); i++)
+        {
+            if (output[i] == '\n') { lines++; if (lines >= MAX_DIFF_LINES) break; }
+            cutoff = i;
+        }
+        entry.diffContent = output.substr(0, cutoff + 1);
+        char buf[128];
+        snprintf(buf, sizeof(buf), "\n... Output truncated (%zu lines omitted)", totalLines - MAX_DIFF_LINES);
+        entry.diffContent += buf;
+    }
+    else
+    {
+        entry.diffContent = output;
+    }
+
+    entry.addedLines = 0;
+    entry.removedLines = 0;
+    std::istringstream stream(entry.diffContent);
+    std::string l;
+    while (std::getline(stream, l))
+    {
+        if (l.size() > 0 && l[0] == '+') entry.addedLines++;
+        else if (l.size() > 0 && l[0] == '-') entry.removedLines++;
+    }
+}
+
+void LogPanel::BuildSelectCommitPatch()
+{
+    if (!m_repository) return;
+
+    m_fileDiffs.clear();
+    m_selectedFileIndex = -1;
+    m_currentCommitDetail = GitCommitDetail{};
+
+    auto [ok, output] = GitProcess::Execute(
+        m_repository->GetPath(),
+        {"show", "--stat", "--format=%H%x00%an%x00%ae%x00%aI%x00%s%x00%B%x00", m_selectedCommit.hash});
+
+    if (!ok || output.empty()) return;
+
+    size_t pos = 0;
+    m_currentCommitDetail.hash = git::ExtractField(output, pos);
+    m_currentCommitDetail.shortHash = m_selectedCommit.shortHash;
+    m_currentCommitDetail.author = git::ExtractField(output, pos);
+    m_currentCommitDetail.authorEmail = git::ExtractField(output, pos);
+    m_currentCommitDetail.date = git::ExtractField(output, pos);
+    m_currentCommitDetail.message = git::ExtractField(output, pos);
+    m_currentCommitDetail.body = git::ExtractField(output, pos);
+
+    std::string statOutput = output.substr(pos);
+
+    m_currentCommitDetail.addedFiles.clear();
+    m_currentCommitDetail.modifiedFiles.clear();
+    m_currentCommitDetail.deletedFiles.clear();
+    m_currentCommitDetail.additions = 0;
+    m_currentCommitDetail.deletions = 0;
+
+    std::istringstream statStream(statOutput);
+    std::string line;
+    while (std::getline(statStream, line))
+    {
+        if (line.empty()) continue;
+
+        if (line.find("files changed") != std::string::npos ||
+            line.find("insertion") != std::string::npos ||
+            line.find("deletion") != std::string::npos)
+        {
+            int addVal = 0, delVal = 0;
+            for (const char* c = line.c_str(); *c; c++)
+            {
+                if (*c >= '0' && *c <= '9')
+                {
+                    int val = 0;
+                    while (*c >= '0' && *c <= '9') { val = val * 10 + (*c - '0'); c++; }
+                    if (strstr(c, "insertion")) addVal = val;
+                    else if (strstr(c, "deletion")) delVal = val;
+                    if (!*c) break;
+                }
+            }
+            if (addVal) m_currentCommitDetail.additions = addVal;
+            if (delVal) m_currentCommitDetail.deletions = delVal;
+            continue;
+        }
+
+        auto pipePos = line.find("|");
+        if (pipePos == std::string::npos || pipePos <= 5) continue;
+
+        std::string filename = line.substr(0, pipePos);
+        auto end = filename.find_last_not_of(" ");
+        if (end != std::string::npos) filename = filename.substr(0, end + 1);
+        auto start = filename.find_first_not_of(" ");
+        if (start != std::string::npos) filename = filename.substr(start);
+        if (filename.empty()) continue;
+
+        m_currentCommitDetail.modifiedFiles.push_back(filename);
+    }
+
+    for (const auto& f : m_currentCommitDetail.modifiedFiles)
+        m_fileDiffs.push_back({f, {}, false, 0, 0});
+}
+
+std::vector<LogPanel::DiffLineInfo> LogPanel::ParseDiffLines(const std::string& diff)
+{
+    std::vector<DiffLineInfo> result;
+    std::istringstream stream(diff);
+    std::string line;
+    int currentOldLine = -1;
+    int currentNewLine = -1;
+
+    while (std::getline(stream, line))
+    {
+        DiffLineInfo info;
+        info.content = line;
+
+        if (line.compare(0, 4, "--- ") == 0 || line.compare(0, 4, "+++ ") == 0)
+        {
+            info.type = DiffLineInfo::Header;
+            info.oldLineNo = -1;
+            info.newLineNo = -1;
+        }
+        else if (line.compare(0, 3, "@@ ") == 0)
+        {
+            info.type = DiffLineInfo::Hunk;
+            info.oldLineNo = -1;
+            info.newLineNo = -1;
+            int oldStart = 0, newStart = 0;
+            if (sscanf_s(line.c_str(), "@@ -%d,%*d +%d,%*d @@", &oldStart, &newStart) >= 2)
+            {
+                currentOldLine = oldStart;
+                currentNewLine = newStart;
+            }
+        }
+        else if (!line.empty() && line[0] == '+')
+        {
+            info.type = DiffLineInfo::Added;
+            info.oldLineNo = -1;
+            info.newLineNo = currentNewLine >= 0 ? currentNewLine++ : -1;
+        }
+        else if (!line.empty() && line[0] == '-')
+        {
+            info.type = DiffLineInfo::Removed;
+            info.oldLineNo = currentOldLine >= 0 ? currentOldLine++ : -1;
+            info.newLineNo = -1;
+        }
+        else
+        {
+            info.type = DiffLineInfo::Normal;
+            info.oldLineNo = currentOldLine >= 0 ? currentOldLine++ : -1;
+            info.newLineNo = currentNewLine >= 0 ? currentNewLine++ : -1;
+        }
+
+        result.push_back(std::move(info));
+    }
+
+    return result;
 }
 
 void LogPanel::DrawGraph(int laneId, const ImVec2& center, bool isMerge, bool isHead)
@@ -339,7 +618,7 @@ void LogPanel::LoadMoreIfNeeded()
     auto [ok, output] = GitProcess::Execute(
         m_repository->GetPath(),
         {"log",
-         "--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%D%x00%P",
+         "--format=%H%x00%h%x00%an%x00%ae%x00%aI%x00%s%x00%D%x00%P%x00",
          "-n", std::to_string(LOAD_BATCH_SIZE),
          "--skip", std::to_string((int)m_commits.size()),
          m_logOptions.branch == "--all" ? "--all" : m_logOptions.branch.c_str(),

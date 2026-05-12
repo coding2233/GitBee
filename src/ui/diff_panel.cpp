@@ -145,16 +145,12 @@ void DiffPanel::FetchDiff(FileDiffEntry& entry)
 
 void DiffPanel::Render()
 {
-    if (!ImGui::Begin("Diff View", nullptr, ImGuiWindowFlags_HorizontalScrollbar))
-    {
-        ImGui::End();
-        return;
-    }
+    ImGui::BeginChild("##diff_panel", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 
     if (!m_hasCommitDetail)
     {
         ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Select a commit to view changes");
-        ImGui::End();
+        ImGui::EndChild();
         return;
     }
 
@@ -175,7 +171,7 @@ void DiffPanel::Render()
     }
     m_splitView.End();
 
-    ImGui::End();
+    ImGui::EndChild();
 }
 
 void DiffPanel::RenderCommitHeader()

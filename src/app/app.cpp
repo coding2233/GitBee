@@ -4,10 +4,18 @@
 #include "../ui/Theme.h"
 #include "../gitcore/git_repository.h"
 #include <imgui.h>
+#include <cstdlib>
+#include <filesystem>
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
+    const char* appData = std::getenv("APPDATA");
+    std::string dataDir = appData ? (std::string(appData) + "\\GitBee") : (std::filesystem::current_path().string() + "\\GitBee");
+    std::filesystem::create_directories(dataDir);
+    m_recentFilePath = dataDir + "\\recent.json";
+
     m_homeView = std::make_unique<HomeView>();
+    m_homeView->LoadRecents(m_recentFilePath);
     m_homeView->OnOpenRepository = [this]() {
         m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
     };
@@ -38,7 +46,11 @@ void GitBeeApp::OpenRepository(const std::string& path)
     m_activeTabIndex = (int)m_repoTabs.size();
     m_statusMessage = "Opened: " + repo->GetRootPath();
 
-    if (m_homeView) m_homeView->AddRecent(repo->GetRootPath());
+    if (m_homeView)
+    {
+        m_homeView->AddRecent(repo->GetRootPath());
+        m_homeView->SaveRecents(m_recentFilePath);
+    }
 }
 
 void GitBeeApp::OnCreate()
@@ -49,7 +61,11 @@ void GitBeeApp::OnCreate()
     Theme::LoadFonts();
 }
 
-void GitBeeApp::OnDestroy() {}
+void GitBeeApp::OnDestroy()
+{
+    if (m_homeView)
+        m_homeView->SaveRecents(m_recentFilePath);
+}
 
 void GitBeeApp::RenderMenuBar()
 {

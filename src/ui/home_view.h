@@ -19,6 +19,8 @@ public:
     };
 
     void AddRecent(const std::string& path);
+    void SaveRecents(const std::string& filePath);
+    void LoadRecents(const std::string& filePath);
 
 private:
     std::vector<RecentRepo> m_recentRepos;

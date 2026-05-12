@@ -210,14 +210,19 @@ struct FileDialog
         {
             if (type == Type::SelectFolder)
             {
-                if (currentFolder.empty() && currentFile.empty())
-                {
-                    strcpy_s(error, "Error: You must select a folder!");
-                }
-                else
+                if (!currentFolder.empty() || !currentFile.empty())
                 {
                     strcpy_s(resultBuffer, sizeof(resultBuffer),
                         (currentPath + "\\" + (currentFolder.empty() ? currentFile : currentFolder)).c_str());
+                    shouldClose = true;
+                }
+                else if (strlen(resultBuffer) > 0)
+                {
+                    shouldClose = true;
+                }
+                else
+                {
+                    strcpy_s(resultBuffer, sizeof(resultBuffer), currentPath.c_str());
                     shouldClose = true;
                 }
             }

@@ -42,4 +42,5 @@ private:
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;
+    std::string m_recentFilePath;
 };

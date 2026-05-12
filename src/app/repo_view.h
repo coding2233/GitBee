@@ -10,7 +10,6 @@ class GitRepository;
 class WorkspacePanel;
 class WorkTreePanel;
 class LogPanel;
-class DiffPanel;
 
 class RepoView
 {
@@ -27,7 +26,6 @@ private:
     enum class Section {
         Workspace,
         Files,
-        Changes,
         History,
     };
 
@@ -48,7 +46,6 @@ private:
     std::unique_ptr<WorkspacePanel> m_workspacePanel;
     std::unique_ptr<WorkTreePanel> m_worktreePanel;
     std::unique_ptr<LogPanel> m_logPanel;
-    std::unique_ptr<DiffPanel> m_diffPanel;
 
     SplitView m_splitView{ SplitView::Type::Horizontal, 220, 80 };
     Section m_activeSection = Section::Workspace;
