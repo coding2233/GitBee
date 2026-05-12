@@ -2,6 +2,7 @@
 #include "../ui/workspace_panel.h"
 #include "../ui/worktree_panel.h"
 #include "../ui/log_panel.h"
+#include "../ui/config_panel.h"
 #include "../gitcore/git_repository.h"
 #include <imgui.h>
 
@@ -12,10 +13,12 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     m_workspacePanel = std::make_unique<WorkspacePanel>();
     m_worktreePanel = std::make_unique<WorkTreePanel>();
     m_logPanel = std::make_unique<LogPanel>();
+    m_configPanel = std::make_unique<ConfigPanel>();
 
     m_workspacePanel->SetRepository(m_repository);
     m_worktreePanel->SetRepository(m_repository);
     m_logPanel->SetRepository(m_repository);
+    m_configPanel->SetRepository(m_repository);
 }
 
 RepoView::~RepoView() = default;
@@ -154,6 +157,7 @@ void RepoView::RenderSidebar()
     RenderSidebarSection("Workspace", Section::Workspace);
     RenderSidebarSection("Files", Section::Files);
     RenderSidebarSection("History", Section::History);
+    RenderSidebarSection("Config", Section::Config);
 
     if (m_branchDataDirty) RefreshBranchData();
 
@@ -240,6 +244,9 @@ void RepoView::RenderContent()
         case Section::History:
             if (m_logPanel) m_logPanel->Render();
             break;
+        case Section::Config:
+            if (m_configPanel) m_configPanel->Render();
+            break;
     }
 }
 
@@ -270,5 +277,6 @@ void RepoView::RefreshAll()
     if (m_workspacePanel) m_workspacePanel->Refresh();
     if (m_worktreePanel) m_worktreePanel->Refresh();
     if (m_logPanel) m_logPanel->Refresh();
+    if (m_configPanel) m_configPanel->Refresh();
     m_branchDataDirty = true;
 }
