@@ -41,6 +41,7 @@ void LogPanel::Refresh()
     m_selectedIndex = -1;
     m_hasMore = true;
     m_loading = false;
+    m_loadedExtraOnInit = false;
     LoadMoreIfNeeded();
 }
 
@@ -147,8 +148,16 @@ void LogPanel::RenderCommitTable()
 
     auto scrollY = ImGui::GetScrollY();
     auto maxScrollY = ImGui::GetScrollMaxY();
-    if (!m_loading && m_hasMore && scrollY > 0 && scrollY >= maxScrollY - 10.0f)
-        LoadMoreIfNeeded();
+    if (!m_loading && m_hasMore)
+    {
+        if (maxScrollY > 0 && scrollY >= maxScrollY - 10.0f)
+            LoadMoreIfNeeded();
+        else if (maxScrollY <= 0 && !m_loadedExtraOnInit)
+        {
+            m_loadedExtraOnInit = true;
+            LoadMoreIfNeeded();
+        }
+    }
 
     if (ImGui::BeginTable("##commits", 5,
         ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY,

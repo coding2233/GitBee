@@ -55,6 +55,7 @@ private:
 
     SplitView m_contentSplit{ SplitView::Type::Vertical, 0.45f, 80.0f };
     bool m_showDetailPanel = false;
+    bool m_loadedExtraOnInit = false;
 
     // Commit detail + diff state
     GitCommit m_selectedCommit;
