@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <filesystem>
 #include <sstream>
+#include <chrono>
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
@@ -128,6 +129,11 @@ void GitBeeApp::ProcessPendingRepos()
             view->OnStatusMessage = [this](const std::string& msg) {
                 m_statusMessage = msg;
             };
+            std::string displayName = pending->displayName;
+            view->OnOperationLog = [this, displayName](const std::string& op, bool ok,
+                const std::string& summary, const std::string& detail) {
+                AddOperationLog(displayName, op, ok, summary, detail);
+            };
             m_repoTabs.push_back({view, pending->displayName});
             m_activeTabIndex = (int)m_repoTabs.size();
             m_statusMessage = "Opened: " + repo->GetRootPath();
@@ -225,6 +231,9 @@ void GitBeeApp::RenderMenuBar()
                 if (m_globalConfig.empty())
                     LoadGlobalConfig();
             }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Command Output", "Ctrl+`", nullptr, !m_showOutputWindow))
+                ShowOutputWindow();
             ImGui::Separator();
             ImGui::MenuItem("ImGui Demo", nullptr, &m_showDemoWindow);
             ImGui::EndMenu();
@@ -600,10 +609,262 @@ void GitBeeApp::RenderSectionTableGlobal(const std::string& section, const std::
     ImGui::Indent(8);
 }
 
+void GitBeeApp::AddOperationLog(const std::string& repoName, const std::string& operation,
+                                 bool success, const std::string& summary, const std::string& detail)
+{
+    if (m_operationLog.size() >= MAX_OP_LOG)
+        m_operationLog.erase(m_operationLog.begin());
+
+    auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+    std::tm tm;
+    localtime_s(&tm, &now);
+    char buf[32];
+    strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
+
+    OperationLogEntry entry;
+    entry.id = m_nextOpId++;
+    entry.time = buf;
+    entry.repoName = repoName;
+    entry.operation = operation;
+    entry.success = success;
+    entry.summary = summary;
+    entry.detail = detail;
+    entry.expanded = false;
+    m_operationLog.push_back(std::move(entry));
+
+    if (m_autoShowOutput)
+        ShowOutputWindow();
+}
+
+void GitBeeApp::ShowOutputWindow()
+{
+    m_showOutputWindow = true;
+}
+
+void GitBeeApp::ClearOperationLog()
+{
+    m_operationLog.clear();
+}
+
+void GitBeeApp::RenderOutputWindow()
+{
+    if (!m_showOutputWindow) return;
+
+    auto* vp = ImGui::GetMainViewport();
+    float winW = vp->Size.x * 0.92f;
+    float winH = vp->Size.y * 0.6f;
+
+    ImGui::SetNextWindowPos(ImVec2((vp->Size.x - winW) * 0.5f, (vp->Size.y - winH) * 0.3f), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(winW, winH), ImGuiCond_Appearing);
+
+    bool open = true;
+    if (ImGui::Begin("Command Output", &open,
+        ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse))
+    {
+        // Toolbar
+        float lineH = ImGui::GetFrameHeight();
+        ImGui::BeginChild("##output_toolbar", ImVec2(0, lineH + 6), false);
+
+        if (ImGui::Button("Clear", ImVec2(60, 0)))
+            ClearOperationLog();
+        ImGui::SameLine();
+        ImGui::Checkbox("Auto-show", &m_autoShowOutput);
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f),
+            "  %d operations", (int)m_operationLog.size());
+
+        ImGui::EndChild();
+
+        ImGui::Separator();
+
+        // Interactive operation banner (merge conflict, etc.)
+        if (m_pendingInteraction)
+        {
+            ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.3f, 0.18f, 0.1f, 1.0f));
+            ImGui::BeginChild("##interaction_banner", ImVec2(0, ImGui::GetFrameHeight() * 3 + 16), true);
+
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.7f, 0.3f, 1.0f));
+            ImGui::TextUnformatted(m_pendingInteraction->title.c_str());
+            ImGui::PopStyleColor();
+
+            ImGui::TextWrapped("%s", m_pendingInteraction->message.c_str());
+
+            if (m_pendingInteraction->hasConflicts)
+            {
+                ImGui::Spacing();
+                ImGui::TextColored(ImVec4(1.0f, 0.3f, 0.3f, 1.0f),
+                    "Conflicts: %d files", m_pendingInteraction->conflictCount);
+            }
+
+            ImGui::Spacing();
+            if (ImGui::Button("Dismiss"))
+                m_pendingInteraction.reset();
+
+            ImGui::EndChild();
+            ImGui::PopStyleColor();
+            ImGui::Separator();
+        }
+
+        // Operation list
+        ImGui::BeginChild("##output_ops_list");
+
+        if (m_operationLog.empty())
+        {
+            const char* msg = "No operations yet. Run pull, push, fetch, checkout...";
+            ImGui::SetCursorPosY(ImGui::GetWindowHeight() * 0.35f);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.4f, 0.4f, 0.4f, 1.0f));
+            float textW = ImGui::CalcTextSize(msg).x;
+            ImGui::SetCursorPosX((ImGui::GetWindowWidth() - textW) * 0.5f);
+            ImGui::TextUnformatted(msg);
+            ImGui::PopStyleColor();
+        }
+        else
+        {
+            if (ImGui::BeginTable("##oplog", 4,
+                ImGuiTableFlags_RowBg | ImGuiTableFlags_ScrollY,
+                ImVec2(0, 0)))
+            {
+                ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 40);
+                ImGui::TableSetupColumn("Operation", ImGuiTableColumnFlags_WidthFixed, 100);
+                ImGui::TableSetupColumn("Source", ImGuiTableColumnFlags_WidthFixed, 160);
+                ImGui::TableSetupColumn("Detail", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableHeadersRow();
+
+                for (int i = (int)m_operationLog.size() - 1; i >= 0; i--)
+                {
+                    auto& entry = m_operationLog[i];
+                    ImGui::TableNextRow();
+                    ImGui::PushID((int)entry.id);
+
+                    // Column 0: Status badge
+                    ImGui::TableNextColumn();
+                    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 3);
+                    ImVec4 badgeColor = entry.success
+                        ? ImVec4(0.2f, 0.6f, 0.2f, 1.0f)
+                        : ImVec4(0.6f, 0.2f, 0.2f, 1.0f);
+                    ImGui::PushStyleColor(ImGuiCol_Button, badgeColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, badgeColor);
+                    ImGui::PushStyleColor(ImGuiCol_ButtonActive, badgeColor);
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
+                    ImGui::Button(entry.success ? "OK" : "!!", ImVec2(32, 0));
+                    ImGui::PopStyleColor(4);
+                    ImGui::PopStyleVar();
+
+                    // Column 1: Operation name
+                    ImGui::TableNextColumn();
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.8f, 1.0f, 1.0f));
+                    ImGui::TextUnformatted(entry.operation.c_str());
+                    ImGui::PopStyleColor();
+
+                    // Column 2: Repo + time
+                    ImGui::TableNextColumn();
+                    ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f),
+                        "%s  %s", entry.repoName.c_str(), entry.time.c_str());
+
+                    // Column 3: Summary (clickable to open detail popup)
+                    ImGui::TableNextColumn();
+                    std::string displaySummary = entry.summary;
+                    for (auto& c : displaySummary) if (c == '\n') c = ' ';
+                    if (displaySummary.size() > 180)
+                        displaySummary = displaySummary.substr(0, 177) + "...";
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, ImVec4(0.2f, 0.2f, 0.25f, 0.5f));
+
+                    if (ImGui::Selectable(displaySummary.c_str(), false,
+                        ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, 0)))
+                    {
+                        m_detailPopupIndex = i;
+                    }
+                    if (ImGui::IsItemHovered())
+                        ImGui::SetTooltip("Click to view full output");
+
+                    ImGui::PopStyleColor(2);
+
+                    ImGui::PopID();
+                }
+                ImGui::EndTable();
+            }
+        }
+
+        ImGui::EndChild();
+    }
+    ImGui::End();
+
+    if (!open) m_showOutputWindow = false;
+}
+
+void GitBeeApp::RenderDetailPopup()
+{
+    if (m_detailPopupIndex < 0 || m_detailPopupIndex >= (int)m_operationLog.size())
+    {
+        m_detailPopupIndex = -1;
+        return;
+    }
+
+    auto& entry = m_operationLog[m_detailPopupIndex];
+    char title[256];
+    snprintf(title, sizeof(title), "Output: %s - %s###detail_popup",
+        entry.operation.c_str(), entry.repoName.c_str());
+
+    auto* vp = ImGui::GetMainViewport();
+    float winW = vp->Size.x * 0.85f;
+    float winH = vp->Size.y * 0.7f;
+
+    ImGui::SetNextWindowPos(ImVec2((vp->Size.x - winW) * 0.5f, (vp->Size.y - winH) * 0.2f), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(winW, winH), ImGuiCond_Appearing);
+
+    bool open = true;
+    if (ImGui::Begin(title, &open,
+        ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse |
+        ImGuiWindowFlags_HorizontalScrollbar))
+    {
+        // Header info
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.6f, 0.8f, 1.0f, 1.0f));
+        ImGui::TextUnformatted(entry.operation.c_str());
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f),
+            "[%s]  %s", entry.repoName.c_str(), entry.time.c_str());
+
+        ImGui::SameLine(ImGui::GetWindowWidth() - 120);
+        ImVec4 badgeCol = entry.success ? ImVec4(0.2f, 0.6f, 0.2f, 1.0f) : ImVec4(0.6f, 0.2f, 0.2f, 1.0f);
+        ImGui::PushStyleColor(ImGuiCol_Button, badgeCol);
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 1, 1, 1));
+        ImGui::Button(entry.success ? "SUCCESS" : "FAILED", ImVec2(80, 0));
+        ImGui::PopStyleColor(2);
+
+        ImGui::Separator();
+
+        // Summary
+        ImGui::TextWrapped("%s", entry.summary.c_str());
+        ImGui::Separator();
+
+        // Full output in monospace
+        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.Size > 1
+            ? ImGui::GetIO().Fonts->Fonts[1]
+            : ImGui::GetIO().Fonts->Fonts[0]);
+
+        ImGui::BeginChild("##detail_full_output", ImVec2(0, 0), true,
+            ImGuiWindowFlags_HorizontalScrollbar);
+
+        ImGui::TextUnformatted(entry.detail.c_str());
+
+        ImGui::EndChild();
+        ImGui::PopFont();
+    }
+    ImGui::End();
+
+    if (!open) m_detailPopupIndex = -1;
+}
+
 void GitBeeApp::OnRender()
 {
     if (m_showDemoWindow)
         ImGui::ShowDemoWindow(&m_showDemoWindow);
+
+    RenderOutputWindow();
+    RenderDetailPopup();
 
     ProcessScanResults();
     ProcessPendingRepos();

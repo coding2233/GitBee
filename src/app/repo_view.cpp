@@ -6,6 +6,7 @@
 #include "../ui/LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
 #include "../gitcore/git_process.h"
+#include <sstream>
 #include <imgui.h>
 
 RepoView::RepoView(std::shared_ptr<GitRepository> repo)
@@ -145,23 +146,57 @@ void RepoView::DoGitAction(const char* action)
     m_asyncTask.error.clear();
     m_asyncTask.name = act;
 
-    if (act == "Pull" || act == "Push" || act == "Fetch")
-    {
-        if (OnStatusMessage) OnStatusMessage(act + "ing...");
+    if (OnStatusMessage) OnStatusMessage(act + "ing...");
 
-        auto repo = m_repository;
-        m_asyncTask.thread = std::thread([this, repo, act]() {
-            bool ok = false;
-            if (act == "Pull") ok = repo->Pull();
-            else if (act == "Push") ok = repo->Push();
-            else if (act == "Fetch") ok = repo->Fetch();
+    auto repo = m_repository;
+    std::string repoName = GetName();
 
-            m_asyncTask.result = ok;
-            m_asyncTask.error = repo->GetLastGitError();
-            m_asyncTask.running = false;
-        });
-        m_asyncTask.thread.detach();
-    }
+    m_asyncTask.thread = std::thread([this, repo, act, repoName]() {
+        std::vector<std::string> gitArgs;
+        if (act == "Pull")      gitArgs = {"pull"};
+        else if (act == "Push") gitArgs = {"push"};
+        else if (act == "Fetch") gitArgs = {"fetch", "--all"};
+
+        auto r = GitProcess::Execute(repo->GetPath(), gitArgs);
+
+        m_asyncTask.result = r.ok;
+        m_asyncTask.error = r.err;
+        m_asyncTask.running = false;
+
+        // Build summary from output
+        std::string summary;
+        if (r.ok)
+        {
+            if (!r.out.empty())
+            {
+                // Pick the most informative line from output
+                std::istringstream stream(r.out);
+                std::string line;
+                while (std::getline(stream, line))
+                {
+                    if (line.find("From ") == 0 || line.find("-> ") != std::string::npos ||
+                        line.find("Updating") != std::string::npos || line.find("Fast-forward") != std::string::npos ||
+                        line.find("Already up") != std::string::npos || line.find("Done") != std::string::npos ||
+                        line.find("remote:") == 0 || line.find(" * ") != std::string::npos)
+                        summary += line + "\n";
+                }
+                if (summary.empty()) summary = r.out.substr(0, std::min(r.out.size(), size_t(200)));
+            }
+            else
+            {
+                summary = act + " completed successfully";
+            }
+        }
+        else
+        {
+            summary = r.err.empty() ? (act + " failed") : r.err;
+        }
+
+        // Report through callback
+        if (OnOperationLog)
+            OnOperationLog(act, r.ok, summary, r.out + "\n--- stderr ---\n" + r.err);
+    });
+    m_asyncTask.thread.detach();
 }
 
 void RepoView::RenderSidebar()
@@ -312,11 +347,32 @@ void RepoView::StartAsyncCheckout(const std::string& branchName)
     if (OnStatusMessage) OnStatusMessage("Checking out " + branchName + "...");
 
     auto repo = m_repository;
-    m_checkoutThread = std::thread([this, repo, branchName]() {
-        bool ok = repo->CheckoutBranch(branchName);
-        if (!ok)
-            m_checkoutError = repo->GetLastGitError();
+    std::string repoName = GetName();
+
+    m_checkoutThread = std::thread([this, repo, branchName, repoName]() {
+        auto r = GitProcess::Execute(repo->GetPath(), {"checkout", branchName});
+        if (!r.ok)
+            m_checkoutError = r.err;
+
         m_checkoutLoading = false;
+
+        std::string summary;
+        if (r.ok)
+        {
+            summary = "Switched to branch '" + branchName + "'";
+            if (!r.out.empty())
+            {
+                auto nl = r.out.find('\n');
+                summary = (nl != std::string::npos) ? r.out.substr(0, nl) : r.out;
+            }
+        }
+        else
+        {
+            summary = r.err.empty() ? ("Checkout '" + branchName + "' failed") : r.err;
+        }
+
+        if (OnOperationLog)
+            OnOperationLog("Checkout", r.ok, summary, r.out + "\n--- stderr ---\n" + r.err);
     });
     m_checkoutThread.detach();
 }

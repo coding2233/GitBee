@@ -14,6 +14,18 @@ class RepoView;
 class HomeView;
 class GitRepository;
 
+struct OperationLogEntry
+{
+    int64_t id;
+    std::string time;
+    std::string repoName;
+    std::string operation;
+    bool success = true;
+    std::string summary;
+    std::string detail;
+    bool expanded = false;
+};
+
 class GitBeeApp : public volt::App
 {
 public:
@@ -97,4 +109,32 @@ private:
 
     void ProcessPendingRepos();
     void StartOpenRepository(const std::string& path);
+
+    // Operation output log
+    std::vector<OperationLogEntry> m_operationLog;
+    static constexpr int MAX_OP_LOG = 100;
+    int64_t m_nextOpId = 1;
+    bool m_showOutputWindow = false;
+    bool m_autoShowOutput = true;
+
+    // Interactive operation (merge conflict, etc.)
+    struct PendingInteraction {
+        std::string repoName;
+        std::string type;       // "merge", "rebase", "stash", etc.
+        std::string title;
+        std::string message;
+        std::string detail;
+        bool hasConflicts = false;
+        int conflictCount = 0;
+    };
+    std::unique_ptr<PendingInteraction> m_pendingInteraction;
+
+    int m_detailPopupIndex = -1;
+
+    void AddOperationLog(const std::string& repoName, const std::string& operation,
+                         bool success, const std::string& summary, const std::string& detail);
+    void ShowOutputWindow();
+    void RenderOutputWindow();
+    void RenderDetailPopup();
+    void ClearOperationLog();
 };

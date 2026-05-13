@@ -28,6 +28,8 @@ public:
     const std::string& GetPath() const { return m_repoPath; }
 
     std::function<void(const std::string&)> OnStatusMessage;
+    std::function<void(const std::string& operation, bool success,
+                       const std::string& summary, const std::string& detail)> OnOperationLog;
 
 private:
     enum class Section {
