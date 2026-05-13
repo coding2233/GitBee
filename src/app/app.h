@@ -6,6 +6,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
 #include <volt-ui/VoltApp.h>
 #include "../ui/FileDialog.h"
 
@@ -62,14 +63,25 @@ private:
         char editBuf[4096]{};
     };
     std::vector<GlobalConfigEntry> m_globalConfig;
+    std::vector<GlobalConfigEntry> m_systemConfig;
     std::atomic<bool> m_globalConfigLoading{false};
+    bool m_globalConfigLoaded = false;
+    bool m_globalConfigLoadStarted = false;
     std::thread m_globalConfigThread;
+    std::mutex m_globalConfigMutex;
+    std::vector<GlobalConfigEntry> m_pendingGlobalConfig;
+    std::vector<GlobalConfigEntry> m_pendingSystemConfig;
     bool m_showAddForm = false;
     char m_newConfigKey[256]{};
     char m_newConfigValue[4096]{};
+    std::map<std::string, bool> m_globalSectionOpen;
 
     void LoadGlobalConfig();
+    void ProcessGlobalConfigResult();
     void RenderGlobalConfigTab();
+    void RenderSectionTableGlobal(const std::string& section, const std::vector<int>& indices);
+
+    std::string GetConfigSection(const std::string& key) const;
 
     // Async scan state
     std::atomic<bool> m_scanning{ false };

@@ -268,14 +268,23 @@ void GitBeeApp::RenderStatusBar()
     ImGui::PopStyleVar(2);
 }
 
+std::string GitBeeApp::GetConfigSection(const std::string& key) const
+{
+    auto dot = key.find('.');
+    if (dot == std::string::npos) return "core";
+    return key.substr(0, dot);
+}
+
 void GitBeeApp::LoadGlobalConfig()
 {
-    if (m_globalConfigLoading) return;
+    if (m_globalConfigLoading || m_globalConfigLoadStarted) return;
     m_globalConfigLoading = true;
+    m_globalConfigLoadStarted = true;
     m_statusMessage = "Loading global config...";
 
     m_globalConfigThread = std::thread([this]() {
-        std::vector<GlobalConfigEntry> entries;
+        std::vector<GlobalConfigEntry> global, system;
+
         auto r = GitProcess::Execute("", {"config", "--global", "--list"});
         if (r.ok && !r.out.empty())
         {
@@ -291,14 +300,28 @@ void GitBeeApp::LoadGlobalConfig()
                     entry.value = line.substr(eq + 1);
                     entry.editing = false;
                     entry.editBuf[0] = '\0';
-                    entries.push_back(std::move(entry));
+                    global.push_back(std::move(entry));
                 }
             }
         }
 
+        auto rs = GitProcess::Execute("", {"config", "--system", "--list"});
+        if (rs.ok && !rs.out.empty())
         {
-            std::lock_guard<std::mutex> lock(m_scanMutex);
-            m_globalConfig = std::move(entries);
+            std::istringstream stream(rs.out);
+            std::string line;
+            while (std::getline(stream, line))
+            {
+                auto eq = line.find('=');
+                if (eq != std::string::npos)
+                    system.push_back({line.substr(0, eq), line.substr(eq + 1), false, {}});
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m_globalConfigMutex);
+            m_pendingGlobalConfig = std::move(global);
+            m_pendingSystemConfig = std::move(system);
         }
         m_globalConfigLoading = false;
         m_statusMessage = "Global config loaded";
@@ -306,10 +329,29 @@ void GitBeeApp::LoadGlobalConfig()
     m_globalConfigThread.detach();
 }
 
+void GitBeeApp::ProcessGlobalConfigResult()
+{
+    if (m_globalConfigLoading) return;
+    if (m_globalConfigLoaded) return;
+    if (!m_globalConfigLoadStarted) return;
+    if (m_globalConfigThread.joinable())
+        m_globalConfigThread.join();
+
+    std::lock_guard<std::mutex> lock(m_globalConfigMutex);
+    if (!m_pendingGlobalConfig.empty() || !m_pendingSystemConfig.empty())
+    {
+        m_globalConfig = std::move(m_pendingGlobalConfig);
+        m_systemConfig = std::move(m_pendingSystemConfig);
+    }
+    m_globalConfigLoaded = true;
+}
+
 void GitBeeApp::RenderGlobalConfigTab()
 {
-    if (!m_globalConfigLoading && m_globalConfigThread.joinable())
-        m_globalConfigThread.join();
+    ProcessGlobalConfigResult();
+
+    if (!m_globalConfigLoaded && !m_globalConfigLoadStarted)
+        LoadGlobalConfig();
 
     if (m_globalConfigLoading)
     {
@@ -317,35 +359,80 @@ void GitBeeApp::RenderGlobalConfigTab()
         return;
     }
 
-    // Toolbar
-    ImGui::BeginChild("##config_toolbar", ImVec2(0, ImGui::GetFrameHeight() + 8), false);
-    if (ImGui::Button("+ Add"))
+    // --- Summary Bar ---
+    ImGui::BeginChild("##gcfg_summary", ImVec2(0, ImGui::GetFrameHeight() * 3 + 16), true);
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.8f, 0.8f, 1.0f));
+    ImGui::TextUnformatted("Global Git Configuration");
+    ImGui::PopStyleColor();
+
+    auto findVal = [&](const std::string& key) -> std::string {
+        for (auto& e : m_globalConfig)
+            if (e.key == key) return e.value;
+        return {};
+    };
+
+    std::string userName = findVal("user.name");
+    std::string userEmail = findVal("user.email");
+    std::string coreEditor = findVal("core.editor");
+    if (coreEditor.empty()) coreEditor = "default";
+
+    ImGui::Columns(4, "##gcfg_summary_cols", false);
+    ImGui::SetColumnWidth(0, 130);
+    ImGui::SetColumnWidth(1, 220);
+    ImGui::SetColumnWidth(2, 130);
+    ImGui::SetColumnWidth(3, 220);
+
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "User:");
+    ImGui::NextColumn();
+    ImGui::TextUnformatted(userName.c_str());
+    if (!userEmail.empty()) { ImGui::SameLine(); ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "<%s>", userEmail.c_str()); }
+    ImGui::NextColumn();
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Editor:");
+    ImGui::NextColumn();
+    ImGui::TextUnformatted(coreEditor.c_str());
+    ImGui::NextColumn();
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Config Entries:");
+    ImGui::NextColumn();
+    ImGui::Text("%d global / %d system", (int)m_globalConfig.size(), (int)m_systemConfig.size());
+    ImGui::NextColumn();
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "File:");
+    ImGui::NextColumn();
+    ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "~/.gitconfig");
+    ImGui::Columns(1);
+    ImGui::EndChild();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
+    // --- Toolbar ---
+    ImGui::BeginChild("##gcfg_toolbar", ImVec2(0, ImGui::GetFrameHeight() + 8), false);
+    if (ImGui::SmallButton("+ Add"))
         m_showAddForm = !m_showAddForm;
     ImGui::SameLine();
-    if (ImGui::Button("Refresh"))
+    if (ImGui::SmallButton("Refresh"))
     {
+        m_globalConfigLoaded = false;
+        m_globalConfigLoadStarted = false;
         m_globalConfig.clear();
-        LoadGlobalConfig();
     }
-    ImGui::SameLine();
-    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%d entries", (int)m_globalConfig.size());
 
     if (m_showAddForm)
     {
         ImGui::Separator();
-        ImGui::TextUnformatted("New Config:");
+        ImGui::TextUnformatted("New:");
         ImGui::SameLine();
         ImGui::PushItemWidth(200);
-        ImGui::InputText("##newkey", m_newConfigKey, sizeof(m_newConfigKey));
+        ImGui::InputTextWithHint("##newkey", "section.key", m_newConfigKey, sizeof(m_newConfigKey));
         ImGui::PopItemWidth();
         ImGui::SameLine();
         ImGui::TextUnformatted("=");
         ImGui::SameLine();
-        ImGui::PushItemWidth(300);
-        ImGui::InputText("##newval", m_newConfigValue, sizeof(m_newConfigValue));
+        ImGui::PushItemWidth(280);
+        ImGui::InputTextWithHint("##newval", "value", m_newConfigValue, sizeof(m_newConfigValue));
         ImGui::PopItemWidth();
         ImGui::SameLine();
-        if (ImGui::Button("Save") && m_newConfigKey[0] != '\0')
+        if (ImGui::SmallButton("Save") && m_newConfigKey[0] != '\0')
         {
             std::string key(m_newConfigKey);
             std::string val(m_newConfigValue);
@@ -361,10 +448,10 @@ void GitBeeApp::RenderGlobalConfigTab()
             m_newConfigKey[0] = '\0';
             m_newConfigValue[0] = '\0';
             m_showAddForm = false;
-            m_statusMessage = "Added config: " + key;
+            m_statusMessage = "Added global config: " + key;
         }
         ImGui::SameLine();
-        if (ImGui::Button("Cancel"))
+        if (ImGui::SmallButton("Cancel"))
         {
             m_newConfigKey[0] = '\0';
             m_newConfigValue[0] = '\0';
@@ -375,33 +462,91 @@ void GitBeeApp::RenderGlobalConfigTab()
 
     ImGui::Separator();
 
-    // Config table
-    ImGui::BeginChild("##config_table");
-    if (ImGui::BeginTable("##global_config", 3,
-        ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders |
-        ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY,
-        ImVec2(0, 0)))
+    // --- Section-grouped config ---
+    ImGui::BeginChild("##gcfg_table");
+
+    std::vector<std::string> sectionOrder = {"core", "user", "credential", "http", "diff", "merge", "alias", "filter", "init", "color", "push", "pull", "fetch", "gc", "pack", "protocol", "safe", "other"};
+    std::map<std::string, std::vector<int>> sections;
+    for (int i = 0; i < (int)m_globalConfig.size(); i++)
     {
-        ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthStretch);
+        std::string sec = GetConfigSection(m_globalConfig[i].key);
+        sections[sec].push_back(i);
+    }
+
+    for (auto& secName : sectionOrder)
+    {
+        if (secName == "other")
+        {
+            for (auto& kv : sections)
+            {
+                bool found = false;
+                for (auto& s : sectionOrder)
+                    if (s == kv.first) { found = true; break; }
+                if (!found)
+                {
+                    auto it = m_globalSectionOpen.find(kv.first);
+                    if (it == m_globalSectionOpen.end())
+                        m_globalSectionOpen[kv.first] = false;
+
+                    bool open = ImGui::TreeNodeEx(kv.first.c_str(), 0, "%s  (%d)",
+                        kv.first.c_str(), (int)kv.second.size());
+                    m_globalSectionOpen[kv.first] = open;
+                    if (open)
+                    {
+                        RenderSectionTableGlobal(kv.first, kv.second);
+                        ImGui::TreePop();
+                    }
+                }
+            }
+            continue;
+        }
+
+        auto it = sections.find(secName);
+        if (it == sections.end()) continue;
+
+        auto openIt = m_globalSectionOpen.find(secName);
+        if (openIt == m_globalSectionOpen.end())
+            m_globalSectionOpen[secName] = true;
+
+        bool open = ImGui::TreeNodeEx(secName.c_str(), ImGuiTreeNodeFlags_DefaultOpen,
+            "%s  (%d)", secName.c_str(), (int)it->second.size());
+        m_globalSectionOpen[secName] = open;
+        if (open)
+        {
+            RenderSectionTableGlobal(secName, it->second);
+            ImGui::TreePop();
+        }
+    }
+
+    ImGui::EndChild();
+}
+
+void GitBeeApp::RenderSectionTableGlobal(const std::string& section, const std::vector<int>& indices)
+{
+    ImGui::Unindent(8);
+    if (ImGui::BeginTable(("##g_" + section).c_str(), 3,
+        ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders,
+        ImVec2(-1, 0)))
+    {
+        ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 250);
         ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 50);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 44);
         ImGui::TableHeadersRow();
 
-        for (int i = 0; i < (int)m_globalConfig.size(); i++)
+        for (int idx : indices)
         {
-            auto& entry = m_globalConfig[i];
+            auto& entry = m_globalConfig[idx];
             ImGui::TableNextRow();
-            ImGui::PushID(i);
+            ImGui::PushID(idx);
 
             ImGui::TableNextColumn();
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
-            ImGui::TextUnformatted(entry.key.c_str());
-            ImGui::PopStyleColor();
+            std::string shortKey = entry.key.substr(section.size() + 1);
+            ImGui::TextUnformatted(shortKey.c_str());
 
             ImGui::TableNextColumn();
             if (entry.editing)
             {
-                ImGui::PushItemWidth(-50);
+                ImGui::PushItemWidth(-60);
                 bool committed = ImGui::InputText("##edit", entry.editBuf, sizeof(entry.editBuf),
                     ImGuiInputTextFlags_EnterReturnsTrue);
                 ImGui::PopItemWidth();
@@ -419,9 +564,7 @@ void GitBeeApp::RenderGlobalConfigTab()
                 }
                 ImGui::SameLine();
                 if (ImGui::SmallButton("X"))
-                {
                     entry.editing = false;
-                }
             }
             else
             {
@@ -441,7 +584,7 @@ void GitBeeApp::RenderGlobalConfigTab()
                 std::thread([key]() {
                     GitProcess::Execute("", {"config", "--global", "--unset", key});
                 }).detach();
-                m_globalConfig.erase(m_globalConfig.begin() + i);
+                m_globalConfig.erase(m_globalConfig.begin() + idx);
                 m_statusMessage = "Removed: " + key;
                 ImGui::PopStyleColor();
                 ImGui::PopID();
@@ -454,7 +597,7 @@ void GitBeeApp::RenderGlobalConfigTab()
 
         ImGui::EndTable();
     }
-    ImGui::EndChild();
+    ImGui::Indent(8);
 }
 
 void GitBeeApp::OnRender()
