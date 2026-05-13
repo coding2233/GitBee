@@ -4,8 +4,12 @@
 #include <vector>
 #include <functional>
 #include <memory>
+#include <atomic>
+#include <thread>
+#include <mutex>
 #include "../gitcore/git_types.h"
 #include "../gitcore/git_repository.h"
+#include "../gitcore/git_process.h"
 #include "SplitView.h"
 
 struct CommitGraphLine
@@ -43,6 +47,28 @@ private:
         std::string content;
     };
 
+    struct AsyncCommitLoader {
+        std::atomic<bool> running{false};
+        std::vector<GitCommit> results;
+        GitLogOptions options;
+        int skipCount = 0;
+        std::thread worker;
+    };
+
+    struct AsyncDetailLoader {
+        std::atomic<bool> running{false};
+        std::string hash;
+        GitCommitDetail detail;
+        std::vector<std::string> modifiedFiles;
+        std::thread worker;
+    };
+
+    struct AsyncDiffLoader {
+        std::atomic<bool> running{false};
+        std::string diffContent;
+        std::thread worker;
+    };
+
     std::shared_ptr<GitRepository> m_repository;
     std::vector<GitCommit> m_commits;
     GitLogOptions m_logOptions;
@@ -52,6 +78,7 @@ private:
     std::string m_filterText;
     std::vector<std::string> m_branches;
     int m_selectedBranch = 0;
+    bool m_branchesLoading = false;
 
     SplitView m_contentSplit{ SplitView::Type::Vertical, 0.45f, 80.0f };
     bool m_showDetailPanel = false;
@@ -81,7 +108,20 @@ private:
 
     std::vector<CommitTableRow> m_tableRows;
 
+    // Async state
+    AsyncCommitLoader m_commitLoader;
+    AsyncDetailLoader m_detailLoader;
+    AsyncDiffLoader m_diffLoader;
+    std::mutex m_pendingCommitsMutex;
+    std::vector<GitCommit> m_pendingCommits;
+    bool m_pendingHasMore = false;
+
     void LoadMoreIfNeeded();
+    void ProcessAsyncResults();
+    void StartAsyncCommitLoad();
+    void StartAsyncDetailLoad();
+    void StartAsyncDiffLoad(const std::string& filePath);
+
     std::string FormatRelativeTime(const std::string& isoDate);
     void FetchBranches();
     void RenderFilterBar();

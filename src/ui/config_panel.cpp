@@ -1,8 +1,17 @@
 #include "config_panel.h"
+#include "LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
 #include "../gitcore/git_process.h"
 #include <imgui.h>
 #include <sstream>
+
+ConfigPanel::ConfigPanel() {}
+
+ConfigPanel::~ConfigPanel()
+{
+    if (m_configThread.joinable())
+        m_configThread.join();
+}
 
 void ConfigPanel::SetRepository(std::shared_ptr<GitRepository> repo)
 {
@@ -15,41 +24,64 @@ void ConfigPanel::Refresh()
     m_loaded = false;
 }
 
-void ConfigPanel::LoadConfig()
+void ConfigPanel::StartAsyncLoad()
 {
-    m_localConfig.clear();
-    m_globalConfig.clear();
+    if (m_configLoading || !m_repository) return;
+    m_configLoading = true;
 
-    if (!m_repository) return;
+    std::string repoPath = m_repository->GetPath();
 
-    // Local config
-    auto r = GitProcess::Execute(m_repository->GetPath(), {"config", "--local", "--list"});
-    if (r.ok && !r.out.empty())
-    {
-        std::istringstream stream(r.out);
-        std::string line;
-        while (std::getline(stream, line))
+    m_configThread = std::thread([this, repoPath]() {
+        std::vector<GitConfigEntry> localCfg, globalCfg;
+
+        auto r = GitProcess::Execute(repoPath, {"config", "--local", "--list"});
+        if (r.ok && !r.out.empty())
         {
-            auto eq = line.find('=');
-            if (eq != std::string::npos)
-                m_localConfig.push_back({line.substr(0, eq), line.substr(eq + 1)});
+            std::istringstream stream(r.out);
+            std::string line;
+            while (std::getline(stream, line))
+            {
+                auto eq = line.find('=');
+                if (eq != std::string::npos)
+                    localCfg.push_back({line.substr(0, eq), line.substr(eq + 1)});
+            }
         }
-    }
 
-    // Global config
-    auto rg = GitProcess::Execute(m_repository->GetPath(), {"config", "--global", "--list"});
-    if (rg.ok && !rg.out.empty())
-    {
-        std::istringstream stream(rg.out);
-        std::string line;
-        while (std::getline(stream, line))
+        auto rg = GitProcess::Execute(repoPath, {"config", "--global", "--list"});
+        if (rg.ok && !rg.out.empty())
         {
-            auto eq = line.find('=');
-            if (eq != std::string::npos)
-                m_globalConfig.push_back({line.substr(0, eq), line.substr(eq + 1)});
+            std::istringstream stream(rg.out);
+            std::string line;
+            while (std::getline(stream, line))
+            {
+                auto eq = line.find('=');
+                if (eq != std::string::npos)
+                    globalCfg.push_back({line.substr(0, eq), line.substr(eq + 1)});
+            }
         }
-    }
 
+        {
+            std::lock_guard<std::mutex> lock(m_configMutex);
+            m_pendingLocal = std::move(localCfg);
+            m_pendingGlobal = std::move(globalCfg);
+        }
+        m_configLoading = false;
+    });
+    m_configThread.detach();
+}
+
+void ConfigPanel::ProcessAsyncResult()
+{
+    if (m_configLoading || m_loaded) return;
+    if (m_configThread.joinable())
+        m_configThread.join();
+
+    std::lock_guard<std::mutex> lock(m_configMutex);
+    if (!m_pendingLocal.empty() || !m_pendingGlobal.empty())
+    {
+        m_localConfig = std::move(m_pendingLocal);
+        m_globalConfig = std::move(m_pendingGlobal);
+    }
     m_loaded = true;
 }
 
@@ -61,12 +93,18 @@ void ConfigPanel::Render()
         return;
     }
 
-    if (!m_loaded)
+    if (!m_loaded && !m_configLoading)
     {
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Loading config...");
-        LoadConfig();
+        StartAsyncLoad();
+    }
+
+    if (m_configLoading)
+    {
+        LoadingSpinnerWithText("Loading config...");
         return;
     }
+
+    ProcessAsyncResult();
 
     ImGui::BeginChild("##config_content", ImVec2(0, 0), true);
 

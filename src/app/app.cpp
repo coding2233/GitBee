@@ -2,10 +2,13 @@
 #include "repo_view.h"
 #include "../ui/home_view.h"
 #include "../ui/Theme.h"
+#include "../ui/LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
+#include "../gitcore/git_process.h"
 #include <imgui.h>
 #include <cstdlib>
 #include <filesystem>
+#include <sstream>
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
@@ -21,7 +24,7 @@ GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
         m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
     };
     m_homeView->OnOpenRecent = [this](const std::string& path) {
-        OpenRepository(path);
+        StartOpenRepository(path);
     };
     m_homeView->OnScanFolder = [this]() {
         m_dialogMode = DialogMode::ScanFolder;
@@ -29,9 +32,26 @@ GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
     };
 }
 
-GitBeeApp::~GitBeeApp() = default;
+GitBeeApp::~GitBeeApp()
+{
+    if (m_globalConfigThread.joinable())
+        m_globalConfigThread.join();
+}
 
 void GitBeeApp::OpenRepository(const std::string& path)
+{
+    StartOpenRepository(path);
+}
+
+struct GitBeeApp::PendingRepo {
+    std::string path;
+    std::string displayName;
+    std::atomic<bool> loading{true};
+    std::shared_ptr<GitRepository> result;
+    std::thread worker;
+};
+
+void GitBeeApp::StartOpenRepository(const std::string& path)
 {
     for (auto& tab : m_repoTabs)
     {
@@ -43,21 +63,87 @@ void GitBeeApp::OpenRepository(const std::string& path)
         }
     }
 
-    auto repo = GitRepository::Open(path);
-    if (!repo) { m_statusMessage = "Failed to open: " + path; return; }
+    auto pending = std::make_unique<PendingRepo>();
+    pending->path = path;
+    std::string resolvedPath = path;
+    while (!resolvedPath.empty() && (resolvedPath.back() == '/' || resolvedPath.back() == '\\'))
+        resolvedPath.pop_back();
+    auto slash = resolvedPath.find_last_of("\\/");
+    pending->displayName = (slash != std::string::npos) ? resolvedPath.substr(slash + 1) : resolvedPath;
 
-    auto view = std::make_shared<RepoView>(repo);
-    view->OnStatusMessage = [this](const std::string& msg) {
-        m_statusMessage = msg;
-    };
-    m_repoTabs.push_back({view, view->GetName()});
-    m_activeTabIndex = (int)m_repoTabs.size();
-    m_statusMessage = "Opened: " + repo->GetRootPath();
+    m_pendingRepos.push_back(std::move(pending));
+    auto* pRepo = m_pendingRepos.back().get();
 
-    if (m_homeView)
+    m_statusMessage = "Opening repository: " + path + "...";
+
+    pRepo->worker = std::thread([this, pRepo, path]() {
+        std::string resolved = path;
+        while (!resolved.empty() && (resolved.back() == '/' || resolved.back() == '\\'))
+            resolved.pop_back();
+        if (resolved.size() >= 5) {
+            std::string suffix = resolved.substr(resolved.size() - 4);
+            if (suffix == ".git" || suffix == ".GIT") {
+                char sep = resolved[resolved.size() - 5];
+                if (sep == '/' || sep == '\\') resolved.resize(resolved.size() - 5);
+            }
+        }
+
+        auto tmp = std::make_shared<GitRepository>(resolved);
+        if (tmp->IsValid())
+        {
+            std::string root = tmp->GetRootPath();
+            if (!root.empty()) resolved = root;
+            auto repo = std::make_shared<GitRepository>(resolved);
+            if (repo->IsValid())
+            {
+                pRepo->result = repo;
+            }
+        }
+        pRepo->loading = false;
+    });
+    pRepo->worker.detach();
+}
+
+void GitBeeApp::ProcessPendingRepos()
+{
+    if (m_pendingRepos.empty()) return;
+
+    for (auto it = m_pendingRepos.begin(); it != m_pendingRepos.end(); )
     {
-        m_homeView->AddRecent(repo->GetRootPath());
-        m_homeView->SaveRecents(m_recentFilePath);
+        auto& pending = *it;
+
+        if (pending->loading)
+        {
+            ++it;
+            continue;
+        }
+
+        if (pending->worker.joinable())
+            pending->worker.join();
+
+        if (pending->result)
+        {
+            auto repo = pending->result;
+            auto view = std::make_shared<RepoView>(repo);
+            view->OnStatusMessage = [this](const std::string& msg) {
+                m_statusMessage = msg;
+            };
+            m_repoTabs.push_back({view, pending->displayName});
+            m_activeTabIndex = (int)m_repoTabs.size();
+            m_statusMessage = "Opened: " + repo->GetRootPath();
+
+            if (m_homeView)
+            {
+                m_homeView->AddRecent(repo->GetRootPath());
+                m_homeView->SaveRecents(m_recentFilePath);
+            }
+        }
+        else
+        {
+            m_statusMessage = "Failed to open: " + pending->path;
+        }
+
+        it = m_pendingRepos.erase(it);
     }
 }
 
@@ -77,6 +163,15 @@ void GitBeeApp::OnDestroy()
         if (m_scanThread.joinable())
             m_scanThread.join();
     }
+
+    for (auto& p : m_pendingRepos)
+    {
+        if (p->worker.joinable())
+            p->worker.join();
+    }
+
+    if (m_globalConfigThread.joinable())
+        m_globalConfigThread.join();
 
     if (m_homeView)
         m_homeView->SaveRecents(m_recentFilePath);
@@ -118,6 +213,19 @@ void GitBeeApp::RenderMenuBar()
         }
         if (ImGui::BeginMenu("View"))
         {
+            if (ImGui::MenuItem("Home", "Ctrl+H", nullptr, !m_homeTabOpen))
+            {
+                m_homeTabOpen = true;
+                m_activeTabIndex = 0;
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Global Config"))
+            {
+                m_globalConfigTabOpen = true;
+                if (m_globalConfig.empty())
+                    LoadGlobalConfig();
+            }
+            ImGui::Separator();
             ImGui::MenuItem("ImGui Demo", nullptr, &m_showDemoWindow);
             ImGui::EndMenu();
         }
@@ -146,9 +254,207 @@ void GitBeeApp::RenderStatusBar()
 
     ImGui::Begin("##StatusBar", nullptr,
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings);
+
+    bool anyLoading = false;
+    for (auto& p : m_pendingRepos) { if (p->loading) anyLoading = true; }
+    if (m_scanning || anyLoading || m_globalConfigLoading)
+    {
+        LoadingSpinner(6.0f, 2.0f);
+        ImGui::SameLine();
+    }
+
     ImGui::TextUnformatted(m_statusMessage.c_str());
     ImGui::End();
     ImGui::PopStyleVar(2);
+}
+
+void GitBeeApp::LoadGlobalConfig()
+{
+    if (m_globalConfigLoading) return;
+    m_globalConfigLoading = true;
+    m_statusMessage = "Loading global config...";
+
+    m_globalConfigThread = std::thread([this]() {
+        std::vector<GlobalConfigEntry> entries;
+        auto r = GitProcess::Execute("", {"config", "--global", "--list"});
+        if (r.ok && !r.out.empty())
+        {
+            std::istringstream stream(r.out);
+            std::string line;
+            while (std::getline(stream, line))
+            {
+                auto eq = line.find('=');
+                if (eq != std::string::npos)
+                {
+                    GlobalConfigEntry entry;
+                    entry.key = line.substr(0, eq);
+                    entry.value = line.substr(eq + 1);
+                    entry.editing = false;
+                    entry.editBuf[0] = '\0';
+                    entries.push_back(std::move(entry));
+                }
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m_scanMutex);
+            m_globalConfig = std::move(entries);
+        }
+        m_globalConfigLoading = false;
+        m_statusMessage = "Global config loaded";
+    });
+    m_globalConfigThread.detach();
+}
+
+void GitBeeApp::RenderGlobalConfigTab()
+{
+    if (!m_globalConfigLoading && m_globalConfigThread.joinable())
+        m_globalConfigThread.join();
+
+    if (m_globalConfigLoading)
+    {
+        LoadingSpinnerWithText("Loading global config...");
+        return;
+    }
+
+    // Toolbar
+    ImGui::BeginChild("##config_toolbar", ImVec2(0, ImGui::GetFrameHeight() + 8), false);
+    if (ImGui::Button("+ Add"))
+        m_showAddForm = !m_showAddForm;
+    ImGui::SameLine();
+    if (ImGui::Button("Refresh"))
+    {
+        m_globalConfig.clear();
+        LoadGlobalConfig();
+    }
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%d entries", (int)m_globalConfig.size());
+
+    if (m_showAddForm)
+    {
+        ImGui::Separator();
+        ImGui::TextUnformatted("New Config:");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(200);
+        ImGui::InputText("##newkey", m_newConfigKey, sizeof(m_newConfigKey));
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::TextUnformatted("=");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(300);
+        ImGui::InputText("##newval", m_newConfigValue, sizeof(m_newConfigValue));
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        if (ImGui::Button("Save") && m_newConfigKey[0] != '\0')
+        {
+            std::string key(m_newConfigKey);
+            std::string val(m_newConfigValue);
+            std::thread([key, val]() {
+                GitProcess::Execute("", {"config", "--global", key, val});
+            }).detach();
+            GlobalConfigEntry entry;
+            entry.key = key;
+            entry.value = val;
+            entry.editing = false;
+            entry.editBuf[0] = '\0';
+            m_globalConfig.push_back(std::move(entry));
+            m_newConfigKey[0] = '\0';
+            m_newConfigValue[0] = '\0';
+            m_showAddForm = false;
+            m_statusMessage = "Added config: " + key;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Cancel"))
+        {
+            m_newConfigKey[0] = '\0';
+            m_newConfigValue[0] = '\0';
+            m_showAddForm = false;
+        }
+    }
+    ImGui::EndChild();
+
+    ImGui::Separator();
+
+    // Config table
+    ImGui::BeginChild("##config_table");
+    if (ImGui::BeginTable("##global_config", 3,
+        ImGuiTableFlags_RowBg | ImGuiTableFlags_Borders |
+        ImGuiTableFlags_Resizable | ImGuiTableFlags_ScrollY,
+        ImVec2(0, 0)))
+    {
+        ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthStretch);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 50);
+        ImGui::TableHeadersRow();
+
+        for (int i = 0; i < (int)m_globalConfig.size(); i++)
+        {
+            auto& entry = m_globalConfig[i];
+            ImGui::TableNextRow();
+            ImGui::PushID(i);
+
+            ImGui::TableNextColumn();
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.8f, 0.6f, 0.2f, 1.0f));
+            ImGui::TextUnformatted(entry.key.c_str());
+            ImGui::PopStyleColor();
+
+            ImGui::TableNextColumn();
+            if (entry.editing)
+            {
+                ImGui::PushItemWidth(-50);
+                bool committed = ImGui::InputText("##edit", entry.editBuf, sizeof(entry.editBuf),
+                    ImGuiInputTextFlags_EnterReturnsTrue);
+                ImGui::PopItemWidth();
+                ImGui::SameLine();
+                if (committed || ImGui::SmallButton("OK"))
+                {
+                    std::string newVal(entry.editBuf);
+                    std::string key = entry.key;
+                    std::thread([key, newVal]() {
+                        GitProcess::Execute("", {"config", "--global", key, newVal});
+                    }).detach();
+                    entry.value = newVal;
+                    entry.editing = false;
+                    m_statusMessage = "Updated: " + key;
+                }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("X"))
+                {
+                    entry.editing = false;
+                }
+            }
+            else
+            {
+                ImGui::TextUnformatted(entry.value.c_str());
+                if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                {
+                    entry.editing = true;
+                    strncpy_s(entry.editBuf, sizeof(entry.editBuf), entry.value.c_str(), _TRUNCATE);
+                }
+            }
+
+            ImGui::TableNextColumn();
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
+            if (ImGui::SmallButton("-"))
+            {
+                std::string key = entry.key;
+                std::thread([key]() {
+                    GitProcess::Execute("", {"config", "--global", "--unset", key});
+                }).detach();
+                m_globalConfig.erase(m_globalConfig.begin() + i);
+                m_statusMessage = "Removed: " + key;
+                ImGui::PopStyleColor();
+                ImGui::PopID();
+                break;
+            }
+            ImGui::PopStyleColor();
+
+            ImGui::PopID();
+        }
+
+        ImGui::EndTable();
+    }
+    ImGui::EndChild();
 }
 
 void GitBeeApp::OnRender()
@@ -157,6 +463,7 @@ void GitBeeApp::OnRender()
         ImGui::ShowDemoWindow(&m_showDemoWindow);
 
     ProcessScanResults();
+    ProcessPendingRepos();
     RenderMenuBar();
 
     auto* vp = ImGui::GetMainViewport();
@@ -170,7 +477,6 @@ void GitBeeApp::OnRender()
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
-    // Main window with embedded tab bar + content
     ImGui::Begin("##MainContent", nullptr,
         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar |
@@ -183,7 +489,8 @@ void GitBeeApp::OnRender()
     {
         int realActive = 0;
 
-        // Home tab (always present, non-closable)
+        // Home tab (closable)
+        if (m_homeTabOpen)
         {
             bool homeOpen = true;
             if (ImGui::BeginTabItem("Home", &homeOpen))
@@ -192,6 +499,34 @@ void GitBeeApp::OnRender()
                 m_homeView->Render();
                 ImGui::EndTabItem();
             }
+            if (!homeOpen) m_homeTabOpen = false;
+        }
+
+        // Pending (loading) repo tabs
+        for (int pi = 0; pi < (int)m_pendingRepos.size(); pi++)
+        {
+            auto& pending = m_pendingRepos[pi];
+            if (ImGui::BeginTabItem(pending->displayName.c_str(), (bool*)0))
+            {
+                ImGui::BeginChild("##pending_content", ImVec2(0, 0), true);
+                ImGui::SetCursorPosX((ImGui::GetWindowWidth() - 100) * 0.5f);
+                ImGui::SetCursorPosY(ImGui::GetWindowHeight() * 0.4f);
+                LoadingSpinnerWithText("Opening repository...", 12.0f);
+                ImGui::EndChild();
+                ImGui::EndTabItem();
+            }
+        }
+
+        // Global Config tab
+        if (m_globalConfigTabOpen)
+        {
+            bool configOpen = true;
+            if (ImGui::BeginTabItem("Global Config", &configOpen))
+            {
+                RenderGlobalConfigTab();
+                ImGui::EndTabItem();
+            }
+            if (!configOpen) m_globalConfigTabOpen = false;
         }
 
         // Repo tabs
@@ -211,11 +546,9 @@ void GitBeeApp::OnRender()
             if (!open) closeIdx = i;
         }
 
-        // Handle tab close after iteration
         if (closeIdx >= 0)
             m_repoTabs.erase(m_repoTabs.begin() + closeIdx);
 
-        // Remember which tab was active
         m_activeTabIndex = realActive;
 
         ImGui::EndTabBar();
@@ -226,7 +559,6 @@ void GitBeeApp::OnRender()
 
     RenderStatusBar();
 
-    // File dialog overlay
     if (m_fileDialog.open)
     {
         if (m_fileDialog.Render())
@@ -237,13 +569,11 @@ void GitBeeApp::OnRender()
                 if (m_dialogMode == DialogMode::ScanFolder)
                     ScanForRepositories(result);
                 else
-                    OpenRepository(result);
+                    StartOpenRepository(result);
             }
             m_dialogMode = DialogMode::None;
         }
     }
-
-
 }
 
 void GitBeeApp::ScanForRepositories(const std::string& rootPath)
@@ -291,7 +621,6 @@ void GitBeeApp::ScanForRepositories(const std::string& rootPath)
                     continue;
                 }
 
-                // Skip common system dirs to speed up scan
                 if (it.depth() == 0 && (filename == "Windows" || filename == "$Recycle.Bin"
                     || filename == "System Volume Information" || filename == "Program Files"
                     || filename == "Program Files (x86)" || filename == "WinSxS"))

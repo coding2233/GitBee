@@ -3,7 +3,9 @@
 #include "../ui/worktree_panel.h"
 #include "../ui/log_panel.h"
 #include "../ui/config_panel.h"
+#include "../ui/LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
+#include "../gitcore/git_process.h"
 #include <imgui.h>
 
 RepoView::RepoView(std::shared_ptr<GitRepository> repo)
@@ -21,7 +23,13 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     m_configPanel->SetRepository(m_repository);
 }
 
-RepoView::~RepoView() = default;
+RepoView::~RepoView()
+{
+    if (m_branchThread.joinable())
+        m_branchThread.join();
+    if (m_checkoutThread.joinable())
+        m_checkoutThread.join();
+}
 
 std::string RepoView::GetName() const
 {
@@ -35,6 +43,7 @@ std::string RepoView::GetName() const
 void RepoView::Render()
 {
     ProcessAsyncResult();
+    ProcessCheckoutResult();
     RenderToolbar();
     m_splitView.Begin();
     RenderSidebar();
@@ -90,6 +99,12 @@ void RepoView::RenderToolbar()
         bool disabled = isGitAction && m_asyncTask.running;
 
         if (disabled) { ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true); ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f); }
+        // Show spinner on sync button when branch data is loading
+        if (i == 0 && m_branchDataLoading)
+        {
+            LoadingSpinner(6.0f, 2.0f);
+            ImGui::SameLine();
+        }
 
         if (ImGui::Button(tools[i].label))
             DoGitAction(tools[i].label);
@@ -159,65 +174,102 @@ void RepoView::RenderSidebar()
     RenderSidebarSection("History", Section::History);
     RenderSidebarSection("Config", Section::Config);
 
-    if (m_branchDataDirty) RefreshBranchData();
-
-    bool branchOpen = ImGui::CollapsingHeader("Branch", ImGuiTreeNodeFlags_DefaultOpen);
-    if (branchOpen)
+    // Process async branch results
+    if (!m_branchDataLoading && m_branchDataDirty && !m_pendingBranchData.localBranches.empty())
     {
-        ImGui::Indent(8);
-        for (auto& b : m_localBranches)
+        if (m_branchThread.joinable())
+            m_branchThread.join();
+
+        std::lock_guard<std::mutex> lock(m_branchMutex);
+        m_localBranches = std::move(m_pendingBranchData.localBranches);
+        m_remoteBranches = std::move(m_pendingBranchData.remoteBranches);
+        m_tagNames = std::move(m_pendingBranchData.tagNames);
+        m_stashCount = m_pendingBranchData.stashCount;
+        m_branchDataDirty = false;
+    }
+
+    if (m_branchDataDirty && !m_branchDataLoading) RefreshBranchData();
+
+    if (m_branchDataLoading)
+    {
+        LoadingSpinnerWithText("Loading branches...");
+    }
+    else
+    {
+        bool branchOpen = ImGui::CollapsingHeader("Branch", ImGuiTreeNodeFlags_DefaultOpen);
+        if (branchOpen)
         {
-            ImGui::PushID(b.name.c_str());
-            if (b.isHead)
+            ImGui::Indent(8);
+            for (auto& b : m_localBranches)
             {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.8f, 0.3f, 1.0f));
-                ImGui::MenuItem(b.name.c_str(), nullptr, true, false);
+                ImGui::PushID(b.name.c_str());
+                if (b.isHead)
+                {
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 0.8f, 0.3f, 1.0f));
+                    ImGui::MenuItem(b.name.c_str(), nullptr, true, false);
+                    ImGui::PopStyleColor();
+                }
+                else
+                {
+                    bool isCheckouting = m_checkoutLoading && m_checkoutBranchName == b.name;
+                    if (isCheckouting)
+                    {
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                        ImGui::MenuItem(b.name.c_str(), nullptr, false, false);
+                        ImGui::PopStyleColor();
+                        ImGui::SameLine();
+                        LoadingSpinner(5.0f, 1.5f);
+                    }
+                    else
+                    {
+                        bool disabled = m_checkoutLoading;
+                        if (disabled) ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+                        if (ImGui::MenuItem(b.name.c_str()))
+                        {
+                            // single click does nothing
+                        }
+                        if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+                            StartAsyncCheckout(b.name);
+                        if (disabled) ImGui::PopItemFlag();
+                    }
+                }
+                ImGui::PopID();
+            }
+            ImGui::Unindent(8);
+        }
+
+        bool remoteOpen = ImGui::CollapsingHeader("Remote");
+        if (remoteOpen)
+        {
+            ImGui::Indent(8);
+            for (auto& b : m_remoteBranches)
+            {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.7f, 1.0f, 1.0f));
+                ImGui::TextUnformatted(b.name.c_str());
                 ImGui::PopStyleColor();
             }
-            else
-            {
-                if (ImGui::MenuItem(b.name.c_str()))
-                {
-                    m_repository->CheckoutBranch(b.name);
-                    RefreshAll();
-                }
-            }
-            ImGui::PopID();
+            ImGui::Unindent(8);
         }
-        ImGui::Unindent(8);
-    }
 
-    bool remoteOpen = ImGui::CollapsingHeader("Remote");
-    if (remoteOpen)
-    {
-        ImGui::Indent(8);
-        for (auto& b : m_remoteBranches)
+        bool tagOpen = ImGui::CollapsingHeader("Tag");
+        if (tagOpen)
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.7f, 1.0f, 1.0f));
-            ImGui::TextUnformatted(b.name.c_str());
-            ImGui::PopStyleColor();
+            ImGui::Indent(8);
+            for (auto& t : m_tagNames)
+                ImGui::TextUnformatted(t.c_str());
+            ImGui::Unindent(8);
         }
-        ImGui::Unindent(8);
-    }
 
-    bool tagOpen = ImGui::CollapsingHeader("Tag");
-    if (tagOpen)
-    {
-        ImGui::Indent(8);
-        for (auto& t : m_tagNames)
-            ImGui::TextUnformatted(t.c_str());
-        ImGui::Unindent(8);
-    }
-
-    bool stashOpen = ImGui::CollapsingHeader("Stashes");
-    if (stashOpen)
-    {
-        ImGui::Indent(8);
-        if (m_stashCount <= 0)
-            ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No stashes");
-        else
-            ImGui::Text("%d stash entries", m_stashCount);
-        ImGui::Unindent(8);
+        bool stashOpen = ImGui::CollapsingHeader("Stashes");
+        if (stashOpen)
+        {
+            ImGui::Indent(8);
+            if (m_stashCount <= 0)
+                ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "No stashes");
+            else
+                ImGui::Text("%d stash entries", m_stashCount);
+            ImGui::Unindent(8);
+        }
     }
 
     ImGui::PopStyleVar();
@@ -250,26 +302,76 @@ void RepoView::RenderContent()
     }
 }
 
+void RepoView::StartAsyncCheckout(const std::string& branchName)
+{
+    if (m_checkoutLoading) return;
+
+    m_checkoutLoading = true;
+    m_checkoutBranchName = branchName;
+    m_checkoutError.clear();
+    if (OnStatusMessage) OnStatusMessage("Checking out " + branchName + "...");
+
+    auto repo = m_repository;
+    m_checkoutThread = std::thread([this, repo, branchName]() {
+        bool ok = repo->CheckoutBranch(branchName);
+        if (!ok)
+            m_checkoutError = repo->GetLastGitError();
+        m_checkoutLoading = false;
+    });
+    m_checkoutThread.detach();
+}
+
+void RepoView::ProcessCheckoutResult()
+{
+    if (m_checkoutLoading) return;
+    if (m_checkoutBranchName.empty()) return;
+    if (m_checkoutThread.joinable())
+        m_checkoutThread.join();
+
+    if (m_checkoutError.empty())
+    {
+        if (OnStatusMessage) OnStatusMessage("Switched to " + m_checkoutBranchName);
+        RefreshAll();
+    }
+    else
+    {
+        if (OnStatusMessage) OnStatusMessage("Checkout " + m_checkoutBranchName + " failed: " + m_checkoutError);
+    }
+
+    m_checkoutBranchName.clear();
+    m_checkoutError.clear();
+}
+
 void RepoView::RefreshBranchData()
 {
-    m_localBranches.clear();
-    m_remoteBranches.clear();
-    m_tagNames.clear();
+    if (m_branchDataLoading || !m_branchDataDirty) return;
+    m_branchDataLoading = true;
 
-    auto branches = m_repository->GetBranches();
-    for (auto& b : branches)
-        m_localBranches.push_back({b.name, b.isHead, false});
+    auto repo = m_repository;
+    m_branchThread = std::thread([this, repo]() {
+        BranchData data;
 
-    auto remotes = m_repository->GetRemoteBranches();
-    for (auto& r : remotes)
-        m_remoteBranches.push_back({r.name, false, true});
+        auto branches = repo->GetBranches();
+        for (auto& b : branches)
+            data.localBranches.push_back({b.name, b.isHead, false});
 
-    auto tags = m_repository->GetTags();
-    for (auto& t : tags)
-        m_tagNames.push_back(t.name);
+        auto remotes = repo->GetRemoteBranches();
+        for (auto& r : remotes)
+            data.remoteBranches.push_back({r.name, false, true});
 
-    m_stashCount = 0;
-    m_branchDataDirty = false;
+        auto tags = repo->GetTags();
+        for (auto& t : tags)
+            data.tagNames.push_back(t.name);
+
+        data.stashCount = 0;
+
+        {
+            std::lock_guard<std::mutex> lock(m_branchMutex);
+            m_pendingBranchData = std::move(data);
+        }
+        m_branchDataLoading = false;
+    });
+    m_branchThread.detach();
 }
 
 void RepoView::RefreshAll()

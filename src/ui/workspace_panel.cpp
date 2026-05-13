@@ -1,8 +1,19 @@
 #include "workspace_panel.h"
+#include "LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
+#include "../gitcore/git_process.h"
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <algorithm>
+#include <sstream>
+
+WorkspacePanel::WorkspacePanel() {}
+
+WorkspacePanel::~WorkspacePanel()
+{
+    if (m_statusThread.joinable())
+        m_statusThread.join();
+}
 
 void WorkspacePanel::SetRepository(std::shared_ptr<GitRepository> repo)
 {
@@ -12,13 +23,120 @@ void WorkspacePanel::SetRepository(std::shared_ptr<GitRepository> repo)
     Refresh();
 }
 
+void WorkspacePanel::StartAsyncRefresh()
+{
+    if (m_statusLoading || !m_repository) return;
+    m_statusLoading = true;
+
+    auto repo = m_repository;
+    m_statusThread = std::thread([this, repo]() {
+        GitStatus status;
+        auto r1 = GitProcess::Execute(repo->GetPath(), {"rev-parse", "--abbrev-ref", "HEAD"});
+        if (r1.ok) status.currentBranch = r1.out;
+
+        auto r2 = GitProcess::Execute(repo->GetPath(), {"rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"});
+        if (r2.ok) status.upstreamBranch = r2.out;
+
+        auto r3 = GitProcess::Execute(repo->GetPath(), {"rev-list", "--left-right", "--count", "HEAD...@{upstream}"});
+        if (r3.ok) {
+            auto space = r3.out.find('\t');
+            if (space != std::string::npos) {
+                status.aheadCount = std::stoi(r3.out.substr(0, space));
+                status.behindCount = std::stoi(r3.out.substr(space + 1));
+            }
+        }
+
+        auto r4 = GitProcess::Execute(repo->GetPath(), {"status", "--porcelain", "-u"});
+        if (r4.ok) {
+            std::istringstream stream(r4.out);
+            std::string line;
+            while (std::getline(stream, line)) {
+                if (line.size() < 3) continue;
+                GitFileEntry entry;
+                entry.filename = line.substr(3);
+                char x = line[0], y = line[1];
+
+                if (x == '?' && y == '?') {
+                    entry.status = GitFileStatus::Untracked;
+                    entry.isStaged = false;
+                    status.untrackedFiles.push_back(entry);
+                    status.totalChanges++;
+                    continue;
+                }
+                if (x == 'U' || y == 'U') status.hasMergeConflict = true;
+
+                if (x != ' ' && x != '?') {
+                    entry.isStaged = true;
+                    switch (x) {
+                        case 'M': entry.status = GitFileStatus::StagedModified; break;
+                        case 'A': entry.status = GitFileStatus::StagedAdded; break;
+                        case 'D': entry.status = GitFileStatus::StagedDeleted; break;
+                        case 'R': entry.status = GitFileStatus::Renamed; break;
+                        default: entry.status = GitFileStatus::Unknown; break;
+                    }
+                    if (entry.status == GitFileStatus::Renamed) {
+                        auto arrow = entry.filename.find(" -> ");
+                        if (arrow != std::string::npos) {
+                            entry.oldFilename = entry.filename.substr(0, arrow);
+                            entry.filename = entry.filename.substr(arrow + 4);
+                        }
+                    }
+                    status.stagedFiles.push_back(entry);
+                    status.totalChanges++;
+                }
+                if (y != ' ' && x != '?' && x != '!') {
+                    entry.isStaged = false;
+                    switch (y) {
+                        case 'M': entry.status = GitFileStatus::Modified; break;
+                        case 'A': entry.status = GitFileStatus::Added; break;
+                        case 'D': entry.status = GitFileStatus::Deleted; break;
+                        default: entry.status = GitFileStatus::Unknown; break;
+                    }
+                    if (x == ' ' || x == 'R') {
+                        auto arrow = entry.filename.find(" -> ");
+                        if (arrow != std::string::npos) {
+                            entry.oldFilename = entry.filename.substr(0, arrow);
+                            entry.filename = entry.filename.substr(arrow + 4);
+                        }
+                    }
+                    status.unstagedFiles.push_back(entry);
+                    status.totalChanges++;
+                }
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(m_statusMutex);
+            m_pendingStatus = std::move(status);
+        }
+        m_statusLoading = false;
+    });
+    m_statusThread.detach();
+}
+
+void WorkspacePanel::ProcessAsyncResult()
+{
+    if (m_statusLoading) return;
+    if (!m_updating) return;
+    if (m_statusThread.joinable())
+        m_statusThread.join();
+
+    GitStatus pending;
+    {
+        std::lock_guard<std::mutex> lock(m_statusMutex);
+        pending = std::move(m_pendingStatus);
+    }
+
+    m_status = std::move(pending);
+    m_updating = false;
+}
+
 void WorkspacePanel::Refresh()
 {
     if (m_repository)
     {
         m_updating = true;
-        m_status = m_repository->GetStatus();
-        m_updating = false;
+        StartAsyncRefresh();
     }
 }
 
@@ -26,11 +144,13 @@ void WorkspacePanel::Render()
 {
     if (!m_repository) return;
 
+    ProcessAsyncResult();
+
     ImGui::BeginChild("##workspace_content", ImVec2(0, ImGui::GetContentRegionAvail().y - 90), true);
 
     if (m_updating)
     {
-        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "Loading...");
+        LoadingSpinnerWithText("Loading workspace status...");
         ImGui::EndChild();
         return;
     }
@@ -133,7 +253,6 @@ void WorkspacePanel::RenderFileRow(const std::string& path, const std::string& o
     auto& selSet = isStaged ? m_selectedStagedPaths : m_selectedUnstagedPaths;
     bool selected = selSet.count(path) > 0;
 
-    // Status indicator
     const char* statusIcon = " ";
     ImU32 statusColor = IM_COL32(128, 128, 128, 255);
     switch (status)
@@ -225,7 +344,6 @@ void WorkspacePanel::RenderCommitArea()
     if (!canCommit) { ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true); ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f); }
     if (ImGui::Button("Commit", ImVec2(90, 40)))
     {
-        // If nothing staged, stage all first
         if (m_status.stagedFiles.empty() && !m_status.unstagedFiles.empty())
             m_repository->Stage();
         m_repository->Commit(m_commitMessage);

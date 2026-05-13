@@ -11,6 +11,7 @@
 
 class RepoView;
 class HomeView;
+class GitRepository;
 
 class GitBeeApp : public volt::App
 {
@@ -42,6 +43,7 @@ private:
     };
     std::vector<RepoTab> m_repoTabs;
     int m_activeTabIndex = 0;  // 0 = Home, 1+ = repo tabs
+    bool m_homeTabOpen = true;
 
     std::unique_ptr<HomeView> m_homeView;
     FileDialog m_fileDialog;
@@ -49,7 +51,25 @@ private:
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;
+    bool m_globalConfigTabOpen = false;
     std::string m_recentFilePath;
+
+    // Global config state
+    struct GlobalConfigEntry {
+        std::string key;
+        std::string value;
+        bool editing = false;
+        char editBuf[4096]{};
+    };
+    std::vector<GlobalConfigEntry> m_globalConfig;
+    std::atomic<bool> m_globalConfigLoading{false};
+    std::thread m_globalConfigThread;
+    bool m_showAddForm = false;
+    char m_newConfigKey[256]{};
+    char m_newConfigValue[4096]{};
+
+    void LoadGlobalConfig();
+    void RenderGlobalConfigTab();
 
     // Async scan state
     std::atomic<bool> m_scanning{ false };
@@ -58,4 +78,11 @@ private:
     std::vector<std::string> m_scanResults;
 
     void ProcessScanResults();
+
+    // Async repo opening
+    struct PendingRepo;
+    std::vector<std::unique_ptr<PendingRepo>> m_pendingRepos;
+
+    void ProcessPendingRepos();
+    void StartOpenRepository(const std::string& path);
 };

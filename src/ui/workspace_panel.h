@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <atomic>
+#include <thread>
+#include <mutex>
 #include "../gitcore/git_types.h"
 #include "SplitView.h"
 
@@ -12,6 +15,8 @@ class GitRepository;
 
 class WorkspacePanel {
 public:
+    WorkspacePanel();
+    ~WorkspacePanel();
     void Render();
     void SetRepository(std::shared_ptr<GitRepository> repo);
     void Refresh();
@@ -28,6 +33,15 @@ private:
 
     std::set<std::string> m_selectedStagedPaths;
     std::set<std::string> m_selectedUnstagedPaths;
+
+    // Async status loading
+    std::atomic<bool> m_statusLoading{false};
+    std::thread m_statusThread;
+    std::mutex m_statusMutex;
+    GitStatus m_pendingStatus;
+
+    void StartAsyncRefresh();
+    void ProcessAsyncResult();
 
     void RenderStagedArea();
     void RenderUnstagedArea();
