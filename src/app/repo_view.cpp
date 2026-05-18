@@ -128,13 +128,23 @@ void RepoView::DoGitAction(const char* action)
     if (act == "Sync") { RefreshAll(); return; }
     if (act == "Terminal")
     {
+#ifdef _WIN32
         std::string cmd = "start cmd /K cd /D \"" + m_repoPath + "\"";
+#else
+        std::string cmd = "x-terminal-emulator --working-directory=\"" + m_repoPath + "\"";
+#endif
         system(cmd.c_str());
         return;
     }
     if (act == "Explorer")
     {
+#ifdef _WIN32
         std::string cmd = "explorer \"" + m_repoPath + "\"";
+#elif defined(__APPLE__)
+        std::string cmd = "open \"" + m_repoPath + "\"";
+#else
+        std::string cmd = "xdg-open \"" + m_repoPath + "\"";
+#endif
         system(cmd.c_str());
         return;
     }

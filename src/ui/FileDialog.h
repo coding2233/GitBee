@@ -175,8 +175,8 @@ struct FileDialog
         ImGui::EndChild();
 
         std::string selectedPath = currentPath;
-        if (!selectedPath.empty() && selectedPath.back() != '\\' && selectedPath.back() != '/')
-            selectedPath += '\\';
+        if (!selectedPath.empty() && selectedPath.back() != '/' && selectedPath.back() != '\\')
+            selectedPath += '/';
         selectedPath += !currentFolder.empty() ? currentFolder : currentFile;
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
@@ -212,8 +212,8 @@ struct FileDialog
             {
                 if (!currentFolder.empty() || !currentFile.empty())
                 {
-                    strcpy_s(resultBuffer, sizeof(resultBuffer),
-                        (currentPath + "\\" + (currentFolder.empty() ? currentFile : currentFolder)).c_str());
+                    snprintf(resultBuffer, sizeof(resultBuffer), "%s/%s",
+                        currentPath.c_str(), (currentFolder.empty() ? currentFile : currentFolder).c_str());
                     shouldClose = true;
                 }
                 else if (strlen(resultBuffer) > 0)
@@ -222,7 +222,7 @@ struct FileDialog
                 }
                 else
                 {
-                    strcpy_s(resultBuffer, sizeof(resultBuffer), currentPath.c_str());
+                    snprintf(resultBuffer, sizeof(resultBuffer), "%s", currentPath.c_str());
                     shouldClose = true;
                 }
             }
@@ -230,12 +230,12 @@ struct FileDialog
             {
                 if (currentFile.empty())
                 {
-                    strcpy_s(error, "Error: You must select a file!");
+                    snprintf(error, sizeof(error), "%s", "Error: You must select a file!");
                 }
                 else
                 {
-                    strcpy_s(resultBuffer, sizeof(resultBuffer),
-                        (currentPath + "\\" + currentFile).c_str());
+                    snprintf(resultBuffer, sizeof(resultBuffer), "%s/%s",
+                        currentPath.c_str(), currentFile.c_str());
                     shouldClose = true;
                 }
             }
@@ -317,10 +317,10 @@ private:
         if (ImGui::Button("Create"))
         {
             if (strlen(newName) == 0)
-                strcpy_s(newError, "Folder name can't be empty");
+                snprintf(newError, sizeof(newError), "%s", "Folder name can't be empty");
             else
             {
-                std::filesystem::create_directory(currentPath + "\\" + newName);
+                std::filesystem::create_directory(currentPath + "/" + newName);
                 newName[0] = 0;
                 newError[0] = 0;
                 ImGui::CloseCurrentPopup();
@@ -347,7 +347,7 @@ private:
         ImGui::TextUnformatted(currentFolder.c_str());
         if (ImGui::Button("Yes"))
         {
-            std::filesystem::remove(currentPath + "\\" + currentFolder);
+            std::filesystem::remove(currentPath + "/" + currentFolder);
             ImGui::CloseCurrentPopup();
         }
         ImGui::SameLine();

@@ -10,6 +10,9 @@ target("GitBee")
     set_languages("c++17")
     add_files("src/*.cpp")
     add_files("src/gitcore/*.cpp")
+    if is_plat("windows") then
+        add_files("src/gitbee.rc")
+    end
 
     after_build(function (target)
         os.cp("fonts", target:targetdir())

@@ -12,7 +12,13 @@ static void DefaultLinkCallback(ImGui::MarkdownLinkCallbackData data)
 {
     if (data.isImage) return;
     std::string url(data.link, data.linkLength);
+#ifdef _WIN32
     std::string cmd = "start " + url;
+#elif defined(__APPLE__)
+    std::string cmd = "open " + url;
+#else
+    std::string cmd = "xdg-open " + url;
+#endif
     system(cmd.c_str());
 }
 

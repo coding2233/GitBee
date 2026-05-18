@@ -110,9 +110,15 @@ void WorkTreePanel::RenderTreeNode(const FileTreeNode& node)
         }
         if (node.isDirectory)
         {
-            if (ImGui::MenuItem("Open in Explorer"))
+            if (ImGui::MenuItem("Open in File Manager"))
             {
+#ifdef _WIN32
                 std::string cmd = "explorer \"" + node.fullPath + "\"";
+#elif defined(__APPLE__)
+                std::string cmd = "open \"" + node.fullPath + "\"";
+#else
+                std::string cmd = "xdg-open \"" + node.fullPath + "\"";
+#endif
                 system(cmd.c_str());
             }
         }

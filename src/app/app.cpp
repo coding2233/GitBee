@@ -13,10 +13,19 @@
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
+    std::string dataDir;
+#ifdef _WIN32
     const char* appData = std::getenv("APPDATA");
-    std::string dataDir = appData ? (std::string(appData) + "\\GitBee") : (std::filesystem::current_path().string() + "\\GitBee");
+    dataDir = appData ? (std::string(appData) + "/GitBee") : (std::filesystem::current_path().string() + "/GitBee");
+#else
+    const char* xdgHome = std::getenv("XDG_CONFIG_HOME");
+    if (xdgHome)
+        dataDir = std::string(xdgHome) + "/GitBee";
+    else
+        dataDir = std::string(std::getenv("HOME")) + "/.config/GitBee";
+#endif
     std::filesystem::create_directories(dataDir);
-    m_recentFilePath = dataDir + "\\recent.json";
+    m_recentFilePath = dataDir + "/recent.json";
 
     m_homeView = std::make_unique<HomeView>();
     m_homeView->LoadRecents(m_recentFilePath);
@@ -581,7 +590,7 @@ void GitBeeApp::RenderSectionTableGlobal(const std::string& section, const std::
                 if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
                 {
                     entry.editing = true;
-                    strncpy_s(entry.editBuf, sizeof(entry.editBuf), entry.value.c_str(), _TRUNCATE);
+                    snprintf(entry.editBuf, sizeof(entry.editBuf), "%s", entry.value.c_str());
                 }
             }
 
@@ -617,7 +626,11 @@ void GitBeeApp::AddOperationLog(const std::string& repoName, const std::string& 
 
     auto now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     std::tm tm;
+#ifdef _WIN32
     localtime_s(&tm, &now);
+#else
+    localtime_r(&now, &tm);
+#endif
     char buf[32];
     strftime(buf, sizeof(buf), "%H:%M:%S", &tm);
 

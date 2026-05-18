@@ -424,7 +424,7 @@ void ConfigPanel::RenderSectionTable(const std::string& sectionName, const std::
                 if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
                 {
                     entry.editing = true;
-                    strncpy_s(entry.editBuf, sizeof(entry.editBuf), entry.value.c_str(), _TRUNCATE);
+                    snprintf(entry.editBuf, sizeof(entry.editBuf), "%s", entry.value.c_str());
                 }
             }
 
