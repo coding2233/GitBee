@@ -56,8 +56,7 @@ void WorkspacePanel::StartAsyncRefresh()
         }
 
         auto r4 = GitProcess::Execute(repo->GetPath(),
-            {"-c", "core.quotePath=off", "status", "--porcelain", "-u",
-             "--no-optional-locks"});
+            {"status", "--porcelain", "-u"});
         if (r4.ok) {
             std::istringstream stream(r4.out);
             std::string line;
@@ -447,8 +446,7 @@ void WorkspacePanel::RenderTreeNode(const FileTreeNode& node, bool isStaged)
 
 void WorkspacePanel::LoadDiff(const std::string& path, bool isStaged)
 {
-    std::vector<std::string> args = {"diff", "-p", "--no-ext-diff",
-        "--no-textconv", "--no-optional-locks"};
+    std::vector<std::string> args = {"diff", "-p"};
     if (isStaged) args.push_back("--cached");
     args.push_back("--");
     args.push_back(path);
