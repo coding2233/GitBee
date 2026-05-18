@@ -255,10 +255,31 @@ void HomeView::RenderLeftPanel()
     ImGui::TextUnformatted("Repositories");
     ImGui::Separator();
 
-    for (int i = 0; i < (int)m_recentRepos.size(); i++)
+    ImGui::PushItemWidth(-1);
+    if (ImGui::InputTextWithHint("##search", "Filter by name...", m_searchFilter, sizeof(m_searchFilter)))
+        m_selectedRepoIndex = 0;
+    ImGui::PopItemWidth();
+
+    int total = (int)m_recentRepos.size();
+    int shown = 0;
+
+    for (int i = 0; i < total; i++)
     {
         auto& repo = m_recentRepos[i];
         bool exists = std::filesystem::exists(repo.path);
+
+        if (m_searchFilter[0]) {
+            std::string name(repo.name);
+            std::string path(repo.path);
+            std::string filt(m_searchFilter);
+            std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+            std::transform(path.begin(), path.end(), path.begin(), ::tolower);
+            std::transform(filt.begin(), filt.end(), filt.begin(), ::tolower);
+            if (name.find(filt) == std::string::npos &&
+                path.find(filt) == std::string::npos)
+                continue;
+        }
+        shown++;
 
         ImGui::PushID(i);
 
@@ -268,10 +289,15 @@ void HomeView::RenderLeftPanel()
         if (!exists)
             ImGui::BeginDisabled();
 
-        if (ImGui::Selectable(repo.name.c_str(), i == m_selectedRepoIndex))
+        if (ImGui::Selectable(repo.name.c_str(), i == m_selectedRepoIndex,
+            ImGuiSelectableFlags_AllowDoubleClick))
         {
-            m_selectedRepoIndex = i;
-            LoadReadme(repo.path);
+            if (ImGui::IsMouseDoubleClicked(0) && exists) {
+                if (OnOpenRecent) OnOpenRecent(repo.path);
+            } else {
+                m_selectedRepoIndex = i;
+                LoadReadme(repo.path);
+            }
         }
 
         if (!exists)
@@ -295,6 +321,9 @@ void HomeView::RenderLeftPanel()
         ImGui::PopStyleColor();
         ImGui::PopID();
     }
+
+    if (m_searchFilter[0] && shown == 0)
+        ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "No matching repositories");
 
     ImGui::EndChild();
 }

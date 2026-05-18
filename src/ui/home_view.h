@@ -30,6 +30,7 @@ private:
     int m_selectedRepoIndex = -1;
     SplitView m_splitView{ SplitView::Type::Horizontal, 220, 80 };
     std::string m_readmeContent;
+    char m_searchFilter[256] = {};
 
     void RenderLeftPanel();
     void RenderRightPanel();
