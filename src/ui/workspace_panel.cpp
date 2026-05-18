@@ -28,24 +28,36 @@ void WorkspacePanel::StartAsyncRefresh()
     m_statusLoading = true;
 
     auto repo = m_repository;
-    m_statusThread = std::thread([this, repo]() {
+    bool needUpstream = m_status.upstreamBranch.empty() && m_status.aheadCount == 0
+                        && m_status.behindCount == 0;
+    m_statusThread = std::thread([this, repo, needUpstream]() {
         GitStatus status;
         auto r1 = GitProcess::Execute(repo->GetPath(), {"rev-parse", "--abbrev-ref", "HEAD"});
         if (r1.ok) status.currentBranch = r1.out;
 
-        auto r2 = GitProcess::Execute(repo->GetPath(), {"rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"});
-        if (r2.ok) status.upstreamBranch = r2.out;
+        if (needUpstream) {
+            auto r2 = GitProcess::Execute(repo->GetPath(),
+                {"rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"});
+            if (r2.ok) status.upstreamBranch = r2.out;
 
-        auto r3 = GitProcess::Execute(repo->GetPath(), {"rev-list", "--left-right", "--count", "HEAD...@{upstream}"});
-        if (r3.ok) {
-            auto space = r3.out.find('\t');
-            if (space != std::string::npos) {
-                status.aheadCount = std::stoi(r3.out.substr(0, space));
-                status.behindCount = std::stoi(r3.out.substr(space + 1));
+            auto r3 = GitProcess::Execute(repo->GetPath(),
+                {"rev-list", "--left-right", "--count", "HEAD...@{upstream}"});
+            if (r3.ok) {
+                auto space = r3.out.find('\t');
+                if (space != std::string::npos) {
+                    status.aheadCount = std::stoi(r3.out.substr(0, space));
+                    status.behindCount = std::stoi(r3.out.substr(space + 1));
+                }
             }
+        } else {
+            status.upstreamBranch = m_status.upstreamBranch;
+            status.aheadCount = m_status.aheadCount;
+            status.behindCount = m_status.behindCount;
         }
 
-        auto r4 = GitProcess::Execute(repo->GetPath(), {"status", "--porcelain", "-u"});
+        auto r4 = GitProcess::Execute(repo->GetPath(),
+            {"-c", "core.quotePath=off", "status", "--porcelain", "-u",
+             "--no-optional-locks"});
         if (r4.ok) {
             std::istringstream stream(r4.out);
             std::string line;
@@ -435,7 +447,8 @@ void WorkspacePanel::RenderTreeNode(const FileTreeNode& node, bool isStaged)
 
 void WorkspacePanel::LoadDiff(const std::string& path, bool isStaged)
 {
-    std::vector<std::string> args = {"diff", "-p"};
+    std::vector<std::string> args = {"diff", "-p", "--no-ext-diff",
+        "--no-textconv", "--no-optional-locks"};
     if (isStaged) args.push_back("--cached");
     args.push_back("--");
     args.push_back(path);
