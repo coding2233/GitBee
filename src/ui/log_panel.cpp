@@ -754,7 +754,11 @@ std::vector<LogPanel::DiffLineInfo> LogPanel::ParseDiffLines(const std::string& 
             info.oldLineNo = -1;
             info.newLineNo = -1;
             int oldStart = 0, newStart = 0;
+#ifdef _MSC_VER
             if (sscanf_s(line.c_str(), "@@ -%d,%*d +%d,%*d @@", &oldStart, &newStart) >= 2)
+#else
+            if (sscanf(line.c_str(), "@@ -%d,%*d +%d,%*d @@", &oldStart, &newStart) >= 2)
+#endif
             {
                 currentOldLine = oldStart;
                 currentNewLine = newStart;

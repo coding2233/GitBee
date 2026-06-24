@@ -545,7 +545,11 @@ std::vector<WorkspacePanel::DiffLine> WorkspacePanel::ParseDiff(const std::strin
         } else if (line.compare(0, 2, "@@") == 0) {
             dl.type = DiffLine::Hunk;
             int os = 0, ns = 0;
+#ifdef _MSC_VER
             if (sscanf_s(line.c_str(), "@@ -%d,%*d +%d,%*d @@", &os, &ns) >= 2) {
+#else
+            if (sscanf(line.c_str(), "@@ -%d,%*d +%d,%*d @@", &os, &ns) >= 2) {
+#endif
                 oldNo = os; newNo = ns;
             }
         } else if (!line.empty() && line[0] == '+') {
