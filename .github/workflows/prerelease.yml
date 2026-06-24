@@ -1,0 +1,91 @@
+name: prerelease
+permissions:
+  contents: write
+on: workflow_dispatch
+  # schedule:
+  #   - cron: '0 10 * * *'
+  # push:
+  #   paths:
+  #     - '.github/workflows/nightly.yml'
+
+jobs:
+  build-prefix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7 
+        with: 
+          script: |
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+            for (const release of releases.data) {
+              if (release.tag_name === 'prerelease') {
+                await github.rest.repos.deleteRelease({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.id,
+                });
+              }
+            }
+            try
+            {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/prerelease`,
+              });
+            }catch (error) {}
+
+  build:
+    needs: build-prefix
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            # name: windows-x86_64
+            plat: windows
+            arch: x64
+          - os: macos-14
+            # name: macosx-arm64
+            plat: macosx
+            arch: arm64
+          - os: ubuntu-latest
+            # name: linux-x86_64
+            plat: linux
+            arch: x86_64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    # 针对不同的操作系统安装不同的依赖项
+    # - name: Install dependencies on Ubuntu
+    #   if: matrix.os == 'ubuntu-latest'
+    #   run: |
+    #     sudo apt-get update
+    #     sudo apt-get -y install libsdl2-2.0 libgl1-mesa-dev libgles2-mesa-dev x11proto-core-dev libx11-dev libwayland-dev libwayland-egl-backend-dev wayland-protocols vulkan-utility-libraries-dev vulkan-tools
+
+    - uses: actions/checkout@v4
+    - uses: xmake-io/github-action-setup-xmake@v1
+      with:
+        xmake-version: latest
+
+    - name: Build
+      run: |
+        xmake f --toolchain=clang -p ${{ matrix.plat }} -y -v
+        xmake -v -y
+
+    - uses: actboy168/action-zip@main
+      id: zip
+      with:
+        name: GitBee-${{ matrix.plat }}-${{ matrix.arch }}
+        path: |
+          ${{ matrix.plat }}/${{ matrix.arch }}/release
+          
+    - uses: softprops/action-gh-release@v1
+      with:
+        prerelease: true
+        name: prerelease
+        tag_name: prerelease
+        fail_on_unmatched_files: true
+        files: ${{  steps.zip.outputs.output }}
