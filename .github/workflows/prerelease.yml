@@ -66,6 +66,9 @@ jobs:
     #     sudo apt-get -y install libsdl2-2.0 libgl1-mesa-dev libgles2-mesa-dev x11proto-core-dev libx11-dev libwayland-dev libwayland-egl-backend-dev wayland-protocols vulkan-utility-libraries-dev vulkan-tools
 
     - uses: actions/checkout@v4
+      with:
+        submodules: true
+        
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
         xmake-version: latest
