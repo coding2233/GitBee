@@ -83,7 +83,7 @@ jobs:
       with:
         name: GitBee-${{ matrix.plat }}-${{ matrix.arch }}
         path: |
-          ${{ matrix.plat }}/${{ matrix.arch }}/release
+          build/${{ matrix.plat }}/${{ matrix.arch }}/release
           
     - uses: softprops/action-gh-release@v1
       with:
