@@ -57,6 +57,7 @@ if is_plat("windows") then
         set_description("A GUI client for Git")
         set_homepage("https://github.com/wanderer-code/GitBee")
         set_iconfile("bee.ico")
+        add_components("DesktopShortcut", "StartMenuShortcut", "LaunchAfterInstall")
         before_package(function (package)
             import("core.project.config")
             local buildir = config.get("buildir") or "build"
@@ -68,3 +69,45 @@ if is_plat("windows") then
             end
         end)
 end
+
+xpack_component("DesktopShortcut")
+    set_default(true)
+    set_title("Create Desktop Shortcut")
+    set_description("Create a shortcut to GitBee on your desktop")
+    on_installcmd(function (component, batchcmds)
+        batchcmds:rawcmd("nsis", [[
+  SetOutPath "$INSTDIR"
+  CreateShortCut "$DESKTOP\GitBee.lnk" "$INSTDIR\GitBee.exe"
+]])
+    end)
+    on_uninstallcmd(function (component, batchcmds)
+        batchcmds:rawcmd("nsis", [[
+  Delete "$DESKTOP\GitBee.lnk"
+]])
+    end)
+
+xpack_component("StartMenuShortcut")
+    set_default(true)
+    set_title("Create Start Menu Shortcut")
+    set_description("Add GitBee shortcut to the Start Menu")
+    on_installcmd(function (component, batchcmds)
+        batchcmds:rawcmd("nsis", [[
+  CreateDirectory "$SMPROGRAMS\GitBee"
+  CreateShortCut "$SMPROGRAMS\GitBee\GitBee.lnk" "$INSTDIR\GitBee.exe"
+]])
+    end)
+    on_uninstallcmd(function (component, batchcmds)
+        batchcmds:rawcmd("nsis", [[
+  RMDir /r "$SMPROGRAMS\GitBee"
+]])
+    end)
+
+xpack_component("LaunchAfterInstall")
+    set_default(true)
+    set_title("Run GitBee after installation")
+    set_description("Launch GitBee after the installer finishes")
+    after_installcmd(function (component, batchcmds)
+        batchcmds:rawcmd("nsis", [[
+  ExecShell "" "$INSTDIR\GitBee.exe"
+]])
+    end)
