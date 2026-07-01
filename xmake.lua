@@ -57,6 +57,5 @@ if is_plat("windows") then
         set_description("A GUI client for Git")
         set_homepage("https://github.com/wanderer-code/GitBee")
         set_iconfile("bee.ico")
-        add_targets("GitBee")
-        add_installfiles("fonts/**")
+        add_installfiles("build/$(plat)/$(arch)/release/(**)")
 end
