@@ -57,5 +57,14 @@ if is_plat("windows") then
         set_description("A GUI client for Git")
         set_homepage("https://github.com/wanderer-code/GitBee")
         set_iconfile("bee.ico")
-        add_installfiles("build/$(plat)/$(arch)/release/(**)")
+        before_package(function (package)
+            import("core.project.config")
+            local buildir = config.get("buildir") or "build"
+            local plat = config.get("plat") or "windows"
+            local arch = config.get("arch") or "x64"
+            local dir = path.join(buildir, plat, arch, "release")
+            for _, fp in ipairs(os.files(path.join(dir, "**"))) do
+                package:add("installfiles", fp, {rootdir = dir})
+            end
+        end)
 end
