@@ -1,3 +1,4 @@
+set_version("1.0.0")
 add_rules("mode.debug", "mode.release")
 
 local has_volt = os.isfile("volt-ui/xmake.lua")
