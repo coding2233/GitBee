@@ -80,7 +80,7 @@ jobs:
 
     - name: Build NSIS Installer
       if: matrix.os == 'windows-latest'
-      run: xmake pack --autobuild=n
+      run: xmake pack --autobuild=n -y
 
     - name: Find NSIS Installer
       if: matrix.os == 'windows-latest'
