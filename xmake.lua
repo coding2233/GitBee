@@ -44,3 +44,17 @@ target("test_gitcore")
         set_symbols("debug")
         set_optimize("none")
     end
+
+includes("@builtin/xpack")
+
+if is_plat("windows") then
+    xpack("GitBee")
+        set_formats("nsis")
+        set_title("GitBee")
+        set_author("GitBee")
+        set_description("A GUI client for Git")
+        set_homepage("https://github.com/wanderer-code/GitBee")
+        set_iconfile("bee.ico")
+        add_targets("GitBee")
+        add_installfiles("fonts/**")
+end
