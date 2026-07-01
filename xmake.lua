@@ -51,6 +51,7 @@ includes("@builtin/xpack")
 if is_plat("windows") then
     xpack("GitBee")
         set_formats("nsis")
+        set_basename("GitBee-install")
         set_title("GitBee")
         set_author("GitBee")
         set_description("A GUI client for Git")
