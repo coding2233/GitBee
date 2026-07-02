@@ -202,22 +202,50 @@ bool DownloadInstaller(const std::string& url, const std::string& destPath)
 
 bool RunInstallerSilent(const std::string& installerPath)
 {
-    std::wstring wPath(installerPath.begin(), installerPath.end());
-    std::wstring args = L"/S";
-
-    SHELLEXECUTEINFOW sei = {sizeof(sei)};
-    sei.fMask = SEE_MASK_NOCLOSEPROCESS;
-    sei.lpVerb = L"open";
-    sei.lpFile = wPath.c_str();
-    sei.lpParameters = args.c_str();
-    sei.nShow = SW_HIDE;
-
-    if (!ShellExecuteExW(&sei))
+    wchar_t exePath[MAX_PATH] = {};
+    if (!GetModuleFileNameW(NULL, exePath, MAX_PATH))
         return false;
 
-    if (sei.hProcess)
-        CloseHandle(sei.hProcess);
-    return true;
+    wchar_t tempDir[MAX_PATH] = {};
+    if (!GetTempPathW(MAX_PATH, tempDir))
+        return false;
+
+    wchar_t batchPath[MAX_PATH] = {};
+    if (GetTempFileNameW(tempDir, L"upd", 0, batchPath) == 0)
+        return false;
+
+    std::wstring batchFile = batchPath;
+    batchFile += L".bat";
+    MoveFileExW(batchPath, batchFile.c_str(), MOVEFILE_REPLACE_EXISTING);
+
+    auto WcharToUtf8 = [](const wchar_t* ws) -> std::string {
+        int len = WideCharToMultiByte(CP_UTF8, 0, ws, -1, NULL, 0, NULL, NULL);
+        if (len <= 0) return {};
+        std::string s(len - 1, 0);
+        WideCharToMultiByte(CP_UTF8, 0, ws, -1, &s[0], len, NULL, NULL);
+        return s;
+    };
+
+    std::string utf8Content = "@timeout /t 5 /nobreak > nul\n";
+    utf8Content += "\"" + installerPath + "\" /S\n";
+    utf8Content += "start \"\" \"" + WcharToUtf8(exePath) + "\"\n";
+    utf8Content += "del \"" + WcharToUtf8(batchFile.c_str()) + "\"";
+
+    HANDLE hBatch = CreateFileW(batchFile.c_str(), GENERIC_WRITE, 0, NULL,
+        CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hBatch == INVALID_HANDLE_VALUE)
+        return false;
+
+    DWORD written = 0;
+    WriteFile(hBatch, utf8Content.c_str(), (DWORD)utf8Content.size(), &written, NULL);
+    CloseHandle(hBatch);
+
+    SHELLEXECUTEINFOW sei = {sizeof(sei)};
+    sei.lpVerb = L"open";
+    sei.lpFile = batchFile.c_str();
+    sei.nShow = SW_HIDE;
+
+    return ShellExecuteExW(&sei);
 }
 
 #else
