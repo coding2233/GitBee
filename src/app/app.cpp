@@ -166,8 +166,12 @@ void GitBeeApp::OnCreate()
 {
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
+    ImGui::StyleColorsDark();
     Theme::ApplyDark();
-    Theme::LoadFonts();
+    float scale = GetConfig().scale;
+    if (scale > 0.0f && scale != 1.0f)
+        ImGui::GetStyle().ScaleAllSizes(scale);
+    Theme::LoadFonts(scale);
 }
 
 void GitBeeApp::OnDestroy()

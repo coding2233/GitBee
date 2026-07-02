@@ -22,9 +22,11 @@ static std::string FindFontsDir() {
     return "fonts/";
 }
 
-void LoadFonts() {
+void LoadFonts(float scale) {
     auto& io = ImGui::GetIO();
     io.Fonts->Clear();
+
+    float fontSize = 16.0f * scale;
 
     std::string fonts_dir = FindFontsDir();
 
@@ -33,23 +35,23 @@ void LoadFonts() {
     main_cfg.OversampleV = 1;
     main_cfg.PixelSnapH = true;
     std::string scp_path = fonts_dir + "SourceCodePro-Medium.ttf";
-    g_default_font = io.Fonts->AddFontFromFileTTF(scp_path.c_str(), 16.0f, &main_cfg);
+    g_default_font = io.Fonts->AddFontFromFileTTF(scp_path.c_str(), fontSize, &main_cfg);
 
     ImFontConfig merge_cfg;
     merge_cfg.MergeMode = true;
     merge_cfg.OversampleH = 1;
     merge_cfg.OversampleV = 1;
     std::string wqy_path = fonts_dir + "wqy-microhei.ttc";
-    io.Fonts->AddFontFromFileTTF(wqy_path.c_str(), 16.0f, &merge_cfg);
+    io.Fonts->AddFontFromFileTTF(wqy_path.c_str(), fontSize, &merge_cfg);
 
     ImFontConfig icon_cfg;
     icon_cfg.MergeMode = true;
     icon_cfg.OversampleH = 1;
     icon_cfg.OversampleV = 1;
-    icon_cfg.GlyphMinAdvanceX = 16.0f;
-    icon_cfg.GlyphOffset = ImVec2(0, 2);
+    icon_cfg.GlyphMinAdvanceX = 16.0f * scale;
+    icon_cfg.GlyphOffset = ImVec2(0, 2 * scale);
     std::string mat_path = fonts_dir + "MaterialIcons-Regular.ttf";
-    g_icon_font = io.Fonts->AddFontFromFileTTF(mat_path.c_str(), 16.0f, &icon_cfg);
+    g_icon_font = io.Fonts->AddFontFromFileTTF(mat_path.c_str(), fontSize, &icon_cfg);
 
     io.Fonts->Build();
 }

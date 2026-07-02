@@ -1,8 +1,15 @@
 #include "app/app.h"
 #include <cstdio>
 #include <cstring>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 int main(int argc, char* argv[]) {
+#ifdef _WIN32
+    SetProcessDPIAware();
+#endif
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
             printf("GitBee - Git Repository Viewer\n\n");

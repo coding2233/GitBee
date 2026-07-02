@@ -6,7 +6,7 @@
 namespace Theme {
 
 void ApplyDark();
-void LoadFonts();
+void LoadFonts(float scale = 1.0f);
 ImFont* GetDefaultFont();
 ImFont* GetIconFont();
 
