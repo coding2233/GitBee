@@ -9,6 +9,12 @@
 #include <chrono>
 #include <sstream>
 #include <iomanip>
+#include <cstring>
+#include <cstdlib>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
 
 static char* FormatLastWriteTime(const std::filesystem::directory_entry& entry, char* buf, size_t bufSize)
 {
@@ -32,6 +38,29 @@ static std::string FormatFileSize(uintmax_t size)
     if (size < 1024 * 1024) return std::to_string(size / 1024) + " KB";
     if (size < 1024ULL * 1024 * 1024) return std::to_string(size / (1024 * 1024)) + " MB";
     return std::to_string(size / (1024ULL * 1024 * 1024)) + " GB";
+}
+
+static std::string GetDefaultPath()
+{
+#ifdef _WIN32
+    const char* userProfile = getenv("USERPROFILE");
+    if (userProfile && std::filesystem::exists(userProfile))
+        return std::string(userProfile);
+    const char* homeDrive = getenv("HOMEDRIVE");
+    const char* homePath = getenv("HOMEPATH");
+    if (homeDrive && homePath)
+    {
+        std::string p = std::string(homeDrive) + homePath;
+        if (std::filesystem::exists(p))
+            return p;
+    }
+    return "C:\\";
+#else
+    const char* home = getenv("HOME");
+    if (home && std::filesystem::exists(home))
+        return std::string(home);
+    return "/";
+#endif
 }
 
 struct FileDialog
@@ -63,12 +92,13 @@ struct FileDialog
             else if (std::filesystem::exists(p))
                 currentPath = p.remove_filename().string();
             else
-                currentPath = std::filesystem::current_path().string();
+                currentPath = GetDefaultPath();
         }
         else
         {
-            currentPath = std::filesystem::current_path().string();
+            currentPath = GetDefaultPath();
         }
+        snprintf(editBuffer, sizeof(editBuffer), "%s", currentPath.c_str());
     }
 
     bool Render()
@@ -95,18 +125,88 @@ struct FileDialog
         catch (...) {}
 
         ImGui::TextUnformatted(currentPath.c_str());
+#ifdef _WIN32
+        ImGui::SameLine();
+        ImGui::SetCursorPosX(ImGui::GetWindowWidth() - 160);
+        ImGui::SetNextItemWidth(130.0f);
+        std::string rootName = std::filesystem::path(currentPath).root_name().string();
+        if (!rootName.empty() && rootName.back() == ':') rootName += '\\';
+        DWORD drivesMask = GetLogicalDrives();
+        if (ImGui::BeginCombo("##drive", rootName.empty() ? "Computer" : rootName.c_str()))
+        {
+            for (char c = 'A'; c <= 'Z'; c++)
+            {
+                if (drivesMask & 1)
+                {
+                    std::string driveStr = std::string(1, c) + ":\\";
+                    bool isSelected = (rootName.size() >= 2 && rootName[0] == c);
+                    if (ImGui::Selectable(driveStr.c_str(), isSelected))
+                    {
+                        currentPath = driveStr;
+                        snprintf(editBuffer, sizeof(editBuffer), "%s", currentPath.c_str());
+                        folderSelectIndex = 0;
+                        fileSelectIndex = 0;
+                        currentFolder.clear();
+                        currentFile.clear();
+                    }
+                    if (isSelected)
+                        ImGui::SetItemDefaultFocus();
+                }
+                drivesMask >>= 1;
+            }
+            ImGui::EndCombo();
+        }
+#endif
         ImGui::Separator();
 
         float leftW = 200.0f;
         float rightW = ImGui::GetContentRegionAvail().x - leftW - ImGui::GetStyle().ItemSpacing.x;
 
+        bool isRoot = (std::filesystem::path(currentPath).parent_path().string() == currentPath);
+
         ImGui::BeginChild("##dirs", ImVec2(leftW, ImGui::GetContentRegionAvail().y - 64), true, ImGuiWindowFlags_HorizontalScrollbar);
 
-        if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+        if (isRoot)
         {
-            if (ImGui::IsMouseDoubleClicked(0))
-                currentPath = std::filesystem::path(currentPath).parent_path().string();
+#ifdef _WIN32
+            DWORD rootDrivesMask = GetLogicalDrives();
+            for (char c = 'A'; c <= 'Z'; c++)
+            {
+                if (rootDrivesMask & 1)
+                {
+                    std::string driveLabel = std::string(1, c) + ":\\";
+                    bool driveSelected = (currentPath == driveLabel);
+                    if (ImGui::Selectable(driveLabel.c_str(), driveSelected,
+                        ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+                    {
+                        if (ImGui::IsMouseDoubleClicked(0))
+                        {
+                            currentPath = driveLabel;
+                            snprintf(editBuffer, sizeof(editBuffer), "%s", currentPath.c_str());
+                            folderSelectIndex = 0;
+                            fileSelectIndex = 0;
+                            ImGui::SetScrollHereY(0.0f);
+                            currentFolder.clear();
+                            currentFile.clear();
+                        }
+                    }
+                }
+                rootDrivesMask >>= 1;
+            }
+#endif
         }
+        else
+        {
+            if (ImGui::Selectable("..", false, ImGuiSelectableFlags_AllowDoubleClick, ImVec2(ImGui::GetContentRegionAvail().x, 0)))
+            {
+                if (ImGui::IsMouseDoubleClicked(0))
+                {
+                    currentPath = std::filesystem::path(currentPath).parent_path().string();
+                    snprintf(editBuffer, sizeof(editBuffer), "%s", currentPath.c_str());
+                }
+            }
+        }
+
         for (int i = 0; i < (int)folders.size(); ++i)
         {
             bool selected = (i == folderSelectIndex);
@@ -117,6 +217,7 @@ struct FileDialog
                 if (ImGui::IsMouseDoubleClicked(0))
                 {
                     currentPath = folders[i].path().string();
+                    snprintf(editBuffer, sizeof(editBuffer), "%s", currentPath.c_str());
                     folderSelectIndex = 0;
                     fileSelectIndex = 0;
                     ImGui::SetScrollHereY(0.0f);
@@ -180,7 +281,32 @@ struct FileDialog
         selectedPath += !currentFolder.empty() ? currentFolder : currentFile;
 
         ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::InputText("##path", resultBuffer, sizeof(resultBuffer));
+        if (ImGui::InputText("##path", editBuffer, sizeof(editBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            std::string newPath = editBuffer;
+            if (newPath.empty())
+                newPath = GetDefaultPath();
+            try
+            {
+                if (std::filesystem::exists(newPath) && std::filesystem::is_directory(newPath))
+                {
+                    currentPath = std::filesystem::path(newPath).lexically_normal().string();
+                    folderSelectIndex = 0;
+                    fileSelectIndex = 0;
+                    currentFolder.clear();
+                    currentFile.clear();
+                    error[0] = 0;
+                }
+                else
+                {
+                    snprintf(error, sizeof(error), "Directory does not exist: %s", newPath.c_str());
+                }
+            }
+            catch (...)
+            {
+                snprintf(error, sizeof(error), "Invalid path: %s", newPath.c_str());
+            }
+        }
         ImGui::PopItemWidth();
         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 4);
 
@@ -218,6 +344,11 @@ struct FileDialog
                 }
                 else if (strlen(resultBuffer) > 0)
                 {
+                    shouldClose = true;
+                }
+                else if (strlen(editBuffer) > 0)
+                {
+                    snprintf(resultBuffer, sizeof(resultBuffer), "%s", editBuffer);
                     shouldClose = true;
                 }
                 else
@@ -261,6 +392,7 @@ private:
     int fileSelectIndex = 0;
     int folderSelectIndex = 0;
     char error[256] = {};
+    char editBuffer[1024] = {};
     struct { SortOrder name, size, type, date; } sortColumns;
 
     void DoSort(int col)
