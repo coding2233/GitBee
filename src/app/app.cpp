@@ -8,6 +8,7 @@
 #include "../update/updater.h"
 #include <imgui.h>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <sstream>
 #include <chrono>
@@ -1157,13 +1158,23 @@ void GitBeeApp::StartDownloadUpdate()
         m_updateThread.join();
 
     m_updateThread = std::thread([this]() {
-        char tempPath[MAX_PATH + 1] = {};
+        char tempPath[1024] = {};
+#ifdef _WIN32
         if (!GetTempPathA(sizeof(tempPath), tempPath))
         {
             m_updateState = UpdateState::Error;
             m_updateError = "Failed to get temp path";
             return;
         }
+#else
+        const char* tmpdir = getenv("TMPDIR");
+        if (!tmpdir) tmpdir = getenv("TMP");
+        if (!tmpdir) tmpdir = "/tmp";
+        snprintf(tempPath, sizeof(tempPath), "%s", tmpdir);
+        size_t len = strlen(tempPath);
+        if (len > 0 && tempPath[len-1] != '/')
+            strcat(tempPath, "/");
+#endif
 
         std::string dest = std::string(tempPath) + m_updateAssetName;
         bool ok = updater::DownloadInstaller(m_updateDownloadUrl, dest);
