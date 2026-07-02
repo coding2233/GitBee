@@ -76,7 +76,10 @@ if is_plat("windows") then
             local arch = config.get("arch") or "x64"
             local dir = path.join(buildir, plat, arch, "release")
             for _, fp in ipairs(os.files(path.join(dir, "**"))) do
-                package:add("installfiles", fp, {rootdir = dir})
+                local name = path.filename(fp)
+                if name ~= "test_gitcore.exe" and path.extension(fp) ~= ".lib" then
+                    package:add("installfiles", fp, {rootdir = dir})
+                end
             end
         end)
 end

@@ -100,6 +100,12 @@ jobs:
         echo "nsis_file=build/xpack/GitBee/$fileName" >> $env:GITHUB_OUTPUT
         echo "Installer: $fileName"
 
+    - name: Clean unwanted files from release dir
+      shell: pwsh
+      run: |
+        Remove-Item -Path "build/${{ matrix.plat }}/${{ matrix.arch }}/release" -Include "*.lib" -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path "build/${{ matrix.plat }}/${{ matrix.arch }}/release" -Filter "test_gitcore*" -Force -ErrorAction SilentlyContinue
+
     - uses: actboy168/action-zip@main
       id: zip
       with:

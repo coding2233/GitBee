@@ -14,7 +14,7 @@ static std::string FindFontsDir() {
         "../../../fonts/",
     };
     for (auto* dir : candidates) {
-        std::string test = std::string(dir) + "SourceCodePro-Medium.ttf";
+        std::string test = std::string(dir) + "wqy-microhei.ttc";
         if (std::filesystem::exists(test)) {
             return dir;
         }
@@ -34,15 +34,8 @@ void LoadFonts(float scale) {
     main_cfg.OversampleH = 1;
     main_cfg.OversampleV = 1;
     main_cfg.PixelSnapH = true;
-    std::string scp_path = fonts_dir + "SourceCodePro-Medium.ttf";
-    g_default_font = io.Fonts->AddFontFromFileTTF(scp_path.c_str(), fontSize, &main_cfg);
-
-    ImFontConfig merge_cfg;
-    merge_cfg.MergeMode = true;
-    merge_cfg.OversampleH = 1;
-    merge_cfg.OversampleV = 1;
     std::string wqy_path = fonts_dir + "wqy-microhei.ttc";
-    io.Fonts->AddFontFromFileTTF(wqy_path.c_str(), fontSize, &merge_cfg);
+    g_default_font = io.Fonts->AddFontFromFileTTF(wqy_path.c_str(), fontSize, &main_cfg);
 
     ImFontConfig icon_cfg;
     icon_cfg.MergeMode = true;
