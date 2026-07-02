@@ -1,5 +1,8 @@
 local gitbee_version = os.getenv("GITBEE_VERSION") or "1.0.0"
-set_version(gitbee_version)
+-- git hash is too long for NSIS VIFileVersion (needs X.X.X.X), so use a static version for metadata
+set_version("1.0.0")
+-- full git hash used for filename and GITBEE_VERSION define
+local gitbee_hash = gitbee_version
 add_rules("mode.debug", "mode.release")
 
 local has_volt = os.isfile("volt-ui/xmake.lua")
@@ -17,7 +20,7 @@ target("GitBee")
         add_files("src/gitbee.rc")
     end
 
-    add_defines('GITBEE_VERSION="' .. gitbee_version .. '"')
+    add_defines('GITBEE_VERSION="' .. gitbee_hash .. '"')
 
     if is_plat("windows") then
         add_syslinks("winhttp", "urlmon")
@@ -59,7 +62,7 @@ includes("@builtin/xpack")
 if is_plat("windows") then
     xpack("GitBee")
         set_formats("nsis")
-        set_basename("GitBee-installer-" .. gitbee_version)
+        set_basename("GitBee-installer-" .. gitbee_hash)
         set_title("GitBee")
         set_author("GitBee")
         set_description("A GUI client for Git")
