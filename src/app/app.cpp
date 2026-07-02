@@ -195,7 +195,12 @@ void GitBeeApp::OnDestroy()
         m_globalConfigThread.join();
 
     if (m_updateThread.joinable())
-        m_updateThread.join();
+    {
+        if (m_updateState == UpdateState::Checking || m_updateState == UpdateState::Downloading)
+            m_updateThread.detach();
+        else
+            m_updateThread.join();
+    }
 
     if (m_homeView)
         m_homeView->SaveRecents(m_recentFilePath);
@@ -1107,7 +1112,7 @@ void GitBeeApp::ProcessScanResults()
 
 void GitBeeApp::StartUpdateCheck()
 {
-    if (m_updateState == UpdateState::Checking)
+    if (m_updateState == UpdateState::Checking || m_updateState == UpdateState::Downloading)
         return;
 
     m_updateState = UpdateState::Checking;
