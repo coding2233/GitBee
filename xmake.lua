@@ -1,4 +1,5 @@
-set_version("1.0.0")
+local gitbee_version = os.getenv("GITBEE_VERSION") or "1.0.0"
+set_version(gitbee_version)
 add_rules("mode.debug", "mode.release")
 
 local has_volt = os.isfile("volt-ui/xmake.lua")
@@ -11,8 +12,15 @@ target("GitBee")
     set_languages("c++17")
     add_files("src/*.cpp")
     add_files("src/gitcore/*.cpp")
+    add_files("src/update/*.cpp")
     if is_plat("windows") then
         add_files("src/gitbee.rc")
+    end
+
+    add_defines('GITBEE_VERSION="' .. gitbee_version .. '"')
+
+    if is_plat("windows") then
+        add_syslinks("winhttp", "urlmon")
     end
 
     after_build(function (target)
@@ -51,7 +59,7 @@ includes("@builtin/xpack")
 if is_plat("windows") then
     xpack("GitBee")
         set_formats("nsis")
-        set_basename("GitBee-installer")
+        set_basename("GitBee-installer-" .. gitbee_version)
         set_title("GitBee")
         set_author("GitBee")
         set_description("A GUI client for Git")

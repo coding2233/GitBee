@@ -137,4 +137,21 @@ private:
     void RenderOutputWindow();
     void RenderDetailPopup();
     void ClearOperationLog();
+
+    // Update check
+    enum class UpdateState { Idle, Checking, Available, Downloading, Downloaded, Error };
+    UpdateState m_updateState = UpdateState::Idle;
+    std::string m_updateCurrentVersion;
+    std::string m_updateLatestVersion;
+    std::string m_updateDownloadUrl;
+    std::string m_updateAssetName;
+    std::string m_updateError;
+    std::string m_updateInstallerPath;
+    std::thread m_updateThread;
+
+    void StartUpdateCheck();
+    void ProcessUpdateResult();
+    void StartDownloadUpdate();
+    void StartInstallUpdate();
+    void RenderUpdatePopup();
 };

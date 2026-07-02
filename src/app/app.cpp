@@ -5,6 +5,7 @@
 #include "../ui/LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
 #include "../gitcore/git_process.h"
+#include "../update/updater.h"
 #include <imgui.h>
 #include <cstdlib>
 #include <filesystem>
@@ -192,6 +193,9 @@ void GitBeeApp::OnDestroy()
     if (m_globalConfigThread.joinable())
         m_globalConfigThread.join();
 
+    if (m_updateThread.joinable())
+        m_updateThread.join();
+
     if (m_homeView)
         m_homeView->SaveRecents(m_recentFilePath);
 }
@@ -224,6 +228,11 @@ void GitBeeApp::RenderMenuBar()
             {
                 m_dialogMode = DialogMode::ScanFolder;
                 m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Check for Updates..."))
+            {
+                StartUpdateCheck();
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Exit", "Alt+F4"))
@@ -885,6 +894,8 @@ void GitBeeApp::OnRender()
 
     ProcessScanResults();
     ProcessPendingRepos();
+    ProcessUpdateResult();
+    RenderUpdatePopup();
     RenderMenuBar();
 
     auto* vp = ImGui::GetMainViewport();
@@ -1089,6 +1100,185 @@ void GitBeeApp::ProcessScanResults()
         m_homeView->SaveRecents(m_recentFilePath);
 
     m_statusMessage = "Scan complete: found " + std::to_string(results.size()) + " repositories";
+}
+
+// --- Update Check ---
+
+void GitBeeApp::StartUpdateCheck()
+{
+    if (m_updateState == UpdateState::Checking)
+        return;
+
+    m_updateState = UpdateState::Checking;
+    m_updateError.clear();
+    m_updateInstallerPath.clear();
+
+    if (m_updateThread.joinable())
+        m_updateThread.join();
+
+    m_updateThread = std::thread([this]() {
+        auto info = updater::CheckForUpdate();
+        std::lock_guard<std::mutex> lock(m_globalConfigMutex); // reuse mutex for simplicity
+        m_updateCurrentVersion = info.currentVersion;
+        m_updateLatestVersion = info.latestVersion;
+        m_updateDownloadUrl = info.downloadUrl;
+        m_updateAssetName = info.assetName;
+        m_updateError = info.error;
+        if (info.available)
+            m_updateState = UpdateState::Available;
+        else if (!info.error.empty())
+            m_updateState = UpdateState::Error;
+        else
+            m_updateState = UpdateState::Idle;
+    });
+}
+
+void GitBeeApp::ProcessUpdateResult()
+{
+    // Nothing to do here - state is updated directly from the thread
+    // This is called each frame to allow cleanup if needed
+    if (m_updateState == UpdateState::Checking || m_updateState == UpdateState::Downloading)
+        return;
+
+    if (m_updateThread.joinable())
+    {
+        m_updateThread.join();
+    }
+}
+
+void GitBeeApp::StartDownloadUpdate()
+{
+    if (m_updateState != UpdateState::Available)
+        return;
+
+    m_updateState = UpdateState::Downloading;
+
+    if (m_updateThread.joinable())
+        m_updateThread.join();
+
+    m_updateThread = std::thread([this]() {
+        char tempPath[MAX_PATH + 1] = {};
+        if (!GetTempPathA(sizeof(tempPath), tempPath))
+        {
+            m_updateState = UpdateState::Error;
+            m_updateError = "Failed to get temp path";
+            return;
+        }
+
+        std::string dest = std::string(tempPath) + m_updateAssetName;
+        bool ok = updater::DownloadInstaller(m_updateDownloadUrl, dest);
+
+        if (ok)
+        {
+            m_updateInstallerPath = dest;
+            m_updateState = UpdateState::Downloaded;
+        }
+        else
+        {
+            m_updateState = UpdateState::Error;
+            m_updateError = "Download failed";
+        }
+    });
+}
+
+void GitBeeApp::StartInstallUpdate()
+{
+    if (m_updateState != UpdateState::Downloaded)
+        return;
+
+    m_updateState = UpdateState::Idle;
+    updater::RunInstallerSilent(m_updateInstallerPath);
+    Quit();
+}
+
+void GitBeeApp::RenderUpdatePopup()
+{
+    if (m_updateState == UpdateState::Checking)
+    {
+        ImGui::OpenPopup("Checking for Updates");
+        if (ImGui::BeginPopupModal("Checking for Updates", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted("Checking for updates...");
+            LoadingSpinner(10.0f, 2.0f);
+            ImGui::EndPopup();
+        }
+    }
+
+    if (m_updateState == UpdateState::Available)
+    {
+        ImGui::OpenPopup("Update Available");
+        if (ImGui::BeginPopupModal("Update Available", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted("A new version is available:");
+            ImGui::Text("  Current: %s", m_updateCurrentVersion.c_str());
+            ImGui::Text("  Latest:  %s", m_updateLatestVersion.c_str());
+            ImGui::Dummy(ImVec2(0, 8));
+
+            if (ImGui::Button("Download Update"))
+            {
+                StartDownloadUpdate();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Later"))
+            {
+                m_updateState = UpdateState::Idle;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    if (m_updateState == UpdateState::Downloading)
+    {
+        ImGui::OpenPopup("Downloading Update");
+        if (ImGui::BeginPopupModal("Downloading Update", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted("Downloading update...");
+            LoadingSpinner(10.0f, 2.0f);
+            ImGui::EndPopup();
+        }
+    }
+
+    if (m_updateState == UpdateState::Downloaded)
+    {
+        ImGui::OpenPopup("Update Ready");
+        if (ImGui::BeginPopupModal("Update Ready", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextUnformatted("Update downloaded successfully.");
+            ImGui::TextUnformatted("The application will close to apply the update.");
+            ImGui::Dummy(ImVec2(0, 8));
+
+            if (ImGui::Button("Install Now"))
+            {
+                StartInstallUpdate();
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Later"))
+            {
+                m_updateState = UpdateState::Idle;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
+
+    if (m_updateState == UpdateState::Error)
+    {
+        ImGui::OpenPopup("Update Error");
+        if (ImGui::BeginPopupModal("Update Error", NULL, ImGuiWindowFlags_AlwaysAutoResize))
+        {
+            ImGui::TextColored(ImColor(1.0f, 0.2f, 0.2f, 1.0f), "%s", m_updateError.c_str());
+            ImGui::Dummy(ImVec2(0, 8));
+            if (ImGui::Button("OK"))
+            {
+                m_updateState = UpdateState::Idle;
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+    }
 }
 
 void GitBeeApp::OnEvent(const SDL_Event& event)
