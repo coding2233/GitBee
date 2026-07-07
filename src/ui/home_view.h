@@ -14,6 +14,7 @@ public:
     std::function<void()> OnOpenRepository;
     std::function<void(const std::string& path)> OnOpenRecent;
     std::function<void()> OnScanFolder;
+    std::function<void()> OnReposCleaned;
 
     struct RecentRepo
     {

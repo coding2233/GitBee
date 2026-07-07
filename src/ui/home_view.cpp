@@ -260,6 +260,29 @@ void HomeView::RenderLeftPanel()
         m_selectedRepoIndex = 0;
     ImGui::PopItemWidth();
 
+    ImGui::Spacing();
+    if (ImGui::SmallButton("Clear Missing"))
+    {
+        for (int i = (int)m_recentRepos.size() - 1; i >= 0; i--)
+        {
+            if (!std::filesystem::exists(m_recentRepos[i].path))
+                m_recentRepos.erase(m_recentRepos.begin() + i);
+        }
+        if (m_selectedRepoIndex >= (int)m_recentRepos.size())
+            m_selectedRepoIndex = (int)m_recentRepos.size() - 1;
+        if (OnReposCleaned) OnReposCleaned();
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("Clear All"))
+    {
+        m_recentRepos.clear();
+        m_selectedRepoIndex = -1;
+        if (OnReposCleaned) OnReposCleaned();
+    }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Remove all repos and re-scan");
+    ImGui::Separator();
+
     int total = (int)m_recentRepos.size();
     int shown = 0;
 

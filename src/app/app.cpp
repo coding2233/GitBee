@@ -42,6 +42,9 @@ GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
         m_dialogMode = DialogMode::ScanFolder;
         m_fileDialog.OpenDialog(FileDialog::Type::SelectFolder);
     };
+    m_homeView->OnReposCleaned = [this]() {
+        m_homeView->SaveRecents(m_recentFilePath);
+    };
 }
 
 GitBeeApp::~GitBeeApp()
