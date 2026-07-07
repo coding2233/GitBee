@@ -83,7 +83,7 @@ Info CheckForUpdate()
     }
 
     HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET",
-        L"/repos/wanderer-code/GitBee/releases/tags/prerelease", NULL, NULL, NULL,
+        L"/repos/coding2233/GitBee/releases/tags/prerelease", NULL, NULL, NULL,
         WINHTTP_FLAG_SECURE);
     if (!hRequest)
     {
@@ -111,11 +111,22 @@ Info CheckForUpdate()
         return info;
     }
 
+    DWORD statusCode = 0;
+    DWORD statusSize = sizeof(statusCode);
+    WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+        NULL, &statusCode, &statusSize, NULL);
+
     std::string response = ReadResponse(hRequest);
 
     WinHttpCloseHandle(hRequest);
     WinHttpCloseHandle(hConnect);
     WinHttpCloseHandle(hSession);
+
+    if (statusCode != 200)
+    {
+        info.error = "GitHub API returned status " + std::to_string(statusCode);
+        return info;
+    }
 
     if (response.empty())
     {
