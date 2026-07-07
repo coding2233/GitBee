@@ -46,6 +46,15 @@ static const char* GetGitExe()
     return s_gitExe.c_str();
 }
 
+static std::wstring Utf8ToWide(const std::string& s)
+{
+    int len = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, NULL, 0);
+    if (len <= 0) return {};
+    std::wstring ws(len - 1, 0);
+    MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &ws[0], len);
+    return ws;
+}
+
 static GitResult ExecGit(const std::string& repoPath,
                           const std::vector<std::string>& args)
 {
@@ -64,16 +73,16 @@ static GitResult ExecGit(const std::string& repoPath,
     CreatePipe(&hOutRd, &hOutWr, &sa, 0);
     CreatePipe(&hErrRd, &hErrWr, &sa, 0);
 
-    STARTUPINFOA si = { sizeof(si) };
+    STARTUPINFOW si = { sizeof(si) };
     si.dwFlags = STARTF_USESTDHANDLES;
     si.hStdOutput = hOutWr;
     si.hStdError  = hErrWr;
 
     PROCESS_INFORMATION pi = {};
-    std::vector<char> cmdBuf(cmdLine.begin(), cmdLine.end());
-    cmdBuf.push_back('\0');
+    std::wstring wCmdLine = Utf8ToWide(cmdLine);
 
-    if (!CreateProcessA(NULL, cmdBuf.data(), NULL, NULL, TRUE,
+    if (!CreateProcessW(Utf8ToWide(GetGitExe()).c_str(), &wCmdLine[0],
+                        NULL, NULL, TRUE,
                         CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
     {
         CloseHandle(hOutRd); CloseHandle(hOutWr);
