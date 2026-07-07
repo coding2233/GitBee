@@ -19,7 +19,7 @@ public:
     std::string GetCurrentBranch() const;
     const std::string& GetPath() const { return m_path; }
 
-    GitSignature GetSignature() const;
+    GitSignature GetSignature();
 
     // Log
     std::vector<GitCommit> GetLog(const GitLogOptions& options = GitLogOptions{}) const;
@@ -60,6 +60,9 @@ public:
 private:
     std::string m_path;
     std::string m_lastError;
+
+    mutable GitSignature m_signature;
+    mutable bool m_signatureLoaded = false;
 
     static GitResult Git(const std::string& path,
                          const std::vector<std::string>& args);

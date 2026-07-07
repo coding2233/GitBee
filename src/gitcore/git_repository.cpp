@@ -46,14 +46,16 @@ std::string GitRepository::GetCurrentBranch() const
     return r.ok ? r.out : "";
 }
 
-GitSignature GitRepository::GetSignature() const
+GitSignature GitRepository::GetSignature()
 {
-    GitSignature sig;
-    auto r1 = Git(m_path, {"config", "user.name"});
-    auto r2 = Git(m_path, {"config", "user.email"});
-    if (r1.ok) sig.name = r1.out;
-    if (r2.ok) sig.email = r2.out;
-    return sig;
+    if (!m_signatureLoaded) {
+        auto r1 = Git(m_path, {"config", "user.name"});
+        auto r2 = Git(m_path, {"config", "user.email"});
+        if (r1.ok) m_signature.name = r1.out;
+        if (r2.ok) m_signature.email = r2.out;
+        m_signatureLoaded = true;
+    }
+    return m_signature;
 }
 
 bool GitRepository::Commit(const std::string& message)
