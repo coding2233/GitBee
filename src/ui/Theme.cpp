@@ -34,6 +34,7 @@ void LoadFonts(float scale) {
     main_cfg.OversampleH = 1;
     main_cfg.OversampleV = 1;
     main_cfg.PixelSnapH = true;
+    main_cfg.GlyphRanges = io.Fonts->GetGlyphRangesChineseSimplifiedCommon();
     std::string wqy_path = fonts_dir + "wqy-microhei.ttc";
     g_default_font = io.Fonts->AddFontFromFileTTF(wqy_path.c_str(), fontSize, &main_cfg);
 
