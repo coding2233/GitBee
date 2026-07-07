@@ -81,7 +81,7 @@ static GitResult ExecGit(const std::string& repoPath,
     PROCESS_INFORMATION pi = {};
     std::wstring wCmdLine = Utf8ToWide(cmdLine);
 
-    if (!CreateProcessW(Utf8ToWide(GetGitExe()).c_str(), &wCmdLine[0],
+    if (!CreateProcessW(NULL, &wCmdLine[0],
                         NULL, NULL, TRUE,
                         CREATE_NO_WINDOW, NULL, NULL, &si, &pi))
     {
