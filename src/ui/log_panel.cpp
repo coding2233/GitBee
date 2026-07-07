@@ -78,8 +78,8 @@ void LogPanel::ProcessAsyncResults()
                 m_commits.push_back(std::move(c));
             m_pendingCommits.clear();
             m_hasMore = m_pendingHasMore;
-            m_loading = false;
         }
+        m_loading = false;
     }
 
     if (!m_detailLoader.running)

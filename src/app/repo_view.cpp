@@ -220,7 +220,7 @@ void RepoView::RenderSidebar()
     RenderSidebarSection("Config", Section::Config);
 
     // Process async branch results
-    if (!m_branchDataLoading && m_branchDataDirty && !m_pendingBranchData.localBranches.empty())
+    if (!m_branchDataLoading && m_branchDataDirty)
     {
         if (m_branchThread.joinable())
             m_branchThread.join();
