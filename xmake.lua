@@ -1,8 +1,12 @@
-local gitbee_version = os.getenv("GITBEE_VERSION") or "1.0.0"
+local gitbee_hash_input = os.getenv("GITBEE_VERSION") or ""
+local gitbee_version = "1.0.0"
+local gitbee_hash = gitbee_version
+if gitbee_hash_input ~= "" then
+    gitbee_version = gitbee_version .. "." .. gitbee_hash_input:sub(1, 10)
+    gitbee_hash = gitbee_version
+end
 -- git hash is too long for NSIS VIFileVersion (needs X.X.X.X), so use a static version for metadata
 set_version("1.0.0")
--- full git hash used for filename and GITBEE_VERSION define
-local gitbee_hash = gitbee_version
 add_rules("mode.debug", "mode.release")
 
 local has_volt = os.isfile("volt-ui/xmake.lua")

@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
             return 0;
         }
         if (strcmp(argv[i], "--version") == 0 || strcmp(argv[i], "-v") == 0) {
-            printf("GitBee version 0.1.0\n");
+            printf("GitBee version %s\n", GITBEE_VERSION);
             return 0;
         }
     }

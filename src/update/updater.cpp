@@ -83,7 +83,7 @@ Info CheckForUpdate()
     }
 
     HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET",
-        L"/repos/coding2233/GitBee/releases/tags/prerelease", NULL, NULL, NULL,
+        L"/repos/wanderer-code/GitBee/releases/tags/prerelease", NULL, NULL, NULL,
         WINHTTP_FLAG_SECURE);
     if (!hRequest)
     {

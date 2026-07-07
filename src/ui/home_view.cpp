@@ -5,7 +5,7 @@
 #include <sstream>
 #include <filesystem>
 
-static const char* APP_VERSION = "v0.2.0";
+static const char* APP_VERSION = GITBEE_VERSION;
 static const char* APP_DESC = "A Lightweight Git Interface Management Tool";
 
 static void DefaultLinkCallback(ImGui::MarkdownLinkCallbackData data)

@@ -73,8 +73,9 @@ jobs:
       shell: pwsh
       run: |
         $hash = git rev-parse HEAD
-        echo "GITBEE_VERSION=$hash" >> $env:GITHUB_ENV
-        echo "Version set to: $hash"
+        $shortHash = $hash.Substring(0, 10)
+        echo "GITBEE_VERSION=$shortHash" >> $env:GITHUB_ENV
+        echo "Version set to: $shortHash"
 
     - uses: xmake-io/github-action-setup-xmake@v1
       with:
