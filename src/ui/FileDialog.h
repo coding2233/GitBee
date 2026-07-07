@@ -105,7 +105,8 @@ struct FileDialog
     {
         if (!open) return false;
 
-        ImGui::SetNextWindowSize(ImVec2(740, 440), ImGuiCond_Appearing);
+        auto& io = ImGui::GetIO();
+        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * 0.65f, io.DisplaySize.y * 0.70f), ImGuiCond_Appearing);
         const char* title = (type == Type::OpenFile) ? "Select a file" : "Select a folder";
         if (!ImGui::Begin(title, &open, ImGuiWindowFlags_NoResize))
         {
