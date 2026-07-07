@@ -73,18 +73,18 @@ Info CheckForUpdate()
         return info;
     }
 
-    HINTERNET hConnect = WinHttpConnect(hSession, L"api.github.com",
+    HINTERNET hConnect = WinHttpConnect(hSession, L"github.com",
         INTERNET_DEFAULT_HTTPS_PORT, 0);
     if (!hConnect)
     {
         WinHttpCloseHandle(hSession);
-        info.error = "Failed to connect to GitHub API";
+        info.error = "Failed to connect";
         return info;
     }
 
     HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET",
-        L"/repos/coding2233/GitBee/releases/tags/prerelease", NULL, NULL, NULL,
-        WINHTTP_FLAG_SECURE);
+        L"/coding2233/GitBee/releases/download/prerelease/latest_version.txt",
+        NULL, NULL, NULL, WINHTTP_FLAG_SECURE);
     if (!hRequest)
     {
         WinHttpCloseHandle(hConnect);
@@ -124,80 +124,26 @@ Info CheckForUpdate()
 
     if (statusCode != 200)
     {
-        info.error = "GitHub API returned status " + std::to_string(statusCode);
+        info.error = "Failed to check for updates (HTTP " + std::to_string(statusCode) + ")";
         return info;
     }
+
+    // Remove trailing whitespace
+    while (!response.empty() && (response.back() == '\n' || response.back() == '\r' || response.back() == ' '))
+        response.pop_back();
 
     if (response.empty())
     {
-        info.error = "Empty response from GitHub API";
+        info.error = "Empty version info";
         return info;
     }
 
-    // Find the first asset with name starting with "GitBee-installer-"
-    size_t assetPos = 0;
-    while (true)
-    {
-        size_t namePos = response.find("\"name\"", assetPos);
-        if (namePos == std::string::npos)
-            break;
-
-        size_t nameStart = response.find('"', namePos + 7);
-        if (nameStart == std::string::npos)
-            break;
-        size_t nameEnd = response.find('"', nameStart + 1);
-        if (nameEnd == std::string::npos)
-            break;
-
-        std::string assetName = response.substr(nameStart + 1, nameEnd - nameStart - 1);
-
-        if (assetName.find("GitBee-installer-") == 0 && EndsWith(assetName, ".exe"))
-        {
-            info.assetName = assetName;
-
-            // Extract version from assetName: GitBee-installer-<hash>.exe
-            std::string prefix = "GitBee-installer-";
-            std::string suffix = ".exe";
-            if (assetName.length() > prefix.length() + suffix.length())
-            {
-                info.latestVersion = assetName.substr(
-                    prefix.length(),
-                    assetName.length() - prefix.length() - suffix.length());
-            }
-
-            // Find download_url near this asset
-            size_t urlStart = response.rfind("\"browser_download_url\"", namePos);
-            if (urlStart != std::string::npos)
-            {
-                size_t urlValStart = response.find('"', urlStart + 22);
-                if (urlValStart != std::string::npos)
-                {
-                    size_t urlValEnd = response.find('"', urlValStart + 1);
-                    if (urlValEnd != std::string::npos)
-                    {
-                        info.downloadUrl = response.substr(urlValStart + 1, urlValEnd - urlValStart - 1);
-                        // Unescape unicode
-                        size_t uPos = info.downloadUrl.find("\\u");
-                        while (uPos != std::string::npos)
-                        {
-                            info.downloadUrl.replace(uPos, 6, "");
-                            uPos = info.downloadUrl.find("\\u");
-                        }
-                    }
-                }
-            }
-
-            info.available = (info.latestVersion != info.currentVersion
-                && !info.latestVersion.empty()
-                && !info.downloadUrl.empty());
-            break;
-        }
-
-        assetPos = nameEnd + 1;
-    }
-
-    if (info.assetName.empty())
-        info.error = "No installer found in latest release";
+    info.latestVersion = response;
+    info.assetName = "GitBee-installer-" + response + ".exe";
+    info.downloadUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/"
+                       + info.assetName;
+    info.available = (info.latestVersion != info.currentVersion
+        && !info.downloadUrl.empty());
 
     return info;
 }

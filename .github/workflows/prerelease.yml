@@ -101,6 +101,13 @@ jobs:
         echo "nsis_file=build/xpack/GitBee/$fileName" >> $env:GITHUB_OUTPUT
         echo "Installer: $fileName"
 
+    - name: Create version info file
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      run: |
+        $version = $env:GITBEE_VERSION
+        Set-Content -Path "build/xpack/GitBee/latest_version.txt" -Value "$version"
+
     - name: Clean unwanted files from release dir
       shell: pwsh
       run: |
@@ -128,4 +135,6 @@ jobs:
         prerelease: true
         name: prerelease
         tag_name: prerelease
-        files: ${{ steps.find-nsis.outputs.nsis_file }}
+        files: |
+          ${{ steps.find-nsis.outputs.nsis_file }}
+          build/xpack/GitBee/latest_version.txt
