@@ -106,9 +106,9 @@ struct FileDialog
         if (!open) return false;
 
         auto& io = ImGui::GetIO();
-        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * 0.65f, io.DisplaySize.y * 0.70f), ImGuiCond_Appearing);
+        ImGui::SetNextWindowSize(ImVec2(io.DisplaySize.x * 0.65f, io.DisplaySize.y * 0.70f), ImGuiCond_FirstUseEver);
         const char* title = (type == Type::OpenFile) ? "Select a file" : "Select a folder";
-        if (!ImGui::Begin(title, &open, ImGuiWindowFlags_NoResize))
+        if (!ImGui::Begin(title, &open, ImGuiWindowFlags_AlwaysHorizontalScrollbar))
         {
             ImGui::End();
             return false;
