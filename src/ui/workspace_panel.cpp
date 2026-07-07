@@ -154,13 +154,13 @@ void WorkspacePanel::Render()
 
     ProcessAsyncResult();
 
-    float commitAreaH = 80;
-    ImGui::BeginChild("##workspace_content",
-        ImVec2(0, ImGui::GetContentRegionAvail().y - commitAreaH), true);
+    m_commitSplit.Begin();
 
     if (m_updating) {
         LoadingSpinnerWithText("Loading workspace status...");
-        ImGui::EndChild();
+        m_commitSplit.Separate();
+        RenderCommitArea();
+        m_commitSplit.End();
         return;
     }
 
@@ -186,8 +186,9 @@ void WorkspacePanel::Render()
         m_vSplit.End();
     }
 
-    ImGui::EndChild();
+    m_commitSplit.Separate();
     RenderCommitArea();
+    m_commitSplit.End();
 }
 
 // ---- Status icon helpers ----
@@ -579,9 +580,10 @@ void WorkspacePanel::RenderCommitArea()
     ImGui::Separator();
 
     float w = ImGui::GetContentRegionAvail().x;
+    float h = ImGui::GetContentRegionAvail().y - ImGui::GetTextLineHeightWithSpacing() - ImGui::GetStyle().ItemSpacing.y * 4;
     ImGui::SetNextItemWidth(w);
     ImGui::InputTextMultiline("##commit_msg", m_commitBuf, sizeof(m_commitBuf),
-        ImVec2(w, 54), ImGuiInputTextFlags_None);
+        ImVec2(w, std::max(h, 54.0f)), ImGuiInputTextFlags_None);
 
     if (m_repository) {
         auto sig = m_repository->GetSignature();

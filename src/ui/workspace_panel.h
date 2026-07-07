@@ -45,6 +45,7 @@ private:
     char m_commitBuf[4096] = {};
     SplitView m_vSplit{ SplitView::Type::Vertical, 0.5f, 80 };
     SplitView m_hSplit{ SplitView::Type::Horizontal, 0.4f, 250 };
+    SplitView m_commitSplit{ SplitView::Type::Vertical, 0.75f, 100 };
     bool m_updating = false;
 
     bool m_treeView = false;
