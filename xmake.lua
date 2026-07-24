@@ -32,6 +32,9 @@ target("GitBee")
 
     after_build(function (target)
         os.cp("fonts", target:targetdir())
+        if os.isdir("scripts") then
+            os.cp("scripts", target:targetdir())
+        end
     end)
 
     if has_volt then
@@ -82,6 +85,13 @@ if is_plat("windows") then
             for _, fp in ipairs(os.files(path.join(dir, "**"))) do
                 local name = path.filename(fp)
                 if name ~= "test_gitcore.exe" and path.extension(fp) ~= ".lib" then
+                    package:add("installfiles", fp, {rootdir = dir})
+                end
+            end
+            -- Also include scripts directory
+            local scriptsDir = path.join(dir, "scripts")
+            if os.isdir(scriptsDir) then
+                for _, fp in ipairs(os.files(path.join(scriptsDir, "**"))) do
                     package:add("installfiles", fp, {rootdir = dir})
                 end
             end
