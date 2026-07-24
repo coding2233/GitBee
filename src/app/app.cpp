@@ -30,6 +30,9 @@ GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
     std::filesystem::create_directories(dataDir);
     m_recentFilePath = dataDir + "/recent.json";
 
+    // Initialize terminal manager with one local terminal
+    m_terminalManager.OpenLocalTerminal();
+
     m_homeView = std::make_unique<HomeView>();
     m_homeView->LoadRecents(m_recentFilePath);
     m_homeView->OnOpenRepository = [this]() {
@@ -1340,6 +1343,17 @@ void GitBeeApp::OnEvent(const SDL_Event& event)
 {
     if (event.type == SDL_EVENT_KEY_DOWN)
     {
+        auto& io = ImGui::GetIO();
+        bool ctrl = (io.KeyMods & ImGuiMod_Ctrl) != 0;
+        bool shift = (io.KeyMods & ImGuiMod_Shift) != 0;
+
+        // Ctrl+Shift+N: new local terminal (global hotkey)
+        if (ctrl && shift && event.key.key == SDLK_N) {
+            m_terminalTabOpen = true;
+            m_terminalManager.OpenLocalTerminal();
+        }
+
+        // ESC: quit
         if (event.key.key == SDLK_ESCAPE)
             Quit();
     }

@@ -8,6 +8,7 @@
 #include <imgui.h>
 #include <cstring>
 #include <algorithm>
+#include <SDL3/SDL.h>
 
 TerminalTab::TerminalTab(Type type, const std::string& title)
     : m_type(type), m_title(title) {
@@ -101,6 +102,9 @@ void TerminalTab::Render() {
     if (m_focused)
         ProcessKeyboardInput();
 
+    // Process mouse events for selection
+    ProcessMouseInput();
+
     // Status bar at bottom
     RenderStatusBar();
 }
@@ -121,36 +125,189 @@ void TerminalTab::ProcessPtyOutput() {
     }
 }
 
-void TerminalTab::RenderTerminal() {
-    ImVec2 avail = ImGui::GetContentRegionAvail();
-    ImVec2 pos = ImGui::GetCursorScreenPos();
+// ---------------------------------------------------------------------------
+// Layout computation
+// ---------------------------------------------------------------------------
+
+TerminalTab::TermLayout TerminalTab::ComputeLayout(ImVec2 availSize) const {
+    TermLayout layout = {};
+    layout.pos = ImGui::GetCursorScreenPos();
 
     // Reserve space for status bar
     float statusH = ImGui::GetFrameHeight() + 4;
-    ImVec2 termSize(avail.x, avail.y - statusH);
+    layout.size = ImVec2(availSize.x, availSize.y - statusH);
 
-    if (termSize.x <= 0 || termSize.y <= 0) return;
+    if (m_terminal) {
+        auto* font = ImGui::GetFont();
+        layout.cellWidth = font->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "M", nullptr, nullptr).x;
+        layout.cellHeight = ImGui::GetTextLineHeight();
+        layout.visibleCols = std::max(16, (int)(layout.size.x / layout.cellWidth));
+        layout.visibleRows = std::max(4, (int)(layout.size.y / layout.cellHeight));
+
+        // Compute scroll position
+        int sbSize = m_terminal->GetScrollbackRows();
+        int totalRows = sbSize + m_terminal->GetRows();
+        int maxScroll = std::max(0, totalRows - layout.visibleRows);
+        layout.scrollRow = (int)(m_scrollY * maxScroll + 0.5f);
+        layout.scrollRow = std::max(0, std::min(layout.scrollRow, maxScroll));
+    } else {
+        layout.cellWidth = 8.0f;
+        layout.cellHeight = 16.0f;
+        layout.visibleCols = 80;
+        layout.visibleRows = 24;
+        layout.scrollRow = 0;
+    }
+
+    return layout;
+}
+
+bool TerminalTab::ScreenPosToGrid(ImVec2 mousePos, int& row, int& col) const {
+    auto& io = ImGui::GetIO();
+
+    // Get the terminal child window bounds
+    ImVec2 winPos = ImGui::GetWindowPos();
+    ImVec2 winSize = ImGui::GetWindowSize();
+
+    // We need layout info. Recompute quickly.
+    TermLayout layout = ComputeLayout(ImGui::GetContentRegionAvail());
+    if (layout.cellWidth <= 0 || layout.cellHeight <= 0) return false;
+
+    float dx = mousePos.x - layout.pos.x;
+    float dy = mousePos.y - layout.pos.y;
+
+    if (dx < 0 || dy < 0 || dx >= layout.size.x || dy >= layout.size.y)
+        return false;
+
+    col = (int)(dx / layout.cellWidth);
+    row = (int)(dy / layout.cellHeight);
+
+    // Clamp
+    col = std::max(0, std::min(col, layout.visibleCols - 1));
+    row = std::max(0, std::min(row, layout.visibleRows - 1));
+
+    // Convert to buffer coordinates
+    row += layout.scrollRow;
+
+    return true;
+}
+
+// ---------------------------------------------------------------------------
+// Mouse Input
+// ---------------------------------------------------------------------------
+
+void TerminalTab::ProcessMouseInput() {
+    if (!m_terminal || !m_open) return;
+
+    auto& io = ImGui::GetIO();
+
+    // Only process mouse events when the terminal view is hovered
+    if (!ImGui::IsWindowHovered()) return;
+
+    // Left mouse button: start/drag selection
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+        int row, col;
+        if (ScreenPosToGrid(ImGui::GetMousePos(), row, col)) {
+            m_mouseSelecting = true;
+            m_mouseDragging = false;
+            m_terminal->BeginSelection(row, col);
+        }
+    }
+
+    if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_mouseSelecting) {
+        if (!m_mouseDragging) {
+            // Check for drag threshold
+            if (ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f)) {
+                m_mouseDragging = true;
+            }
+        }
+        if (m_mouseDragging) {
+            int row, col;
+            if (ScreenPosToGrid(ImGui::GetMousePos(), row, col)) {
+                m_terminal->UpdateSelection(row, col);
+            }
+        }
+    }
+
+    if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
+        if (m_mouseSelecting) {
+            m_terminal->EndSelection();
+            m_mouseSelecting = false;
+            m_mouseDragging = false;
+        }
+    }
+
+    // Right click: cancel selection
+    if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+        if (m_terminal->HasSelection()) {
+            m_terminal->CancelSelection();
+            m_mouseSelecting = false;
+            m_mouseDragging = false;
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Copy / Paste
+// ---------------------------------------------------------------------------
+
+void TerminalTab::CopySelection() {
+    if (!m_terminal || !m_terminal->HasSelection()) return;
+
+    std::string text = m_terminal->GetSelectedText();
+    if (text.empty()) return;
+
+    // Set clipboard via SDL
+    if (SDL_SetClipboardText(text.c_str()) == 0) {
+        LOG_DEBUG("Copied %zu bytes from terminal selection", text.size());
+    } else {
+        LOG_ERROR("Failed to copy to clipboard: %s", SDL_GetError());
+    }
+
+    // Clear selection after copy
+    m_terminal->CancelSelection();
+}
+
+void TerminalTab::PasteClipboard() {
+    if (!m_pty || !m_open) return;
+
+    // Get clipboard text via SDL
+    if (!SDL_HasClipboardText()) return;
+
+    char* text = SDL_GetClipboardText();
+    if (!text) return;
+
+    size_t len = strlen(text);
+    if (len > 0) {
+        m_pty->Write(text, len);
+        LOG_DEBUG("Pasted %zu bytes from clipboard to PTY", len);
+    }
+    SDL_free(text);
+}
+
+// ---------------------------------------------------------------------------
+// Terminal Rendering
+// ---------------------------------------------------------------------------
+
+void TerminalTab::RenderTerminal() {
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    TermLayout layout = ComputeLayout(avail);
+    if (layout.size.x <= 0 || layout.size.y <= 0) return;
 
     // Begin a child window to track focus
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::BeginChild("##terminal_view", termSize, false,
+    ImGui::BeginChild("##terminal_view", layout.size, false,
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
     m_focused = ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows);
 
     // Resize terminal emulator if window size changed
     if (m_terminal) {
-        auto* font = ImGui::GetFont();
-        float cellW = font->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "M", nullptr, nullptr).x;
-        float cellH = ImGui::GetTextLineHeight();
-        int newCols = std::max(16, (int)(termSize.x / cellW));
-        int newRows = std::max(4, (int)(termSize.y / cellH));
-        m_terminal->Resize(newCols, newRows);
+        m_terminal->Resize(layout.visibleCols, layout.visibleRows);
 
         // Render
         ImVec2 renderPos = ImGui::GetCursorScreenPos();
-        m_terminal->Render(renderPos, termSize, m_scrollY);
+        m_terminal->Render(renderPos, layout.size, m_scrollY);
     }
 
     // Capture scroll wheel for scrolling through buffer
@@ -165,13 +322,44 @@ void TerminalTab::RenderTerminal() {
     ImGui::PopStyleVar(2);
 }
 
+// ---------------------------------------------------------------------------
+// Keyboard Input
+// ---------------------------------------------------------------------------
+
 void TerminalTab::ProcessKeyboardInput() {
     if (!m_pty || !m_open) return;
 
     auto& io = ImGui::GetIO();
     ImGuiKeyChord mods = io.KeyMods;
 
-    // Send regular character input (skip if Ctrl/Alt/Super held to avoid duplicates)
+    // Check for Ctrl+Shift actions first (these are NOT sent to PTY)
+    for (int key = ImGuiKey_A; key <= ImGuiKey_Z; key++) {
+        auto imguiKey = (ImGuiKey)key;
+        if (!ImGui::IsKeyPressed(imguiKey, false)) continue;
+
+        auto action = KeyMapping::GetAction(imguiKey, mods);
+        switch (action) {
+            case KeyMapping::Action::Copy:
+                CopySelection();
+                return;
+            case KeyMapping::Action::Paste:
+                PasteClipboard();
+                return;
+            case KeyMapping::Action::NewTab:
+                // Handled by TerminalManager
+                return;
+            case KeyMapping::Action::Clear: {
+                // Send clear screen sequence (Ctrl+L equivalent)
+                const char* clearSeq = "\x0c";
+                m_pty->Write(clearSeq, 1);
+                return;
+            }
+            default:
+                break;
+        }
+    }
+
+    // Send regular character input (skip if Ctrl/Alt/Super held)
     bool ctrlHeld = (mods & ImGuiMod_Ctrl) != 0;
     bool altHeld = (mods & ImGuiMod_Alt) != 0;
     bool superHeld = (mods & ImGuiMod_Super) != 0;
@@ -212,20 +400,19 @@ void TerminalTab::ProcessKeyboardInput() {
         ImGuiKey_LeftBracket, ImGuiKey_RightBracket, ImGuiKey_Backslash, ImGuiKey_Slash
     };
 
-    // Also check A-Z for Ctrl+letter combos
+    // Also check A-Z for Ctrl+letter combos (but skip Ctrl+Shift which was handled above)
     for (int key = ImGuiKey_A; key <= ImGuiKey_Z; key++) {
         auto imguiKey = (ImGuiKey)key;
-        if (ImGui::IsKeyPressed(imguiKey, false)) {
-            // Check for terminal actions (Ctrl+Shift+letter)
-            auto action = KeyMapping::GetAction(imguiKey, mods);
-            if (action != KeyMapping::Action::None)
-                continue;
+        if (!ImGui::IsKeyPressed(imguiKey, false)) continue;
 
-            // Send VT sequence to PTY
-            const char* seq = KeyMapping::ToVtSequence(imguiKey, mods);
-            if (seq) {
-                m_pty->Write(seq, strlen(seq));
-            }
+        // Skip if it's a Ctrl+Shift action (already handled above)
+        if (KeyMapping::GetAction(imguiKey, mods) != KeyMapping::Action::None)
+            continue;
+
+        // Send VT sequence to PTY
+        const char* seq = KeyMapping::ToVtSequence(imguiKey, mods);
+        if (seq) {
+            m_pty->Write(seq, strlen(seq));
         }
     }
 
@@ -239,22 +426,41 @@ void TerminalTab::ProcessKeyboardInput() {
     }
 }
 
-void TerminalTab::RenderStatusBar() {
-    ImVec2 avail = ImGui::GetContentRegionAvail();
+// ---------------------------------------------------------------------------
+// Status Bar
+// ---------------------------------------------------------------------------
 
+void TerminalTab::RenderStatusBar() {
     ImGui::Separator();
 
     std::string status;
     if (m_open) {
         status = m_type == Type::LocalShell ? "Local Terminal" : "SSH Connected";
         if (m_terminal) {
-            status += " | " + std::to_string(m_terminal->GetCols()) + "x" +
-                      std::to_string(m_terminal->GetRows());
+            int sbSize = m_terminal->GetScrollbackRows();
+            if (sbSize > 0) {
+                status += " | " + std::to_string(m_terminal->GetCols()) + "x" +
+                          std::to_string(m_terminal->GetRows()) +
+                          " | buffer: " + std::to_string(sbSize) + " lines";
+            } else {
+                status += " | " + std::to_string(m_terminal->GetCols()) + "x" +
+                          std::to_string(m_terminal->GetRows());
+            }
+        }
+        if (m_terminal && m_terminal->HasSelection()) {
+            status += " | [selected]";
         }
     } else {
         status = "Disconnected";
     }
 
-    ImVec2 textSize = ImGui::CalcTextSize(status.c_str());
     ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", status.c_str());
+
+    // Show copy/paste shortcuts hint on hover
+    if (ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("Ctrl+Shift+C  Copy selection\n"
+                          "Ctrl+Shift+V  Paste\n"
+                          "Ctrl+Shift+L  Clear screen\n"
+                          "Mouse drag    Select text");
+    }
 }

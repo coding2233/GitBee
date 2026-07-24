@@ -27,11 +27,14 @@ TerminalEmulator::TerminalEmulator(int cols, int rows)
         return;
     }
 
-    // Set screen callbacks
+    // Set screen callbacks — including scrollback
     VTermScreenCallbacks cbs = {0};
     cbs.damage = Damage;
     cbs.movecursor = MoveCursor;
     cbs.settermprop = SetTermProp;
+    cbs.sb_pushline = ScrollbackPushLine;
+    cbs.sb_popline = ScrollbackPopLine;
+    cbs.sb_clear = ScrollbackClear;
     vterm_screen_set_callbacks(m_screen, &cbs, this);
 
     // Enable reflow and alt screen
@@ -42,6 +45,7 @@ TerminalEmulator::TerminalEmulator(int cols, int rows)
 
     // Pre-allocate cell cache
     m_cellCache.resize((size_t)(cols * rows));
+    m_scrollback.reserve(256);
 
     LOG_DEBUG("TerminalEmulator created: %dx%d", cols, rows);
 }
@@ -94,12 +98,182 @@ const VTermScreenCell* TerminalEmulator::GetCell(int col, int row) const {
     return nullptr;
 }
 
-int TerminalEmulator::GetScrollbackRows() const {
-    if (!m_screen) return 0;
-    // libvterm doesn't directly expose scrollback size via screen API.
-    // We'll use the screen damage/scrollback callbacks in a future iteration.
-    // For now, 0 means "no scrollback rows shown beyond screen rows".
-    return 0;
+const VTermScreenCell* TerminalEmulator::GetScrollbackCell(int row, int col) const {
+    if (row < 0 || row >= (int)m_scrollback.size()) return nullptr;
+    if (col < 0 || col >= m_cols) return nullptr;
+    const auto& sbRow = m_scrollback[row];
+    if ((size_t)col >= sbRow.size()) return nullptr;
+    return &sbRow[col];
+}
+
+int TerminalEmulator::ScreenRowToBufferRow(int screenRow) const {
+    // In the current render, screenRow is the visible row index.
+    // Scrollback rows are "above" the screen, so the buffer row is:
+    // scrollback.size() + screenRow (when scrollY == 0).
+    // But when scrolled back, visible rows show both scrollback + screen.
+    // This is handled inside Render() since it knows the scrollY offset.
+    return (int)m_scrollback.size() + screenRow;
+}
+
+// ---------------------------------------------------------------------------
+// Scrollback Callbacks
+// ---------------------------------------------------------------------------
+
+int TerminalEmulator::ScrollbackPushLine(int cols, const VTermScreenCell* cells, void* user) {
+    auto* self = (TerminalEmulator*)user;
+    if ((int)self->m_scrollback.size() >= self->MAX_SCROLLBACK_ROWS) {
+        // Remove oldest line
+        self->m_scrollback.erase(self->m_scrollback.begin());
+    }
+    // Copy the line into scrollback
+    std::vector<VTermScreenCell> row(cells, cells + cols);
+    self->m_scrollback.push_back(std::move(row));
+    return 1;
+}
+
+int TerminalEmulator::ScrollbackPopLine(int cols, VTermScreenCell* cells, void* user) {
+    auto* self = (TerminalEmulator*)user;
+    if (self->m_scrollback.empty()) return 0;
+    const auto& row = self->m_scrollback.back();
+    size_t copyLen = std::min((size_t)cols, row.size());
+    memcpy(cells, row.data(), copyLen * sizeof(VTermScreenCell));
+    self->m_scrollback.pop_back();
+    return 1;
+}
+
+int TerminalEmulator::ScrollbackClear(void* user) {
+    auto* self = (TerminalEmulator*)user;
+    self->m_scrollback.clear();
+    return 1;
+}
+
+// ---------------------------------------------------------------------------
+// Selection API
+// ---------------------------------------------------------------------------
+
+void TerminalEmulator::BeginSelection(int row, int col) {
+    m_selecting = true;
+    m_selStartRow = row;
+    m_selStartCol = col;
+    m_selEndRow = row;
+    m_selEndCol = col;
+    m_hasSelection = true;
+}
+
+void TerminalEmulator::UpdateSelection(int row, int col) {
+    if (!m_selecting) return;
+    m_selEndRow = row;
+    m_selEndCol = col;
+}
+
+void TerminalEmulator::EndSelection() {
+    m_selecting = false;
+    // Normalize: ensure start <= end
+    if (m_selStartRow > m_selEndRow ||
+        (m_selStartRow == m_selEndRow && m_selStartCol > m_selEndCol)) {
+        std::swap(m_selStartRow, m_selEndRow);
+        std::swap(m_selStartCol, m_selEndCol);
+    }
+}
+
+void TerminalEmulator::GetSelectionRange(int& startRow, int& startCol,
+                                          int& endRow, int& endCol) const {
+    startRow = m_selStartRow;
+    startCol = m_selStartCol;
+    endRow = m_selEndRow;
+    endCol = m_selEndCol;
+    // Normalize
+    if (startRow > endRow || (startRow == endRow && startCol > endCol)) {
+        std::swap(startRow, endRow);
+        std::swap(startCol, endCol);
+    }
+}
+
+bool TerminalEmulator::IsCellSelected(int row, int col) const {
+    if (!m_hasSelection) return false;
+
+    int sr = m_selStartRow, sc = m_selStartCol;
+    int er = m_selEndRow, ec = m_selEndCol;
+    if (sr > er || (sr == er && sc > ec)) {
+        std::swap(sr, er);
+        std::swap(sc, ec);
+    }
+
+    if (row < sr || row > er) return false;
+    if (row == sr && col < sc) return false;
+    if (row == er && col > ec) return false;
+    return true;
+}
+
+std::string TerminalEmulator::GetSelectedText() const {
+    if (!m_hasSelection || !m_screen) return {};
+
+    int sr, sc, er, ec;
+    GetSelectionRange(sr, sc, er, ec);
+
+    // We need to figure out if the selection spans the scrollback buffer
+    // or only the visible screen. sr/er are in scrollback-adjusted coordinates.
+    int sbSize = (int)m_scrollback.size();
+    std::string result;
+
+    for (int row = sr; row <= er; row++) {
+        std::string line;
+        if (row < sbSize) {
+            // Row is in scrollback buffer
+            const auto& sbRow = m_scrollback[row];
+            int startCol = (row == sr) ? sc : 0;
+            int endCol = (row == er) ? ec : (int)sbRow.size() - 1;
+            for (int c = startCol; c <= endCol && c < (int)sbRow.size(); c++) {
+                // Convert cell chars to UTF-8
+                char utf8[8];
+                int len = 0;
+                uint32_t cp = sbRow[c].chars[0];
+                if (cp == 0) cp = ' ';
+                if (cp < 0x80) {
+                    utf8[len++] = (char)cp;
+                } else if (cp < 0x800) {
+                    utf8[len++] = 0xC0 | (cp >> 6);
+                    utf8[len++] = 0x80 | (cp & 0x3F);
+                } else if (cp < 0x10000) {
+                    utf8[len++] = 0xE0 | (cp >> 12);
+                    utf8[len++] = 0x80 | ((cp >> 6) & 0x3F);
+                    utf8[len++] = 0x80 | (cp & 0x3F);
+                } else {
+                    utf8[len++] = 0xF0 | (cp >> 18);
+                    utf8[len++] = 0x80 | ((cp >> 12) & 0x3F);
+                    utf8[len++] = 0x80 | ((cp >> 6) & 0x3F);
+                    utf8[len++] = 0x80 | (cp & 0x3F);
+                }
+                line.append(utf8, len);
+            }
+        } else {
+            // Row is on the visible screen
+            int screenRow = row - sbSize;
+            if (screenRow >= m_rows) break;
+            int startCol = (row == sr) ? sc : 0;
+            int endCol = (row == er) ? ec : m_cols - 1;
+            // Use vterm_screen_get_text for cleaner extraction
+            VTermRect rect;
+            rect.start_row = screenRow;
+            rect.end_row = screenRow + 1;
+            rect.start_col = startCol;
+            rect.end_col = endCol + 1;
+            char buf[4096];
+            size_t n = vterm_screen_get_text(m_screen, buf, sizeof(buf) - 1, rect);
+            buf[n] = '\0';
+            line = buf;
+        }
+
+        // Trim trailing whitespace for non-last lines
+        if (row < er) {
+            while (!line.empty() && (line.back() == ' ' || line.back() == '\0'))
+                line.pop_back();
+            line += "\r\n";
+        }
+        result += line;
+    }
+
+    return result;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +282,6 @@ int TerminalEmulator::GetScrollbackRows() const {
 
 void TerminalEmulator::Render(ImVec2 pos, ImVec2 size, float scrollY) {
     if (!m_screen) {
-        // Render placeholder
         auto* dl = ImGui::GetWindowDrawList();
         dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y),
                           IM_COL32(16, 16, 20, 255));
@@ -133,61 +306,70 @@ void TerminalEmulator::Render(ImVec2 pos, ImVec2 size, float scrollY) {
     int visibleRows = std::min(m_rows, (int)(size.y / cellHeight));
     if (visibleCols <= 0 || visibleRows <= 0) return;
 
-    // Scroll offset (clamp to valid range)
-    int maxScroll = m_rows - visibleRows;
-    int scrollRow = std::max(0, std::min((int)(scrollY * maxScroll + 0.5f), maxScroll));
+    int sbSize = (int)m_scrollback.size();
+    int totalRows = sbSize + m_rows;
+
+    // Scroll offset: 0 = bottom (show only visible screen), max = show top of scrollback
+    int maxScroll = std::max(0, totalRows - visibleRows);
+    int scrollRow = (int)(scrollY * maxScroll + 0.5f);
+    scrollRow = std::max(0, std::min(scrollRow, maxScroll));
 
     // Default colors (matching the app's dark theme)
     ImU32 defaultBg = IM_COL32(16, 16, 20, 255);
     ImU32 defaultFg = IM_COL32(220, 220, 220, 255);
+    ImU32 selectionBg = IM_COL32(60, 80, 120, 255);  // blue-tinted selection
 
     // Fill background
     dl->AddRectFilled(pos, ImVec2(pos.x + size.x, pos.y + size.y), defaultBg);
 
-    // Track cursor position for rendering
-    int cursorScreenRow = m_cursorRow - scrollRow;
+    // Track cursor position for rendering (only if not scrolled back)
+    int cursorScreenRow = (scrollRow <= sbSize) ? (m_cursorRow + sbSize - scrollRow) : -1;
     int cursorScreenCol = m_cursorCol;
 
     // Render each visible row
     for (int r = 0; r < visibleRows; r++) {
-        int gridRow = scrollRow + r;
-        if (gridRow < 0 || gridRow >= m_rows) continue;
-
+        int bufferRow = scrollRow + r;
         float y = pos.y + r * lineSpacing;
+
+        if (bufferRow < 0 || bufferRow >= totalRows) continue;
+
+        bool isScrollback = (bufferRow < sbSize);
+        int srcRow = isScrollback ? bufferRow : (bufferRow - sbSize);
 
         // Scan row and group cells with same attributes for efficient rendering
         int c = 0;
         while (c < visibleCols) {
-            const VTermScreenCell* cell = GetCell(c, gridRow);
+            const VTermScreenCell* cell = nullptr;
+            if (isScrollback) {
+                cell = GetScrollbackCell(srcRow, c);
+            } else {
+                cell = GetCell(c, srcRow);
+            }
             if (!cell) { c++; continue; }
 
             // Find run of cells with identical styles
             int runEnd = c + 1;
             while (runEnd < visibleCols) {
-                const VTermScreenCell* next = GetCell(runEnd, gridRow);
+                const VTermScreenCell* next = nullptr;
+                if (isScrollback) {
+                    next = GetScrollbackCell(srcRow, runEnd);
+                } else {
+                    next = GetCell(runEnd, srcRow);
+                }
                 if (!next) break;
 
-                // Check if styles match (same bg, fg, bold, italic, underline)
-                bool same = true;
-                // Compare background color
-                if (next->bg.type != cell->bg.type ||
-                    next->bg.rgb.red != cell->bg.rgb.red ||
-                    next->bg.rgb.green != cell->bg.rgb.green ||
-                    next->bg.rgb.blue != cell->bg.rgb.blue)
-                    same = false;
-                // Compare foreground
-                if (same && (next->fg.type != cell->fg.type ||
-                    next->fg.rgb.red != cell->fg.rgb.red ||
-                    next->fg.rgb.green != cell->fg.rgb.green ||
-                    next->fg.rgb.blue != cell->fg.rgb.blue))
-                    same = false;
-                // Compare attributes
-                if (same && next->attrs.bold != cell->attrs.bold)
-                    same = false;
-                if (same && next->attrs.italic != cell->attrs.italic)
-                    same = false;
-                if (same && next->attrs.underline != cell->attrs.underline)
-                    same = false;
+                // Check if styles match
+                bool same = (next->bg.type == cell->bg.type &&
+                    next->bg.rgb.red == cell->bg.rgb.red &&
+                    next->bg.rgb.green == cell->bg.rgb.green &&
+                    next->bg.rgb.blue == cell->bg.rgb.blue &&
+                    next->fg.type == cell->fg.type &&
+                    next->fg.rgb.red == cell->fg.rgb.red &&
+                    next->fg.rgb.green == cell->fg.rgb.green &&
+                    next->fg.rgb.blue == cell->fg.rgb.blue &&
+                    next->attrs.bold == cell->attrs.bold &&
+                    next->attrs.italic == cell->attrs.italic &&
+                    next->attrs.underline == cell->attrs.underline);
 
                 if (!same) break;
                 runEnd++;
@@ -218,24 +400,39 @@ void TerminalEmulator::Render(ImVec2 pos, ImVec2 size, float scrollY) {
                 std::swap(bgColor, fgColor);
             }
 
+            // Check selection highlight
+            bool hasSelectionInRun = false;
+            if (m_hasSelection) {
+                for (int ci = c; ci < runEnd; ci++) {
+                    if (IsCellSelected(bufferRow, ci)) {
+                        hasSelectionInRun = true;
+                        break;
+                    }
+                }
+            }
+
             float x = pos.x + c * cellWidth;
             float runWidth = (runEnd - c) * cellWidth;
 
             // Draw background
-            if (bgColor != defaultBg || (cursorScreenRow == r && cursorScreenCol >= c && cursorScreenCol < runEnd)) {
+            if (hasSelectionInRun) {
+                dl->AddRectFilled(ImVec2(x, y), ImVec2(x + runWidth, y + cellHeight), selectionBg);
+            } else if (bgColor != defaultBg) {
                 dl->AddRectFilled(ImVec2(x, y), ImVec2(x + runWidth, y + cellHeight), bgColor);
             }
 
             // Draw text for this run
-            if (fgColor != bgColor) {  // only draw if visible
-                // Build a UTF-8 string for the run
-                // We process each cell individually to handle combining chars and wide chars
+            if (fgColor != bgColor || hasSelectionInRun) {
                 float textX = x;
                 for (int ci = c; ci < runEnd; ci++) {
-                    const VTermScreenCell* cc = GetCell(ci, gridRow);
+                    const VTermScreenCell* cc = nullptr;
+                    if (isScrollback) {
+                        cc = GetScrollbackCell(srcRow, ci);
+                    } else {
+                        cc = GetCell(ci, srcRow);
+                    }
                     if (!cc) break;
 
-                    // Convert chars[0..n] to UTF-8
                     char utf8Buf[32] = {};
                     int utf8Len = 0;
                     for (int chi = 0; chi < VTERM_MAX_CHARS_PER_CELL && cc->chars[chi]; chi++) {
@@ -259,12 +456,12 @@ void TerminalEmulator::Render(ImVec2 pos, ImVec2 size, float scrollY) {
                     utf8Buf[utf8Len] = '\0';
 
                     if (utf8Len > 0) {
-                        dl->AddText(ImVec2(textX, y), fgColor, utf8Buf);
+                        ImU32 textColor = hasSelectionInRun ? defaultFg : fgColor;
+                        dl->AddText(ImVec2(textX, y), textColor, utf8Buf);
                     }
 
-                    // Advance position
                     textX += cc->width * cellWidth;
-                    if (cc->width == 2) ci++;  // skip the padding cell for wide chars
+                    if (cc->width == 2) ci++;
                 }
             }
 
@@ -284,18 +481,19 @@ void TerminalEmulator::Render(ImVec2 pos, ImVec2 size, float scrollY) {
                 dl->AddLine(ImVec2(x, strikeY), ImVec2(x + runWidth, strikeY), fgColor, 1.0f);
             }
 
-            // Advance column
             c = runEnd;
         }
 
         // Draw cursor on this row if visible
-        if (m_cursorVisible && cursorScreenRow == r && cursorScreenCol >= 0 && cursorScreenCol < m_cols) {
+        bool cursorOnThisRow = (cursorScreenRow == r);
+        if (m_cursorVisible && cursorOnThisRow && cursorScreenCol >= 0 && cursorScreenCol < m_cols) {
             float cx = pos.x + cursorScreenCol * cellWidth;
-            // Draw cursor as a white block with alpha blending, or an underline
+            // Blink cursor: 2 cycles per second
             float t = (float)(ImGui::GetTime() * 2.0);
-            if (fmod(t, 2.0) < 1.0) {  // blink every 0.5s
+            bool cursorOn = (fmod(t, 2.0) < 1.0);
+            if (cursorOn) {
                 dl->AddRectFilled(ImVec2(cx, y), ImVec2(cx + cellWidth, y + cellHeight),
-                                  IM_COL32(200, 200, 200, 160));
+                                  IM_COL32(200, 200, 200, 180));
             }
         }
     }
@@ -363,4 +561,15 @@ void TerminalEmulator::BuildCellCache() const {
     }
 
     m_cellCacheValid = true;
+}
+
+// ---------------------------------------------------------------------------
+// Rendering Helpers
+// ---------------------------------------------------------------------------
+
+ImU32 TerminalEmulator::VTermColorToImU32(const VTermScreenCell& cell, bool isForeground) const {
+    const auto& col = isForeground ? cell.fg : cell.bg;
+    VTermColor c = col;
+    vterm_screen_convert_color_to_rgb(m_screen, &c);
+    return IM_COL32(c.rgb.red, c.rgb.green, c.rgb.blue, 255);
 }
