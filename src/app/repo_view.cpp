@@ -7,6 +7,7 @@
 #include "../ui/LoadingSpinner.h"
 #include "../gitcore/git_repository.h"
 #include "../gitcore/git_process.h"
+#include "../dbg_log.h"
 #include <sstream>
 #include <imgui.h>
 
@@ -135,6 +136,7 @@ void RepoView::RenderToolbar()
 void RepoView::DoGitAction(const char* action)
 {
     std::string act = action;
+    LOG_INFO("Git action: %s (repo: %s)", act.c_str(), m_repoPath.c_str());
 
     if (act == "Sync") { RefreshAll(); return; }
     if (act == "Terminal")
@@ -178,11 +180,15 @@ void RepoView::DoGitAction(const char* action)
         else if (act == "Push") gitArgs = {"push"};
         else if (act == "Fetch") gitArgs = {"fetch", "--all"};
 
+        LOG_INFO("Running git %s in %s", act.c_str(), repo->GetPath().c_str());
         auto r = GitProcess::Execute(repo->GetPath(), gitArgs);
 
         m_asyncTask.result = r.ok;
         m_asyncTask.error = r.err;
         m_asyncTask.running = false;
+
+        if (!r.ok)
+            LOG_WARN("git %s failed: %s", act.c_str(), r.err.c_str());
 
         // Build summary from output
         std::string summary;
@@ -365,6 +371,7 @@ void RepoView::RenderContent()
 void RepoView::StartAsyncCheckout(const std::string& branchName)
 {
     if (m_checkoutLoading) return;
+    LOG_INFO("Checking out branch: %s (repo: %s)", branchName.c_str(), m_repoPath.c_str());
 
     m_checkoutLoading = true;
     m_checkoutBranchName = branchName;

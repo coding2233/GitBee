@@ -2,6 +2,7 @@
 #include "LoadingSpinner.h"
 #include "../gitcore/git_util.h"
 #include "../gitcore/git_process.h"
+#include "../dbg_log.h"
 #include <imgui.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <ctime>
@@ -536,6 +537,7 @@ void LogPanel::StartAsyncDiffLoad(const std::string& filePath)
         if (!r.ok)
         {
             m_diffLoader.diffContent = "Error: " + r.err;
+            LOG_WARN("LogPanel diff load failed: %s", r.err.c_str());
         }
         else
         {

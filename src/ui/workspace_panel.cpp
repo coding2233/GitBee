@@ -5,6 +5,7 @@
 #include <imgui.h>
 #include <algorithm>
 #include <sstream>
+#include "../dbg_log.h"
 
 WorkspacePanel::WorkspacePanel() {}
 
@@ -26,6 +27,7 @@ void WorkspacePanel::StartAsyncRefresh()
 {
     if (m_statusLoading || !m_repository) return;
     m_statusLoading = true;
+    LOG_DEBUG("StartAsyncRefresh: %s", m_repository->GetPath().c_str());
 
     auto repo = m_repository;
     bool needUpstream = m_status.upstreamBranch.empty() && m_status.aheadCount == 0
@@ -120,6 +122,7 @@ void WorkspacePanel::StartAsyncRefresh()
             m_pendingStatus = std::move(status);
         }
         m_statusLoading = false;
+        LOG_DEBUG("Status refresh done: %d changes", m_status.totalChanges);
     });
     m_statusThread.detach();
 }

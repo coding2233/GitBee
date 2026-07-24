@@ -1,5 +1,6 @@
 #include "git_repository.h"
 #include "git_process.h"
+#include "../dbg_log.h"
 
 #include <memory>
 #include <sstream>
@@ -63,9 +64,10 @@ GitSignature GitRepository::GetSignature()
 
 bool GitRepository::Commit(const std::string& message)
 {
-    if (message.empty()) return false;
+    if (message.empty()) { LOG_WARN("Commit: empty message"); return false; }
     auto r = Git(m_path, {"commit", "-m", message});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Commit failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("Commit succeeded");
     return true;
 }
 
@@ -77,7 +79,8 @@ bool GitRepository::Stage(const std::vector<std::string>& files)
     else
         for (auto& f : files) args.push_back(f);
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Stage failed: %s", r.err.c_str()); return false; }
+    LOG_DEBUG("Stage OK");
     return true;
 }
 
@@ -89,7 +92,7 @@ bool GitRepository::Unstage(const std::vector<std::string>& files)
     else
         for (auto& f : files) args.push_back(f);
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Unstage failed: %s", r.err.c_str()); return false; }
     return true;
 }
 
@@ -98,7 +101,7 @@ bool GitRepository::Restore(const std::vector<std::string>& files)
     std::vector<std::string> args = {"checkout", "--"};
     for (auto& f : files) args.push_back(f);
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Restore failed: %s", r.err.c_str()); return false; }
     return true;
 }
 
@@ -109,10 +112,11 @@ bool GitRepository::Discard(const std::vector<std::string>& files)
     auto r = Git(m_path, args);
     if (!r.ok)
     {
+        LOG_DEBUG("restore failed, trying checkout --");
         args = {"checkout", "--"};
         for (auto& f : files) args.push_back(f);
         auto r2 = Git(m_path, args);
-        if (!r2.ok) { m_lastError = r2.err; return false; }
+        if (!r2.ok) { m_lastError = r2.err; LOG_WARN("Discard failed: %s", r2.err.c_str()); return false; }
         return true;
     }
     return true;
@@ -121,21 +125,24 @@ bool GitRepository::Discard(const std::vector<std::string>& files)
 bool GitRepository::Pull()
 {
     auto r = Git(m_path, {"pull"});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Pull failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("Pull succeeded");
     return true;
 }
 
 bool GitRepository::Push()
 {
     auto r = Git(m_path, {"push"});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Push failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("Push succeeded");
     return true;
 }
 
 bool GitRepository::Fetch()
 {
     auto r = Git(m_path, {"fetch", "--all"});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Fetch failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("Fetch succeeded");
     return true;
 }
 
@@ -240,17 +247,19 @@ std::vector<GitBranchInfo> GitRepository::GetRemoteBranches() const
 
 bool GitRepository::CheckoutBranch(const std::string& name)
 {
+    LOG_INFO("Checkout: %s", name.c_str());
     auto r = Git(m_path, {"checkout", name});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Checkout '%s' failed: %s", name.c_str(), r.err.c_str()); return false; }
     return true;
 }
 
 bool GitRepository::CreateBranch(const std::string& name, const std::string& from)
 {
+    LOG_INFO("Create branch: %s from %s", name.c_str(), from.empty() ? "HEAD" : from.c_str());
     std::vector<std::string> args = {"branch", name};
     if (!from.empty()) args.push_back(from);
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Create branch '%s' failed: %s", name.c_str(), r.err.c_str()); return false; }
     return true;
 }
 
@@ -465,9 +474,13 @@ std::shared_ptr<GitRepository> GitRepository::Open(const std::string& path)
         }
     }
     auto tmp = std::make_shared<GitRepository>(resolved);
-    if (!tmp->IsValid()) return nullptr;
+    if (!tmp->IsValid()) {
+        LOG_WARN("Open: not a git repository: %s", path.c_str());
+        return nullptr;
+    }
     std::string root = tmp->GetRootPath();
     if (!root.empty()) resolved = root;
+    LOG_INFO("Opened repository: %s", resolved.c_str());
     return std::make_shared<GitRepository>(resolved);
 }
 
@@ -531,6 +544,8 @@ std::vector<GitWorktreeInfo> GitRepository::GetWorktrees() const
 bool GitRepository::AddWorktree(const std::string& path, const std::string& branch,
                                  bool detach, const std::string& baseCommit)
 {
+    LOG_INFO("AddWorktree: path=%s branch=%s detach=%d base=%s",
+             path.c_str(), branch.c_str(), detach, baseCommit.c_str());
     std::vector<std::string> args = {"worktree", "add"};
     if (detach)
         args.push_back("--detach");
@@ -543,34 +558,39 @@ bool GitRepository::AddWorktree(const std::string& path, const std::string& bran
         args.push_back(baseCommit);
     }
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("AddWorktree failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("AddWorktree succeeded: %s", path.c_str());
     return true;
 }
 
 bool GitRepository::RemoveWorktree(const std::string& path, bool force)
 {
+    LOG_INFO("RemoveWorktree: path=%s force=%d", path.c_str(), force);
     std::vector<std::string> args = {"worktree", "remove"};
     if (force) args.push_back("--force");
     args.push_back(path);
     auto r = Git(m_path, args);
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("RemoveWorktree failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("RemoveWorktree succeeded");
     return true;
 }
 
 bool GitRepository::PruneWorktrees()
 {
     auto r = Git(m_path, {"worktree", "prune"});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("Prune failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("Prune succeeded");
     return true;
 }
 
 bool GitRepository::InitSubmodules(const std::string& worktreePath)
 {
-    // First init, then update recursively
+    LOG_INFO("InitSubmodules: %s", worktreePath.c_str());
     auto r1 = Git(worktreePath, {"submodule", "init"});
-    if (!r1.ok) { m_lastError = r1.err; return false; }
+    if (!r1.ok) { m_lastError = r1.err; LOG_WARN("submodule init failed: %s", r1.err.c_str()); return false; }
     auto r2 = Git(worktreePath, {"submodule", "update", "--init", "--recursive"});
-    if (!r2.ok) { m_lastError = r2.err; return false; }
+    if (!r2.ok) { m_lastError = r2.err; LOG_WARN("submodule update failed: %s", r2.err.c_str()); return false; }
+    LOG_INFO("InitSubmodules succeeded");
     return true;
 }
 
@@ -659,8 +679,11 @@ std::vector<GitNestedRepoInfo> GitRepository::DetectNestedRepos() const
                 }
             }
         }
-    } catch (...) {}
+    } catch (...) {
+        LOG_EXCEPTION("DetectNestedRepos");
+    }
 
+    LOG_DEBUG("DetectNestedRepos: found %zu nested repo(s) in %s", result.size(), rootPath.c_str());
     return result;
 }
 
@@ -688,8 +711,10 @@ bool GitRepository::CloneNestedRepo(const std::string& srcGitDir,
     }
 
     // Use git clone --local for efficiency
+    LOG_INFO("CloneNestedRepo: %s -> %s  (gitdir=%s)", srcRepo.c_str(), dstPath.c_str(), srcGitDir.c_str());
     auto r = Git("", {"clone", "--local", "--", srcRepo, dstPath});
-    if (!r.ok) { m_lastError = r.err; return false; }
+    if (!r.ok) { m_lastError = r.err; LOG_WARN("CloneNestedRepo failed: %s", r.err.c_str()); return false; }
+    LOG_INFO("CloneNestedRepo succeeded");
     return true;
 }
 

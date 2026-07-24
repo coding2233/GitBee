@@ -123,7 +123,7 @@ struct FileDialog
                 else files.push_back(p);
             }
         }
-        catch (...) {}
+        catch (...) { LOG_EXCEPTION("FileDialog::Refresh"); }
 
         ImGui::TextUnformatted(currentPath.c_str());
 #ifdef _WIN32
@@ -306,6 +306,7 @@ struct FileDialog
             catch (...)
             {
                 snprintf(error, sizeof(error), "Invalid path: %s", newPath.c_str());
+                LOG_EXCEPTION("FileDialog::PathEdit");
             }
         }
         ImGui::PopItemWidth();

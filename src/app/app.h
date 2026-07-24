@@ -7,6 +7,7 @@
 #include <mutex>
 #include <atomic>
 #include <map>
+#include "../dbg_log.h"
 #include <volt-ui/VoltApp.h>
 #include "../ui/FileDialog.h"
 

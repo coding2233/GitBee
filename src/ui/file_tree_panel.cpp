@@ -1,5 +1,6 @@
 #include "file_tree_panel.h"
 #include "../gitcore/git_repository.h"
+#include "../dbg_log.h"
 #include <imgui.h>
 #include <algorithm>
 
@@ -53,7 +54,7 @@ void FileTreePanel::LoadDirectory(const std::string& path, std::vector<FileTreeN
             out.push_back(std::move(node));
         }
     }
-    catch (...) {}
+    catch (...) { LOG_EXCEPTION("FileTreePanel::LoadDirectory"); }
 }
 
 void FileTreePanel::Render()

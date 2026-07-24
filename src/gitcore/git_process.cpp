@@ -1,4 +1,5 @@
 #include "git_process.h"
+#include "../dbg_log.h"
 
 #include <cstdio>
 #include <cstring>
@@ -87,7 +88,9 @@ static GitResult ExecGit(const std::string& repoPath,
     {
         CloseHandle(hOutRd); CloseHandle(hOutWr);
         CloseHandle(hErrRd); CloseHandle(hErrWr);
+        DWORD gle = GetLastError();
         result.err = "Git is not installed or not found in PATH";
+        LOG_ERROR("CreateProcessW failed (gle=%lu) cmd=%s", gle, cmdLine.c_str());
         return result;
     }
 
@@ -115,6 +118,14 @@ static GitResult ExecGit(const std::string& repoPath,
     while (!result.out.empty() &&
            (result.out.back() == '\n' || result.out.back() == '\r'))
         result.out.pop_back();
+
+    LOG_DEBUG("[%s] git %s  (in %s)",
+              result.ok ? "OK" : "FAIL",
+              cmdLine.c_str(),
+              repoPath.empty() ? "<global>" : repoPath.c_str());
+    if (!result.ok && !result.err.empty()) {
+        LOG_WARN("  stderr: %s", result.err.c_str());
+    }
 
     return result;
 }
@@ -165,13 +176,16 @@ GitResult GitProcess::Execute(const std::string& repoPath,
     std::string errPath = MakeErrorPath();
     std::string cmd = BuildCommand(repoPath, args, errPath);
 
+    LOG_DEBUG("exec: %s", cmd.c_str());
+
     FILE* pipe = popen(cmd.c_str(), "r");
     if (!pipe) {
-        if (errno == ENOENT)
+        int saved_errno = errno;
+        if (saved_errno == ENOENT)
             result.err = "Git is not installed or not found in PATH";
         else
-            result.err = "Failed to execute command: " +
-                         std::string(strerror(errno));
+            result.err = std::string(strerror(saved_errno));
+        LOG_ERROR("popen failed (errno=%d): %s", saved_errno, result.err.c_str());
         return result;
     }
 
@@ -197,6 +211,11 @@ GitResult GitProcess::Execute(const std::string& repoPath,
            (output.back() == '\n' || output.back() == '\r'))
         output.pop_back();
     result.out = std::move(output);
+
+    if (!result.ok && !result.err.empty()) {
+        LOG_WARN("git command had errors: %s", result.err.c_str());
+    }
+
     return result;
 #endif
 }

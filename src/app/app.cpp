@@ -12,6 +12,7 @@
 #include <filesystem>
 #include <sstream>
 #include <chrono>
+#include "../dbg_log.h"
 
 GitBeeApp::GitBeeApp(const volt::AppConfig& config) : volt::App(config)
 {
@@ -68,12 +69,15 @@ struct GitBeeApp::PendingRepo {
 
 void GitBeeApp::StartOpenRepository(const std::string& path)
 {
+    LOG_INFO("StartOpenRepository: %s", path.c_str());
+
     for (auto& tab : m_repoTabs)
     {
         if (tab.view && tab.view->GetPath() == path)
         {
             m_activeTabIndex = (int)(&tab - &m_repoTabs[0]) + 1;
             m_statusMessage = "Already opened: " + path;
+            LOG_DEBUG("Repository already open, switching to tab");
             return;
         }
     }
@@ -139,6 +143,7 @@ void GitBeeApp::ProcessPendingRepos()
         if (pending->result)
         {
             auto repo = pending->result;
+            LOG_INFO("Repo loaded: %s", pending->displayName.c_str());
             auto view = std::make_shared<RepoView>(repo);
             view->OnStatusMessage = [this](const std::string& msg) {
                 m_statusMessage = msg;
@@ -164,6 +169,7 @@ void GitBeeApp::ProcessPendingRepos()
         else
         {
             m_statusMessage = "Failed to open: " + pending->path;
+            LOG_WARN("Failed to open repository: %s", pending->path.c_str());
         }
 
         it = m_pendingRepos.erase(it);
@@ -172,6 +178,7 @@ void GitBeeApp::ProcessPendingRepos()
 
 void GitBeeApp::OnCreate()
 {
+    LOG_INFO("GitBee starting (version %s)", GITBEE_VERSION);
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
     ImGui::StyleColorsDark();
@@ -184,6 +191,8 @@ void GitBeeApp::OnCreate()
 
 void GitBeeApp::OnDestroy()
 {
+    LOG_INFO("GitBee shutting down");
+
     if (m_scanning)
     {
         m_scanning = false;
@@ -1074,7 +1083,7 @@ void GitBeeApp::ScanForRepositories(const std::string& rootPath)
                 }
             }
         }
-        catch (...) {}
+        catch (...) { LOG_EXCEPTION("ScanForRepositories"); }
 
         {
             std::lock_guard<std::mutex> lock(m_scanMutex);

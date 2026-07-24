@@ -1,4 +1,5 @@
 #include "updater.h"
+#include "../dbg_log.h"
 #include <cstdio>
 #include <cstdlib>
 #include <algorithm>
@@ -70,6 +71,7 @@ Info CheckForUpdate()
     if (!hSession)
     {
         info.error = "Failed to initialize HTTP";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
         return info;
     }
 
@@ -79,6 +81,7 @@ Info CheckForUpdate()
     {
         WinHttpCloseHandle(hSession);
         info.error = "Failed to connect";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
         return info;
     }
 
@@ -90,6 +93,7 @@ Info CheckForUpdate()
         WinHttpCloseHandle(hConnect);
         WinHttpCloseHandle(hSession);
         info.error = "Failed to create request";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
         return info;
     }
 
@@ -99,6 +103,7 @@ Info CheckForUpdate()
         WinHttpCloseHandle(hConnect);
         WinHttpCloseHandle(hSession);
         info.error = "Failed to send request";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
         return info;
     }
 
@@ -108,6 +113,7 @@ Info CheckForUpdate()
         WinHttpCloseHandle(hConnect);
         WinHttpCloseHandle(hSession);
         info.error = "Failed to receive response";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
         return info;
     }
 
@@ -213,6 +219,7 @@ Info CheckForUpdate()
     Info info;
     info.currentVersion = GetCurrentVersion();
     info.error = "Update check is only supported on Windows";
+    LOG_WARN("UpdateCheck: %s", info.error.c_str());
     return info;
 }
 
