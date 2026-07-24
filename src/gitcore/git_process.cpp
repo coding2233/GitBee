@@ -6,6 +6,12 @@
 #include <sstream>
 #include <fstream>
 #include <cstdlib>
+#include <filesystem>
+#include <thread>
+
+#ifndef _WIN32
+#include <unistd.h>
+#endif
 
 #ifdef _WIN32
 #include <windows.h>
@@ -218,4 +224,132 @@ GitResult GitProcess::Execute(const std::string& repoPath,
 
     return result;
 #endif
+}
+
+// ---- Shell script execution ----
+
+std::string GitProcess::GetShellPath()
+{
+#ifdef _WIN32
+    // Try common Git Bash locations
+    const char* paths[] = {
+        "C:\\Program Files\\Git\\bin\\bash.exe",
+        "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+        "C:\\Git\\bin\\bash.exe",
+    };
+    for (auto* p : paths) {
+        if (GetFileAttributesA(p) != INVALID_FILE_ATTRIBUTES)
+            return p;
+    }
+    // Fallback: hope it's in PATH
+    return "bash";
+#else
+    return "/bin/bash";
+#endif
+}
+
+std::string GitProcess::GetUserScriptsDir()
+{
+    std::string dir;
+#ifdef _WIN32
+    const char* appData = std::getenv("APPDATA");
+    dir = appData ? (std::string(appData) + "/GitBee/scripts") : "";
+#else
+    const char* xdgHome = std::getenv("XDG_CONFIG_HOME");
+    if (xdgHome)
+        dir = std::string(xdgHome) + "/GitBee/scripts";
+    else {
+        const char* home = std::getenv("HOME");
+        if (home)
+            dir = std::string(home) + "/.config/GitBee/scripts";
+    }
+#endif
+    return dir;
+}
+
+std::string GitProcess::GetDefaultScriptsDir()
+{
+    // Bundled scripts live next to the executable in a "scripts" subfolder
+    std::string exeDir;
+#ifdef _WIN32
+    wchar_t exePath[MAX_PATH];
+    if (GetModuleFileNameW(NULL, exePath, MAX_PATH)) {
+        std::filesystem::path p(exePath);
+        exeDir = p.parent_path().string();
+    }
+#else
+    // Try /proc/self/exe or argv[0] — best-effort
+    char buf[4096];
+    ssize_t len = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+    if (len > 0) {
+        buf[len] = '\0';
+        exeDir = std::filesystem::path(buf).parent_path().string();
+    }
+#endif
+    if (exeDir.empty()) return "";
+    return exeDir + "/scripts";
+}
+
+GitResult GitProcess::ExecuteScript(const std::string& scriptPath,
+                                     const std::string& repoPath,
+                                     const std::vector<std::string>& extraArgs)
+{
+    GitResult result;
+
+    // Verify script exists
+    std::error_code ec;
+    if (!std::filesystem::exists(scriptPath, ec)) {
+        result.err = "Script not found: " + scriptPath;
+        LOG_ERROR("ExecuteScript: %s", result.err.c_str());
+        return result;
+    }
+
+    std::string shell = GetShellPath();
+
+    // Build argument list: script path, repo path, then extra args
+    std::string cmd = "\"" + shell + "\" \"" + scriptPath + "\" \"" + repoPath + "\"";
+    for (auto& a : extraArgs) {
+        // Escape double-quotes in arguments
+        std::string escaped = a;
+        size_t pos = 0;
+        while ((pos = escaped.find('"', pos)) != std::string::npos) {
+            escaped.replace(pos, 1, "\\\"");
+            pos += 2;
+        }
+        cmd += " \"" + escaped + "\"";
+    }
+
+    LOG_INFO("ExecuteScript: %s", cmd.c_str());
+
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) {
+        result.err = std::string("Failed to execute script: ") + strerror(errno);
+        LOG_ERROR("ExecuteScript: popen failed: %s", strerror(errno));
+        return result;
+    }
+
+    std::string output;
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0)
+        output.append(buf, n);
+
+    int status = pclose(pipe);
+    result.ok = (status == 0);
+    result.out = std::move(output);
+
+    while (!result.out.empty() &&
+           (result.out.back() == '\n' || result.out.back() == '\r'))
+        result.out.pop_back();
+
+    if (result.ok) {
+        LOG_INFO("ExecuteScript succeeded: %s", scriptPath.c_str());
+    } else {
+        LOG_WARN("ExecuteScript failed (exit=%d): %s",
+                 status, scriptPath.c_str());
+        if (!result.out.empty())
+            result.err = result.out;
+    }
+
+    return result;
 }

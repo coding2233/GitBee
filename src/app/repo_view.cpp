@@ -2,6 +2,7 @@
 #include "../ui/workspace_panel.h"
 #include "../ui/file_tree_panel.h"
 #include "../ui/worktree_panel.h"
+#include "../ui/script_panel.h"
 #include "../ui/log_panel.h"
 #include "../ui/config_panel.h"
 #include "../ui/LoadingSpinner.h"
@@ -18,12 +19,14 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     m_workspacePanel = std::make_unique<WorkspacePanel>();
     m_fileTreePanel = std::make_unique<FileTreePanel>();
     m_worktreePanel = std::make_unique<WorktreePanel>();
+    m_scriptPanel = std::make_unique<ScriptPanel>();
     m_logPanel = std::make_unique<LogPanel>();
     m_configPanel = std::make_unique<ConfigPanel>();
 
     m_workspacePanel->SetRepository(m_repository);
     m_fileTreePanel->SetRepository(m_repository);
     m_worktreePanel->SetRepository(m_repository);
+    m_scriptPanel->SetRepository(m_repository);
     m_logPanel->SetRepository(m_repository);
     m_configPanel->SetRepository(m_repository);
 
@@ -32,6 +35,10 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     };
     m_worktreePanel->OnOperationLog = [this](const std::string& op, bool ok,
                                               const std::string& summary, const std::string& detail) {
+        if (OnOperationLog) OnOperationLog(op, ok, summary, detail);
+    };
+    m_scriptPanel->OnOperationLog = [this](const std::string& op, bool ok,
+                                            const std::string& summary, const std::string& detail) {
         if (OnOperationLog) OnOperationLog(op, ok, summary, detail);
     };
 }
@@ -234,6 +241,7 @@ void RepoView::RenderSidebar()
     RenderSidebarSection("Workspace", Section::Workspace);
     RenderSidebarSection("Files", Section::Files);
     RenderSidebarSection("Worktrees", Section::Worktrees);
+    RenderSidebarSection("Scripts", Section::Scripts);
     RenderSidebarSection("History", Section::History);
     RenderSidebarSection("Config", Section::Config);
 
@@ -359,6 +367,9 @@ void RepoView::RenderContent()
         case Section::Worktrees:
             if (m_worktreePanel) m_worktreePanel->Render();
             break;
+        case Section::Scripts:
+            if (m_scriptPanel) m_scriptPanel->Render();
+            break;
         case Section::History:
             if (m_logPanel) m_logPanel->Render();
             break;
@@ -467,6 +478,7 @@ void RepoView::RefreshAll()
     if (m_workspacePanel) m_workspacePanel->Refresh();
     if (m_fileTreePanel) m_fileTreePanel->Refresh();
     if (m_worktreePanel) m_worktreePanel->Refresh();
+    if (m_scriptPanel) m_scriptPanel->Refresh();
     if (m_logPanel) m_logPanel->Refresh();
     if (m_configPanel) m_configPanel->Refresh();
     m_branchDataDirty = true;

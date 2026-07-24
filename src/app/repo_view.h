@@ -14,6 +14,7 @@ class GitRepository;
 class WorkspacePanel;
 class FileTreePanel;
 class WorktreePanel;
+class ScriptPanel;
 class LogPanel;
 class ConfigPanel;
 
@@ -38,6 +39,7 @@ private:
         Workspace,
         Files,
         Worktrees,
+        Scripts,
         History,
         Config,
     };
@@ -94,6 +96,7 @@ private:
     std::unique_ptr<WorkspacePanel> m_workspacePanel;
     std::unique_ptr<FileTreePanel> m_fileTreePanel;
     std::unique_ptr<WorktreePanel> m_worktreePanel;
+    std::unique_ptr<ScriptPanel> m_scriptPanel;
     std::unique_ptr<LogPanel> m_logPanel;
     std::unique_ptr<ConfigPanel> m_configPanel;
 
