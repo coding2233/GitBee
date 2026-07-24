@@ -29,6 +29,10 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
     m_worktreePanel->OnOpenWorktree = [this](const std::string& path) {
         if (OnOpenWorktree) OnOpenWorktree(path);
     };
+    m_worktreePanel->OnOperationLog = [this](const std::string& op, bool ok,
+                                              const std::string& summary, const std::string& detail) {
+        if (OnOperationLog) OnOperationLog(op, ok, summary, detail);
+    };
 }
 
 RepoView::~RepoView()

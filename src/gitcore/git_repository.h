@@ -62,6 +62,13 @@ public:
     bool RemoveWorktree(const std::string& path, bool force = false);
     bool PruneWorktrees();
 
+    // Submodule support for worktrees
+    bool InitSubmodules(const std::string& worktreePath);
+
+    // Nested repo detection & copy
+    std::vector<GitNestedRepoInfo> DetectNestedRepos() const;
+    bool CloneNestedRepo(const std::string& srcGitDir, const std::string& dstPath);
+
     std::string GetLastGitError() const { return m_lastError; }
 
 private:

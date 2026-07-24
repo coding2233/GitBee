@@ -102,3 +102,10 @@ struct GitWorktreeInfo {
     bool isLocked = false;
     std::string lockReason;
 };
+
+struct GitNestedRepoInfo {
+    std::string path;          // relative path from repo root
+    std::string absolutePath;  // absolute path on disk
+    std::string gitDir;        // absolute path to .git (file for worktrees, dir for normal)
+    bool isWorktree = false;   // true if .git is a file (linked worktree)
+};

@@ -3,8 +3,11 @@
 
 #include <memory>
 #include <sstream>
+#include <fstream>
 #include <algorithm>
 #include <cctype>
+#include <set>
+#include <filesystem>
 
 static std::string extractField(const std::string& output, size_t& pos)
 {
@@ -557,6 +560,135 @@ bool GitRepository::RemoveWorktree(const std::string& path, bool force)
 bool GitRepository::PruneWorktrees()
 {
     auto r = Git(m_path, {"worktree", "prune"});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
+}
+
+bool GitRepository::InitSubmodules(const std::string& worktreePath)
+{
+    // First init, then update recursively
+    auto r1 = Git(worktreePath, {"submodule", "init"});
+    if (!r1.ok) { m_lastError = r1.err; return false; }
+    auto r2 = Git(worktreePath, {"submodule", "update", "--init", "--recursive"});
+    if (!r2.ok) { m_lastError = r2.err; return false; }
+    return true;
+}
+
+std::vector<GitNestedRepoInfo> GitRepository::DetectNestedRepos() const
+{
+    std::vector<GitNestedRepoInfo> result;
+    std::string rootPath = GetRootPath();
+    if (rootPath.empty()) return result;
+
+    // Collect submodule paths to exclude them
+    std::set<std::string> submodulePaths;
+    auto subs = GetSubmodules();
+    for (auto& s : subs) {
+        submodulePaths.insert(s.path);
+    }
+
+    // Also get the main .git path to exclude
+    std::string mainGitDir = rootPath + "/.git";
+
+    // Also exclude .git/worktrees dir (contains worktree metadata, not real repos)
+    std::string worktreesMetaDir = rootPath + "/.git/worktrees";
+
+    try {
+        std::error_code ec;
+        auto it = std::filesystem::recursive_directory_iterator(
+            rootPath,
+            std::filesystem::directory_options::skip_permission_denied,
+            ec);
+        auto end = std::filesystem::recursive_directory_iterator{};
+
+        for (; it != end; it.increment(ec)) {
+            if (ec) { ec.clear(); continue; }
+
+            // Skip .git entirely
+            if (it->path().filename() == ".git") {
+                it.disable_recursion_pending();
+                continue;
+            }
+
+            // Depth limit
+            if (it.depth() > 10) {
+                it.disable_recursion_pending();
+                continue;
+            }
+
+            if (it->is_directory() || it->is_regular_file()) {
+                auto fn = it->path().filename().string();
+                if (fn == ".git") {
+                    std::string absPath = it->path().parent_path().string();
+                    std::string absGit = it->path().string();
+
+                    // Skip the main .git
+                    if (absPath == rootPath) {
+                        it.disable_recursion_pending();
+                        continue;
+                    }
+
+                    // Skip .git/worktrees metadata
+                    if (absPath.find(worktreesMetaDir) == 0) {
+                        continue;
+                    }
+
+                    // Compute relative path
+                    std::string relPath = absPath;
+                    if (relPath.rfind(rootPath, 0) == 0) {
+                        relPath = relPath.substr(rootPath.size());
+                        while (!relPath.empty() && (relPath[0] == '/' || relPath[0] == '\\'))
+                            relPath = relPath.substr(1);
+                    }
+
+                    // Skip submodule paths
+                    if (submodulePaths.count(relPath) > 0) {
+                        it.disable_recursion_pending();
+                        continue;
+                    }
+
+                    GitNestedRepoInfo info;
+                    info.absolutePath = absPath;
+                    info.path = relPath;
+                    info.gitDir = absGit;
+                    info.isWorktree = it->is_regular_file(); // .git as file = worktree link
+                    result.push_back(info);
+
+                    // Don't recurse into nested repos
+                    it.disable_recursion_pending();
+                }
+            }
+        }
+    } catch (...) {}
+
+    return result;
+}
+
+bool GitRepository::CloneNestedRepo(const std::string& srcGitDir,
+                                     const std::string& dstPath)
+{
+    // Determine the actual source repo path
+    std::string srcRepo;
+    if (std::filesystem::is_regular_file(srcGitDir)) {
+        // Worktree link: read gitdir line to get the actual repo
+        std::ifstream gitFile(srcGitDir);
+        if (gitFile.is_open()) {
+            std::string line;
+            std::getline(gitFile, line);
+            gitFile.close();
+            // line format: "gitdir: /path/to/actual/.git/worktrees/xxx"
+            if (line.rfind("gitdir: ", 0) == 0) {
+                srcRepo = line.substr(8);
+            }
+        }
+        if (srcRepo.empty()) return false;
+    } else {
+        // Normal .git directory
+        srcRepo = srcGitDir;
+    }
+
+    // Use git clone --local for efficiency
+    auto r = Git("", {"clone", "--local", "--", srcRepo, dstPath});
     if (!r.ok) { m_lastError = r.err; return false; }
     return true;
 }

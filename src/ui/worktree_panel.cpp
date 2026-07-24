@@ -12,6 +12,8 @@ void WorktreePanel::SetRepository(std::shared_ptr<GitRepository> repo)
     m_worktrees.clear();
     m_branchNames.clear();
     m_branchesDirty = true;
+    m_nestedRepoCount = 0;
+    m_nestedRepoCountLoaded = false;
     Refresh();
 }
 
@@ -19,6 +21,7 @@ void WorktreePanel::Refresh()
 {
     m_loaded = false;
     m_branchesDirty = true;
+    m_nestedRepoCountLoaded = false;
 }
 
 void WorktreePanel::LoadWorktrees()
@@ -63,6 +66,21 @@ void WorktreePanel::StartRefreshBranches()
     m_branchesDirty = false;
 }
 
+void WorktreePanel::StartDetectNestedCount()
+{
+    if (m_detectingNested || m_nestedRepoCountLoaded || !m_repository) return;
+    m_detectingNested = true;
+
+    auto repo = m_repository;
+    m_nestedDetectThread = std::thread([this, repo]() {
+        auto nested = repo->DetectNestedRepos();
+        m_nestedRepoCount = (int)nested.size();
+        m_nestedRepoCountLoaded = true;
+        m_detectingNested = false;
+    });
+    m_nestedDetectThread.detach();
+}
+
 void WorktreePanel::Render()
 {
     if (!m_repository)
@@ -89,28 +107,38 @@ void WorktreePanel::Render()
         }
     }
 
+    // Render post-create progress if active
+    if (m_postTask && m_postTask->running) {
+        RenderPostCreateProgress();
+    }
+
     ImGui::BeginChild("##worktree_content", ImVec2(0, 0), true);
 
     // --- Header ---
     ImGui::TextColored(ImVec4(0.8f, 0.6f, 0.2f, 1.0f), "Git Worktrees");
-    ImGui::SameLine(ImGui::GetWindowWidth() - 160);
+    ImGui::SameLine(ImGui::GetWindowWidth() - 200);
 
     // Toolbar buttons
+    bool creating = m_postTask && m_postTask->running;
+    if (creating) { ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true); ImGui::PushStyleVar(ImGuiStyleVar_Alpha, 0.5f); }
+
     if (ImGui::SmallButton("+ Add")) {
         m_showAddForm = !m_showAddForm;
         StartRefreshBranches();
+        StartDetectNestedCount();  // fire & forget for badge display
         if (m_showAddForm) {
             m_newPathBuf[0] = '\0';
             m_selectedBranch = 0;
             m_detachHead = false;
             m_baseCommitBuf[0] = '\0';
+            m_initSubmodules = true;
+            m_copyNestedRepos = true;
         }
     }
     ImGui::SameLine();
     if (ImGui::SmallButton("Prune")) {
-        if (m_repository->PruneWorktrees()) {
+        if (m_repository->PruneWorktrees())
             Refresh();
-        }
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Remove stale worktree entries");
@@ -118,6 +146,8 @@ void WorktreePanel::Render()
     ImGui::SameLine();
     if (ImGui::SmallButton("Refresh"))
         Refresh();
+
+    if (creating) { ImGui::PopStyleVar(); ImGui::PopItemFlag(); }
 
     ImGui::Separator();
 
@@ -152,7 +182,7 @@ void WorktreePanel::Render()
         ImGui::TableSetupColumn("Branch", ImGuiTableColumnFlags_WidthFixed, 160);
         ImGui::TableSetupColumn("HEAD", ImGuiTableColumnFlags_WidthFixed, 90);
         ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch);
-        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 60);
+        ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 120);
         ImGui::TableHeadersRow();
 
         for (int i = 0; i < (int)m_worktrees.size(); i++)
@@ -200,17 +230,29 @@ void WorktreePanel::Render()
                     if (OnOpenWorktree) OnOpenWorktree(entry.info.path);
                 }
                 ImGui::SameLine();
+                // Init submodules button for existing worktrees
+                if (ImGui::SmallButton("Sub")) {
+                    if (m_repository->InitSubmodules(entry.info.path)) {
+                        if (OnOperationLog)
+                            OnOperationLog("submodule init", true,
+                                "Submodules initialized in " + entry.info.path, "");
+                    } else {
+                        if (OnOperationLog)
+                            OnOperationLog("submodule init", false,
+                                "Failed: " + m_repository->GetLastGitError(), "");
+                    }
+                }
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Init submodules in this worktree");
+                ImGui::SameLine();
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.3f, 0.3f, 1.0f));
                 if (ImGui::SmallButton("X")) {
-                    // Confirm removal
                     bool forceRemove = entry.info.isLocked;
                     if (m_repository->RemoveWorktree(entry.info.path, forceRemove)) {
                         Refresh();
                     } else {
-                        // Try with force
-                        if (m_repository->RemoveWorktree(entry.info.path, true)) {
+                        if (m_repository->RemoveWorktree(entry.info.path, true))
                             Refresh();
-                        }
                     }
                 }
                 ImGui::PopStyleColor();
@@ -229,8 +271,13 @@ void WorktreePanel::Render()
 
 void WorktreePanel::RenderAddForm()
 {
+    // Load nested count in background
+    if (!m_nestedRepoCountLoaded && !m_detectingNested)
+        StartDetectNestedCount();
+
+    float formH = ImGui::GetFrameHeight() * 10 + 40;
     ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.15f, 0.20f, 0.15f, 1.0f));
-    ImGui::BeginChild("##add_worktree_form", ImVec2(0, ImGui::GetFrameHeight() * 7 + 24), true);
+    ImGui::BeginChild("##add_worktree_form", ImVec2(0, formH), true);
 
     ImGui::TextColored(ImVec4(0.5f, 0.9f, 0.5f, 1.0f), "New Worktree");
 
@@ -258,15 +305,40 @@ void WorktreePanel::RenderAddForm()
     }
     ImGui::PopItemWidth();
 
-    // Options
+    // Detach / Base commit
+    ImGui::TextUnformatted("Options:");
+    ImGui::SameLine(80);
     ImGui::Checkbox("Detach HEAD", &m_detachHead);
     if (!m_detachHead) {
         ImGui::SameLine();
-        ImGui::TextUnformatted("|  Base commit (optional):");
+        ImGui::TextUnformatted("|  Base commit:");
         ImGui::SameLine();
         ImGui::PushItemWidth(160);
-        ImGui::InputTextWithHint("##base_commit", "SHA / tag", m_baseCommitBuf, sizeof(m_baseCommitBuf));
+        ImGui::InputTextWithHint("##base_commit", "SHA / tag (optional)", m_baseCommitBuf, sizeof(m_baseCommitBuf));
         ImGui::PopItemWidth();
+    }
+
+    // --- Post-creation options ---
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(0.6f, 0.7f, 0.9f, 1.0f), "After creation:");
+
+    // Submodules checkbox
+    ImGui::Checkbox("Initialize submodules", &m_initSubmodules);
+    ImGui::SameLine();
+    ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f),
+        "(git submodule update --init --recursive)");
+
+    // Nested repos checkbox with count badge
+    ImGui::Checkbox("Copy nested repositories", &m_copyNestedRepos);
+    ImGui::SameLine();
+    if (m_detectingNested) {
+        ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "(scanning...)");
+    } else if (m_nestedRepoCountLoaded) {
+        if (m_nestedRepoCount > 0)
+            ImGui::TextColored(ImVec4(0.4f, 0.8f, 0.4f, 1.0f), "(%d found)", m_nestedRepoCount);
+        else
+            ImGui::TextColored(ImVec4(0.4f, 0.4f, 0.4f, 1.0f), "(none detected)");
     }
 
     // Buttons
@@ -280,9 +352,66 @@ void WorktreePanel::RenderAddForm()
         bool ok = m_repository->AddWorktree(m_newPathBuf, branch, m_detachHead, baseCommit);
         if (ok) {
             m_showAddForm = false;
+
+            // Check if post-creation tasks are needed
+            bool needSubmodules = m_initSubmodules;
+            bool needNested = m_copyNestedRepos && m_nestedRepoCount > 0;
+
+            if (needSubmodules || needNested) {
+                // Launch async post-create task
+                m_postTask = std::make_unique<PostCreateTask>();
+                m_postTask->worktreePath = m_newPathBuf;
+                m_postTask->initSubmodules = needSubmodules;
+                m_postTask->copyNested = needNested;
+                m_postTask->totalNested = m_nestedRepoCount;
+                m_postTask->running = true;
+
+                auto repo = m_repository;
+                std::string wtPath = m_newPathBuf;
+                auto* task = m_postTask.get();
+
+                task->worker = std::thread([repo, wtPath, task]() {
+                    // Step 1: Init submodules
+                    if (task->initSubmodules) {
+                        task->status = "Initializing submodules...";
+                        if (repo->InitSubmodules(wtPath)) {
+                            task->submoduleDone = true;
+                        } else {
+                            task->submoduleError = repo->GetLastGitError();
+                            task->submoduleDone = true;
+                        }
+                    } else {
+                        task->submoduleDone = true;
+                    }
+
+                    // Step 2: Copy nested repos
+                    if (task->copyNested) {
+                        auto nested = repo->DetectNestedRepos();
+                        task->totalNested = (int)nested.size();
+                        for (int i = 0; i < task->totalNested; i++) {
+                            auto& nr = nested[i];
+                            task->status = "Cloning nested repo " + std::to_string(i + 1) +
+                                           "/" + std::to_string(task->totalNested) +
+                                           ": " + nr.path;
+                            std::string dstPath = wtPath + "/" + nr.path;
+                            // Create parent directories if needed
+                            std::filesystem::create_directories(
+                                std::filesystem::path(dstPath).parent_path());
+                            if (!repo->CloneNestedRepo(nr.gitDir, dstPath)) {
+                                task->nestedErrors.push_back(nr.path + ": " + repo->GetLastGitError());
+                            }
+                            task->nestedDone = i + 1;
+                        }
+                    }
+
+                    task->status = "Done";
+                    task->running = false;
+                });
+                task->worker.detach();
+            }
+
             Refresh();
         }
-        // On failure, keep form open so user can adjust
     }
 
     if (!canCreate) { ImGui::PopStyleVar(); ImGui::PopItemFlag(); }
@@ -290,6 +419,65 @@ void WorktreePanel::RenderAddForm()
     ImGui::SameLine();
     if (ImGui::Button("Cancel", ImVec2(80, 0)))
         m_showAddForm = false;
+
+    ImGui::EndChild();
+    ImGui::PopStyleColor();
+    ImGui::Separator();
+}
+
+void WorktreePanel::RenderPostCreateProgress()
+{
+    if (!m_postTask) return;
+
+    auto& t = *m_postTask;
+
+    // Auto-join and cleanup when done
+    if (!t.running) {
+        if (t.worker.joinable()) t.worker.join();
+
+        // Build summary for operation log
+        std::string summary;
+        if (t.submoduleDone && t.submoduleError.empty())
+            summary += "Submodules: OK\n";
+        else if (!t.submoduleError.empty())
+            summary += "Submodules: FAILED - " + t.submoduleError + "\n";
+        if (t.copyNested) {
+            int ok = t.nestedDone - (int)t.nestedErrors.size();
+            summary += "Nested repos: " + std::to_string(ok) + "/" +
+                       std::to_string(t.totalNested) + " cloned";
+            for (auto& e : t.nestedErrors)
+                summary += "\n  Error: " + e;
+        }
+
+        if (OnOperationLog)
+            OnOperationLog("worktree post-init", t.nestedErrors.empty() && t.submoduleError.empty(),
+                summary, "Worktree: " + t.worktreePath);
+
+        m_postTask.reset();
+        Refresh();
+        return;
+    }
+
+    // Progress bar rendering
+    ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.15f, 0.15f, 0.25f, 1.0f));
+    ImGui::BeginChild("##post_create_progress", ImVec2(0, ImGui::GetFrameHeight() * 3 + 16), true);
+
+    ImGui::TextColored(ImVec4(0.5f, 0.7f, 1.0f, 1.0f), "%s", t.status.c_str());
+
+    int totalSteps = (t.initSubmodules ? 1 : 0) + (t.copyNested ? t.totalNested : 0);
+    int doneSteps = 0;
+    if (t.submoduleDone) doneSteps++;
+    doneSteps += t.nestedDone;
+
+    if (totalSteps > 0) {
+        float frac = (float)doneSteps / (float)totalSteps;
+        ImGui::ProgressBar(frac, ImVec2(-1, 0),
+            doneSteps > 0 ? (std::to_string(doneSteps) + "/" + std::to_string(totalSteps)).c_str() : "");
+    } else {
+        LoadingSpinner(8.0f, 2.0f);
+        ImGui::SameLine();
+        ImGui::TextUnformatted("Working...");
+    }
 
     ImGui::EndChild();
     ImGui::PopStyleColor();
