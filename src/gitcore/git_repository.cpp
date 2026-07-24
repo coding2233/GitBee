@@ -468,6 +468,99 @@ std::shared_ptr<GitRepository> GitRepository::Open(const std::string& path)
     return std::make_shared<GitRepository>(resolved);
 }
 
+// --- Worktree management ---
+
+std::vector<GitWorktreeInfo> GitRepository::GetWorktrees() const
+{
+    std::vector<GitWorktreeInfo> result;
+    auto r = Git(m_path, {"worktree", "list", "--porcelain"});
+    if (!r.ok) return result;
+
+    GitWorktreeInfo current;
+    std::istringstream ss(r.out);
+    std::string line;
+
+    auto flush = [&]() {
+        if (!current.path.empty()) {
+            if (current.sha.empty()) {
+                // Try to get HEAD for this worktree
+                auto hr = Git(current.path, {"rev-parse", "HEAD"});
+                if (hr.ok) current.sha = hr.out;
+            }
+            result.push_back(current);
+            current = GitWorktreeInfo{};
+        }
+    };
+
+    while (std::getline(ss, line)) {
+        if (line.empty()) {
+            flush();
+            continue;
+        }
+        if (line.rfind("worktree ", 0) == 0) {
+            current.path = line.substr(9);
+        } else if (line == "bare") {
+            current.isBare = true;
+        } else if (line == "detached") {
+            current.isDetached = true;
+        } else if (line.rfind("branch ", 0) == 0) {
+            current.branch = line.substr(14); // strip "refs/heads/"
+        } else if (line.rfind("HEAD ", 0) == 0) {
+            current.sha = line.substr(5);
+        } else if (line == "locked") {
+            current.isLocked = true;
+        } else if (line.rfind("lockreason ", 0) == 0) {
+            current.lockReason = line.substr(11);
+        }
+    }
+    flush();
+
+    // Mark main worktree
+    std::string rootPath = GetRootPath();
+    for (auto& wt : result) {
+        if (wt.path == rootPath)
+            wt.isMain = true;
+    }
+
+    return result;
+}
+
+bool GitRepository::AddWorktree(const std::string& path, const std::string& branch,
+                                 bool detach, const std::string& baseCommit)
+{
+    std::vector<std::string> args = {"worktree", "add"};
+    if (detach)
+        args.push_back("--detach");
+    args.push_back(path);
+    if (!branch.empty()) {
+        if (!baseCommit.empty())
+            args.push_back(baseCommit);
+        args.push_back(branch);
+    } else if (!baseCommit.empty()) {
+        args.push_back(baseCommit);
+    }
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
+}
+
+bool GitRepository::RemoveWorktree(const std::string& path, bool force)
+{
+    std::vector<std::string> args = {"worktree", "remove"};
+    if (force) args.push_back("--force");
+    args.push_back(path);
+    auto r = Git(m_path, args);
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
+}
+
+bool GitRepository::PruneWorktrees()
+{
+    auto r = Git(m_path, {"worktree", "prune"});
+    if (!r.ok) { m_lastError = r.err; return false; }
+    return true;
+}
+
 GitStatus GitRepository::GetStatus() const
 {
     GitStatus status;

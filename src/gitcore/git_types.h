@@ -91,3 +91,14 @@ struct GitSubmoduleInfo {
     std::string sha;
     std::string url;
 };
+
+struct GitWorktreeInfo {
+    std::string path;       // absolute path to worktree
+    std::string branch;     // checked-out branch (or "detached")
+    std::string sha;        // HEAD commit sha
+    bool isBare = false;
+    bool isDetached = false;
+    bool isMain = false;    // primary worktree (bare repo's main checkout)
+    bool isLocked = false;
+    std::string lockReason;
+};

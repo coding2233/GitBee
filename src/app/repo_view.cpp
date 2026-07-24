@@ -1,5 +1,6 @@
 #include "repo_view.h"
 #include "../ui/workspace_panel.h"
+#include "../ui/file_tree_panel.h"
 #include "../ui/worktree_panel.h"
 #include "../ui/log_panel.h"
 #include "../ui/config_panel.h"
@@ -14,14 +15,20 @@ RepoView::RepoView(std::shared_ptr<GitRepository> repo)
 {
     m_repoPath = m_repository->GetRootPath();
     m_workspacePanel = std::make_unique<WorkspacePanel>();
-    m_worktreePanel = std::make_unique<WorkTreePanel>();
+    m_fileTreePanel = std::make_unique<FileTreePanel>();
+    m_worktreePanel = std::make_unique<WorktreePanel>();
     m_logPanel = std::make_unique<LogPanel>();
     m_configPanel = std::make_unique<ConfigPanel>();
 
     m_workspacePanel->SetRepository(m_repository);
+    m_fileTreePanel->SetRepository(m_repository);
     m_worktreePanel->SetRepository(m_repository);
     m_logPanel->SetRepository(m_repository);
     m_configPanel->SetRepository(m_repository);
+
+    m_worktreePanel->OnOpenWorktree = [this](const std::string& path) {
+        if (OnOpenWorktree) OnOpenWorktree(path);
+    };
 }
 
 RepoView::~RepoView()
@@ -216,6 +223,7 @@ void RepoView::RenderSidebar()
 
     RenderSidebarSection("Workspace", Section::Workspace);
     RenderSidebarSection("Files", Section::Files);
+    RenderSidebarSection("Worktrees", Section::Worktrees);
     RenderSidebarSection("History", Section::History);
     RenderSidebarSection("Config", Section::Config);
 
@@ -336,6 +344,9 @@ void RepoView::RenderContent()
             if (m_workspacePanel) m_workspacePanel->Render();
             break;
         case Section::Files:
+            if (m_fileTreePanel) m_fileTreePanel->Render();
+            break;
+        case Section::Worktrees:
             if (m_worktreePanel) m_worktreePanel->Render();
             break;
         case Section::History:
@@ -443,6 +454,7 @@ void RepoView::RefreshBranchData()
 void RepoView::RefreshAll()
 {
     if (m_workspacePanel) m_workspacePanel->Refresh();
+    if (m_fileTreePanel) m_fileTreePanel->Refresh();
     if (m_worktreePanel) m_worktreePanel->Refresh();
     if (m_logPanel) m_logPanel->Refresh();
     if (m_configPanel) m_configPanel->Refresh();

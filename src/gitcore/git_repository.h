@@ -55,6 +55,13 @@ public:
     bool Push();
     bool Fetch();
 
+    // Worktree management
+    std::vector<GitWorktreeInfo> GetWorktrees() const;
+    bool AddWorktree(const std::string& path, const std::string& branch,
+                     bool detach = false, const std::string& baseCommit = {});
+    bool RemoveWorktree(const std::string& path, bool force = false);
+    bool PruneWorktrees();
+
     std::string GetLastGitError() const { return m_lastError; }
 
 private:

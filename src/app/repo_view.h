@@ -12,7 +12,8 @@
 
 class GitRepository;
 class WorkspacePanel;
-class WorkTreePanel;
+class FileTreePanel;
+class WorktreePanel;
 class LogPanel;
 class ConfigPanel;
 
@@ -30,11 +31,13 @@ public:
     std::function<void(const std::string&)> OnStatusMessage;
     std::function<void(const std::string& operation, bool success,
                        const std::string& summary, const std::string& detail)> OnOperationLog;
+    std::function<void(const std::string& path)> OnOpenWorktree;
 
 private:
     enum class Section {
         Workspace,
         Files,
+        Worktrees,
         History,
         Config,
     };
@@ -89,7 +92,8 @@ private:
     std::string m_repoPath;
 
     std::unique_ptr<WorkspacePanel> m_workspacePanel;
-    std::unique_ptr<WorkTreePanel> m_worktreePanel;
+    std::unique_ptr<FileTreePanel> m_fileTreePanel;
+    std::unique_ptr<WorktreePanel> m_worktreePanel;
     std::unique_ptr<LogPanel> m_logPanel;
     std::unique_ptr<ConfigPanel> m_configPanel;
 

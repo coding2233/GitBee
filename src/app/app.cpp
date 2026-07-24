@@ -148,6 +148,9 @@ void GitBeeApp::ProcessPendingRepos()
                 const std::string& summary, const std::string& detail) {
                 AddOperationLog(displayName, op, ok, summary, detail);
             };
+            view->OnOpenWorktree = [this](const std::string& path) {
+                StartOpenRepository(path);
+            };
             m_repoTabs.push_back({view, pending->displayName});
             m_activeTabIndex = (int)m_repoTabs.size();
             m_statusMessage = "Opened: " + repo->GetRootPath();
