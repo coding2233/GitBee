@@ -1197,17 +1197,22 @@ void GitBeeApp::StartDownloadUpdate()
 #endif
 
         std::string dest = std::string(tempPath) + m_updateAssetName;
+
+        LOG_INFO("Downloading update: %s -> %s", m_updateDownloadUrl.c_str(), dest.c_str());
         bool ok = updater::DownloadInstaller(m_updateDownloadUrl, dest);
 
         if (ok)
         {
+            LOG_INFO("Download succeeded: %s", dest.c_str());
             m_updateInstallerPath = dest;
             m_updateState = UpdateState::Downloaded;
         }
         else
         {
+            std::string errMsg = "Download failed. Check that curl or wget is installed and you have network access.";
+            LOG_ERROR("Update download failed: %s", errMsg.c_str());
             m_updateState = UpdateState::Error;
-            m_updateError = "Download failed";
+            m_updateError = errMsg;
         }
     });
 }

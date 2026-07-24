@@ -154,13 +154,29 @@ Info CheckForUpdate()
     return info;
 }
 
+static std::wstring Utf8ToWideStr(const std::string& s)
+{
+    int len = MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, NULL, 0);
+    if (len <= 0) return {};
+    std::wstring ws(len - 1, 0);
+    MultiByteToWideChar(CP_UTF8, 0, s.c_str(), -1, &ws[0], len);
+    return ws;
+}
+
 bool DownloadInstaller(const std::string& url, const std::string& destPath)
 {
-    std::wstring wUrl(url.begin(), url.end());
-    std::wstring wDest(destPath.begin(), destPath.end());
+    std::wstring wUrl = Utf8ToWideStr(url);
+    std::wstring wDest = Utf8ToWideStr(destPath);
+    if (wUrl.empty() || wDest.empty()) return false;
 
+    LOG_INFO("DownloadInstaller: %s -> %s", url.c_str(), destPath.c_str());
     HRESULT hr = URLDownloadToFileW(NULL, wUrl.c_str(), wDest.c_str(), 0, NULL);
-    return SUCCEEDED(hr);
+    bool ok = SUCCEEDED(hr);
+    if (!ok)
+        LOG_ERROR("DownloadInstaller failed: HRESULT=0x%08lx", (unsigned long)hr);
+    else
+        LOG_INFO("DownloadInstaller succeeded");
+    return ok;
 }
 
 bool RunInstallerSilent(const std::string& installerPath)
@@ -213,26 +229,92 @@ bool RunInstallerSilent(const std::string& installerPath)
 
 #else
 
-// Stub for non-Windows platforms
+// Non-Windows impl using curl/wget
 Info CheckForUpdate()
 {
     Info info;
     info.currentVersion = GetCurrentVersion();
-    info.error = "Update check is only supported on Windows";
-    LOG_WARN("UpdateCheck: %s", info.error.c_str());
+
+    // Try curl first, then wget
+    auto tryDownload = [](const std::string& url) -> std::string {
+        std::string cmd;
+        // curl: -sS = silent but show errors, -L follow redirects
+        cmd = "curl -sS -L \"" + url + "\" 2>/dev/null";
+
+        FILE* pipe = popen(cmd.c_str(), "r");
+        if (!pipe) {
+            // try wget
+            cmd = "wget -q -O - \"" + url + "\" 2>/dev/null";
+            pipe = popen(cmd.c_str(), "r");
+            if (!pipe) return {};
+        }
+
+        std::string result;
+        char buf[4096];
+        size_t n;
+        while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0)
+            result.append(buf, n);
+        pclose(pipe);
+
+        while (!result.empty() && (result.back() == '\n' || result.back() == '\r' || result.back() == ' '))
+            result.pop_back();
+        return result;
+    };
+
+    std::string versionUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/latest_version.txt";
+    std::string response = tryDownload(versionUrl);
+
+    if (response.empty())
+    {
+        info.error = "Failed to check for updates (curl/wget not found or network error)";
+        LOG_WARN("UpdateCheck: %s", info.error.c_str());
+        return info;
+    }
+
+    info.latestVersion = response;
+    info.assetName = "GitBee-installer-" + response + ".exe";
+    info.downloadUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/"
+                       + info.assetName;
+    info.available = (info.latestVersion != info.currentVersion
+        && !info.downloadUrl.empty());
+
+    LOG_INFO("UpdateCheck: current=%s latest=%s available=%d",
+             info.currentVersion.c_str(), info.latestVersion.c_str(), info.available);
     return info;
 }
 
 bool DownloadInstaller(const std::string& url, const std::string& destPath)
 {
-    (void)url;
-    (void)destPath;
+    LOG_INFO("DownloadInstaller: %s -> %s", url.c_str(), destPath.c_str());
+
+    // Try curl -Lo, then wget -O
+    std::string cmd;
+    cmd = "curl -sS -L -o \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
+
+    int ret = system(cmd.c_str());
+    if (ret == 0) {
+        LOG_INFO("DownloadInstaller: curl succeeded");
+        return true;
+    }
+    LOG_WARN("DownloadInstaller: curl failed (ret=%d), trying wget...", ret);
+
+    cmd = "wget -q -O \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
+    ret = system(cmd.c_str());
+    if (ret == 0) {
+        LOG_INFO("DownloadInstaller: wget succeeded");
+        return true;
+    }
+
+    LOG_ERROR("DownloadInstaller: both curl (ret=%d) and wget (ret=%d) failed",
+              ret, ret);
     return false;
 }
 
 bool RunInstallerSilent(const std::string& installerPath)
 {
     (void)installerPath;
+    // Not supported on non-Windows; user can run the installer manually
+    LOG_WARN("RunInstallerSilent: not supported on this platform");
     return false;
 }
 
