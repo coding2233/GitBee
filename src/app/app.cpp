@@ -278,6 +278,13 @@ void GitBeeApp::RenderMenuBar()
             if (ImGui::MenuItem("Command Output", "Ctrl+`", nullptr, !m_showOutputWindow))
                 ShowOutputWindow();
             ImGui::Separator();
+            if (ImGui::MenuItem("Terminal", "Ctrl+T", nullptr, true))
+            {
+                m_terminalTabOpen = true;
+                if (m_terminalManager.Count() == 0)
+                    m_terminalManager.OpenLocalTerminal();
+            }
+            ImGui::Separator();
             ImGui::MenuItem("ImGui Demo", nullptr, &m_showDemoWindow);
             ImGui::EndMenu();
         }
@@ -980,6 +987,18 @@ void GitBeeApp::OnRender()
                 ImGui::EndTabItem();
             }
             if (!configOpen) m_globalConfigTabOpen = false;
+        }
+
+        // Terminal tab
+        if (m_terminalTabOpen)
+        {
+            bool termOpen = true;
+            if (ImGui::BeginTabItem("Terminal", &termOpen))
+            {
+                m_terminalManager.Render();
+                ImGui::EndTabItem();
+            }
+            if (!termOpen) m_terminalTabOpen = false;
         }
 
         // Repo tabs

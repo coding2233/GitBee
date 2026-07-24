@@ -41,8 +41,21 @@ target("GitBee")
         add_deps("volt-ui")
         add_packages("libsdl3", "imgui")
         add_includedirs("src")
+        add_includedirs("deps/libvterm/include")
+        add_includedirs("deps/libvterm/src")
         add_files("src/app/*.cpp")
         add_files("src/ui/*.cpp")
+
+        -- Terminal subsystem (explicit file list for control)
+        add_files("src/terminal/TerminalEmulator.cpp")
+        add_files("src/terminal/TerminalTab.cpp")
+        add_files("src/terminal/TerminalManager.cpp")
+        add_files("src/terminal/LocalPty.cpp")
+        add_files("src/terminal/SshPty.cpp")
+        add_files("src/terminal/KeyMapping.cpp")
+        add_files("src/terminal/ConnectionStore.cpp")
+        -- libvterm (C library, compiled as C)
+        add_files("deps/libvterm/src/*.c")
     end
 
     if is_mode("debug") then

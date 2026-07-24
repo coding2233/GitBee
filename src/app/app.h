@@ -10,6 +10,7 @@
 #include "../dbg_log.h"
 #include <volt-ui/VoltApp.h>
 #include "../ui/FileDialog.h"
+#include "../terminal/TerminalManager.h"
 
 class RepoView;
 class HomeView;
@@ -62,6 +63,10 @@ private:
     std::unique_ptr<HomeView> m_homeView;
     FileDialog m_fileDialog;
     DialogMode m_dialogMode = DialogMode::None;
+
+    // Terminal tab
+    TerminalManager m_terminalManager;
+    bool m_terminalTabOpen = true;
 
     std::string m_statusMessage = "Ready";
     bool m_showDemoWindow = false;

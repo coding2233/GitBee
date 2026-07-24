@@ -252,8 +252,12 @@ std::string GitProcess::GetUserScriptsDir()
 {
     std::string dir;
 #ifdef _WIN32
-    const char* appData = std::getenv("APPDATA");
-    dir = appData ? (std::string(appData) + "/GitBee/scripts") : "";
+    char* appData = nullptr;
+    size_t appDataLen = 0;
+    if (_dupenv_s(&appData, &appDataLen, "APPDATA") == 0 && appData) {
+        dir = std::string(appData) + "/GitBee/scripts";
+        free(appData);
+    }
 #else
     const char* xdgHome = std::getenv("XDG_CONFIG_HOME");
     if (xdgHome)
@@ -321,10 +325,21 @@ GitResult GitProcess::ExecuteScript(const std::string& scriptPath,
 
     LOG_INFO("ExecuteScript: %s", cmd.c_str());
 
+#ifdef _WIN32
+    FILE* pipe = _popen(cmd.c_str(), "r");
+#else
     FILE* pipe = popen(cmd.c_str(), "r");
+#endif
     if (!pipe) {
+#ifdef _WIN32
+        char errBuf[256] = {};
+        strerror_s(errBuf, sizeof(errBuf), errno);
+        result.err = std::string("Failed to execute script: ") + errBuf;
+        LOG_ERROR("ExecuteScript: popen failed: %s", errBuf);
+#else
         result.err = std::string("Failed to execute script: ") + strerror(errno);
         LOG_ERROR("ExecuteScript: popen failed: %s", strerror(errno));
+#endif
         return result;
     }
 
@@ -334,7 +349,11 @@ GitResult GitProcess::ExecuteScript(const std::string& scriptPath,
     while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0)
         output.append(buf, n);
 
+#ifdef _WIN32
+    int status = _pclose(pipe);
+#else
     int status = pclose(pipe);
+#endif
     result.ok = (status == 0);
     result.out = std::move(output);
 
