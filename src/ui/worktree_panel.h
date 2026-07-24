@@ -40,30 +40,66 @@ private:
     int m_selectedBranch = 0;
     bool m_detachHead = false;
     char m_baseCommitBuf[64]{};
-    bool m_initSubmodules = true;   // default on
-    bool m_copyNestedRepos = true;  // default on
+    bool m_initSubmodules = true;
+    bool m_copyNestedRepos = true;
 
     // Nested repo count (detected from current worktree)
     int m_nestedRepoCount = 0;
     bool m_nestedRepoCountLoaded = false;
 
-    // Post-create async tasks
-    struct PostCreateTask {
+    // ------------------------------------------------------------------
+    // Unified async operation state
+    // ------------------------------------------------------------------
+    enum class OpType {
+        None,
+        AddWorktree,
+        RemoveWorktree,
+        Prune,
+        InitSubmodules,
+        PostCreate    // submodule init + nested clone after add
+    };
+
+    struct Operation {
+        OpType type = OpType::None;
         std::atomic<bool> running{false};
+        bool result = false;
+        std::string error;
+        std::string statusText;   // current step description, updated by worker
+        std::thread worker;
+
+        // For Add
         std::string worktreePath;
-        bool initSubmodules = false;
-        bool copyNested = false;
+        std::string branch;
+        std::string baseCommit;
+        bool detach = false;
+
+        // For Remove / InitSubmodules
+        std::string targetPath;
+
+        // For PostCreate
+        bool doInitSubmodules = false;
+        bool doCopyNested = false;
         int totalNested = 0;
         int nestedDone = 0;
-        std::string status;
         bool submoduleDone = false;
         std::string submoduleError;
         std::vector<std::string> nestedErrors;
-        std::thread worker;
     };
-    std::unique_ptr<PostCreateTask> m_postTask;
 
-    // Async
+    std::unique_ptr<Operation> m_op;
+
+    void OpStartAddWorktree(const std::string& path, const std::string& branch,
+                            bool detach, const std::string& baseCommit);
+    void OpStartRemoveWorktree(const std::string& path);
+    void OpStartPrune();
+    void OpStartInitSubmodules(const std::string& path);
+    void OpStartPostCreate(const std::string& path, bool doSub, bool doNested, int nestedCount);
+    void OpProcessResult();
+    void OpRenderProgress();
+
+    // ------------------------------------------------------------------
+    // Async data loading
+    // ------------------------------------------------------------------
     std::atomic<bool> m_loading{false};
     std::thread m_loadThread;
     std::mutex m_mutex;
@@ -72,7 +108,6 @@ private:
     void LoadWorktrees();
     void RenderWorktreeRow(const WorktreeEntry& entry);
     void RenderAddForm();
-    void RenderPostCreateProgress();
 
     // Branch options for the add form
     void StartRefreshBranches();
@@ -83,4 +118,6 @@ private:
     void StartDetectNestedCount();
     std::atomic<bool> m_detectingNested{false};
     std::thread m_nestedDetectThread;
+
+    bool IsAnyOpRunning() const;
 };
