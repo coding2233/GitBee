@@ -23,6 +23,10 @@ struct PtyConfig {
     std::string privateKeyPath;     // for publickey auth
     std::string passphrase;         // for encrypted key
     bool useAgent = false;
+    std::string startupCommand;     // optional command to run after connect
+    std::string jumpHost;           // optional SSH proxy/jump host
+    bool keepAlive = true;
+    int keepAliveInterval = 60;
 };
 
 /// Abstract PTY interface.

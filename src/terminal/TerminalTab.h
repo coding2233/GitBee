@@ -24,6 +24,9 @@ public:
     /// Close the terminal session.
     void Close();
 
+    /// Attempt to reconnect a disconnected terminal.
+    void Reconnect();
+
     /// Render the content of this tab (fills the available area).
     void Render();
 
@@ -49,11 +52,15 @@ public:
     /// Callbacks
     std::function<void(const std::string& title)> OnTitleChange;
 
+    /// Check if reconnect is possible.
+    bool CanReconnect() const { return m_reconnectPending; }
+
 private:
     Type m_type;
     std::string m_title;
     std::string m_workingDir;
     bool m_open = false;
+    bool m_reconnectPending = false;
 
     std::unique_ptr<PtyAdapter> m_pty;
     std::unique_ptr<TerminalEmulator> m_terminal;
@@ -66,11 +73,19 @@ private:
     bool m_mouseDragging = false;
     bool m_mouseSelecting = false;
 
+    // Search overlay state
+    bool m_searchActive = false;
+    char m_searchText[256] = {};
+    int m_searchCurrentMatch = 0;
+    int m_searchTotalMatches = 0;
+    bool m_searchCaseSensitive = false;
+
     void RenderTerminal();
     void ProcessPtyOutput();
     void ProcessKeyboardInput();
     void ProcessMouseInput();
     void RenderStatusBar();
+    void RenderSearchOverlay();
 
     /// Map screen pixel position to terminal grid cell (row, col).
     /// Returns false if position is outside the terminal area.

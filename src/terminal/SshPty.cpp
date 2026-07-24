@@ -263,9 +263,156 @@ void SshPty::PumpOutput() {
 
 #else // _WIN32
 bool SshPty::OpenPty(const std::string& sshCommand, int cols, int rows) {
-    LOG_WARN("SshPty not yet implemented on Windows");
-    return false;
+    HANDLE hPipeInRd = NULL, hPipeInWr = NULL;
+    HANDLE hPipeOutRd = NULL, hPipeOutWr = NULL;
+    HANDLE hPipeErrRd = NULL, hPipeErrWr = NULL;
+    HPCON hpc;
+    PROCESS_INFORMATION pi = {0};
+    STARTUPINFOEXW siEx = {0};
+
+    // Create pipes
+    if (!CreatePipe(&hPipeInRd, &hPipeInWr, NULL, 0)) {
+        LOG_ERROR("SshPty ConPTY: CreatePipe failed for stdin (gle=%lu)", GetLastError());
+        return false;
+    }
+    if (!CreatePipe(&hPipeOutRd, &hPipeOutWr, NULL, 0)) {
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        return false;
+    }
+    if (!CreatePipe(&hPipeErrRd, &hPipeErrWr, NULL, 0)) {
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        return false;
+    }
+
+    COORD size = {(SHORT)cols, (SHORT)rows};
+    HRESULT hr = CreatePseudoConsole(size, hPipeInRd, hPipeOutWr, 0, &hpc);
+    if (FAILED(hr)) {
+        LOG_ERROR("SshPty ConPTY: CreatePseudoConsole failed (hr=0x%lx)", hr);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+
+    // Prepare STARTUPINFOEX
+    siEx.StartupInfo.cb = sizeof(STARTUPINFOEXW);
+    siEx.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    siEx.StartupInfo.hStdInput = hPipeErrRd;
+    siEx.StartupInfo.hStdOutput = hPipeErrWr;
+    siEx.StartupInfo.hStdError = hPipeErrWr;
+
+    SIZE_T attrListSize = 0;
+    InitializeProcThreadAttributeList(NULL, 1, 0, &attrListSize);
+    siEx.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
+        GetProcessHeap(), 0, attrListSize);
+    if (!siEx.lpAttributeList) {
+        ClosePseudoConsole(hpc);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+    InitializeProcThreadAttributeList(siEx.lpAttributeList, 1, 0, &attrListSize);
+    UpdateProcThreadAttribute(siEx.lpAttributeList, 0,
+        PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, hpc,
+        sizeof(HPCON), NULL, NULL);
+
+    // Convert SSH command to wide string and wrap in cmd /c
+    // The sshCommand is built by PtyConfig, we just pass it to shell
+    std::string fullCmd = "cmd.exe /c \"" + sshCommand + "\"";
+    int wlen = MultiByteToWideChar(CP_UTF8, 0, fullCmd.c_str(), -1, NULL, 0);
+    std::wstring wCmd;
+    if (wlen > 0) {
+        wCmd.resize(wlen - 1);
+        MultiByteToWideChar(CP_UTF8, 0, fullCmd.c_str(), -1, &wCmd[0], wlen);
+    } else {
+        wCmd = L"cmd.exe";
+    }
+
+    SetEnvironmentVariableW(L"TERM", L"xterm-256color");
+    SetEnvironmentVariableW(L"COLORTERM", L"truecolor");
+
+    BOOL created = CreateProcessW(
+        NULL, &wCmd[0], NULL, NULL, FALSE,
+        EXTENDED_STARTUPINFO_PRESENT,
+        NULL, NULL, &siEx.StartupInfo, &pi);
+
+    if (!created) {
+        LOG_ERROR("SshPty ConPTY: CreateProcessW failed (gle=%lu)", GetLastError());
+        HeapFree(GetProcessHeap(), 0, siEx.lpAttributeList);
+        ClosePseudoConsole(hpc);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+
+    HeapFree(GetProcessHeap(), 0, siEx.lpAttributeList);
+
+    // Store handles
+    m_masterFd = (int)hPipeOutRd;
+    m_hConPtyInput = hPipeInWr;
+    m_hConPty = hpc;
+    m_hProcess = pi.hProcess;
+
+    CloseHandle(hPipeInRd);
+    CloseHandle(hPipeOutWr);
+    CloseHandle(hPipeErrRd);
+    CloseHandle(hPipeErrWr);
+    CloseHandle(pi.hThread);
+
+    m_running = true;
+    m_pumpThread = std::thread(&SshPty::PumpOutput, this);
+
+    LOG_INFO("SshPty opened via ConPTY: %s", sshCommand.c_str());
+    return true;
 }
-void SshPty::ClosePty() { m_masterFd = -1; }
-void SshPty::PumpOutput() {}
+
+void SshPty::ClosePty() {
+    if (m_pid > 0) {
+        TerminateProcess(m_hProcess, 0);
+        WaitForSingleObject(m_hProcess, 1000);
+    }
+    if (m_hProcess) { CloseHandle(m_hProcess); m_hProcess = NULL; }
+    if (m_hConPty) { ClosePseudoConsole(m_hConPty); m_hConPty = NULL; }
+    if (m_masterFd >= 0) { CloseHandle((HANDLE)m_masterFd); m_masterFd = -1; }
+    if (m_hConPtyInput) { CloseHandle(m_hConPtyInput); m_hConPtyInput = NULL; }
+}
+
+void SshPty::PumpOutput() {
+    LOG_DEBUG("SshPty ConPTY pump thread started");
+    HANDLE hOut = (HANDLE)m_masterFd;
+    char tempBuf[65536];
+
+    while (m_running) {
+        DWORD n = 0;
+        BOOL success = ReadFile(hOut, tempBuf, sizeof(tempBuf), &n, NULL);
+        if (!m_running) break;
+        if (!success) {
+            DWORD err = GetLastError();
+            if (err == ERROR_BROKEN_PIPE) break;
+            if (err == ERROR_OPERATION_ABORTED) continue;
+            break;
+        }
+        if (n > 0) {
+            std::lock_guard<std::mutex> lock(m_ringMutex);
+            size_t available;
+            if (m_ringHead >= m_ringTail)
+                available = (RING_SIZE - m_ringHead) + m_ringTail - 1;
+            else
+                available = m_ringTail - m_ringHead - 1;
+            size_t toWrite = std::min((size_t)n, available);
+            size_t firstChunk = std::min(toWrite, RING_SIZE - m_ringHead);
+            memcpy(m_ringBuf + m_ringHead, tempBuf, firstChunk);
+            if (toWrite > firstChunk)
+                memcpy(m_ringBuf, tempBuf + firstChunk, toWrite - firstChunk);
+            m_ringHead = (m_ringHead + toWrite) % RING_SIZE;
+            m_ringCv.notify_one();
+        }
+    }
+    LOG_DEBUG("SshPty ConPTY pump thread exiting");
+    m_running = false;
+    if (OnClosed) OnClosed();
+}
 #endif

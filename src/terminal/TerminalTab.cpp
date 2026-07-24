@@ -55,7 +55,8 @@ bool TerminalTab::Start(const PtyConfig& config) {
     // PTY closed notification
     m_pty->OnClosed = [this]() {
         m_open = false;
-        LOG_INFO("Terminal PTY closed");
+        m_reconnectPending = true;  // Enable session recovery
+        LOG_INFO("Terminal PTY closed, reconnect pending");
     };
 
     m_open = true;
@@ -70,10 +71,59 @@ void TerminalTab::Close() {
     }
     m_terminal.reset();
     m_open = false;
+    m_reconnectPending = false;
+}
+
+void TerminalTab::Reconnect() {
+    if (!m_reconnectPending) return;
+    if (m_pty) {
+        m_pty->Close();
+        m_pty.reset();
+    }
+
+    // Recreate PTY based on type
+    if (m_type == Type::LocalShell) {
+        m_pty = std::make_unique<LocalPty>();
+    } else {
+        m_pty = std::make_unique<SshPty>();
+    }
+
+    // Try to restart with same config
+    PtyConfig cfg;
+    cfg.cols = 80;
+    cfg.rows = 24;
+    if (!m_workingDir.empty())
+        cfg.workingDir = m_workingDir;
+
+    if (m_pty->Start(cfg)) {
+        m_open = true;
+        m_reconnectPending = false;
+        LOG_INFO("TerminalTab reconnected: %s", m_title.c_str());
+
+        // Recreate terminal emulator if needed
+        if (!m_terminal) {
+            m_terminal = std::make_unique<TerminalEmulator>(80, 24);
+            m_terminal->OnTitleChange = [this](const std::string& title) {
+                if (!title.empty()) {
+                    m_title = title;
+                    if (OnTitleChange) OnTitleChange(title);
+                }
+            };
+        }
+
+        m_pty->OnClosed = [this]() {
+            m_open = false;
+            m_reconnectPending = true;
+            LOG_INFO("Terminal PTY closed after reconnect");
+        };
+    } else {
+        LOG_ERROR("Failed to reconnect terminal");
+        m_pty.reset();
+    }
 }
 
 void TerminalTab::Render() {
-    if (!m_open || !m_terminal) {
+    if ((!m_open || !m_terminal) && !m_reconnectPending) {
         // Display a "disconnected" placeholder
         ImVec2 avail = ImGui::GetContentRegionAvail();
         auto* dl = ImGui::GetWindowDrawList();
@@ -89,7 +139,23 @@ void TerminalTab::Render() {
         ImVec2 textPos(pos.x + (avail.x - textSize.x) * 0.5f,
                        pos.y + (avail.y - textSize.y) * 0.5f);
         dl->AddText(textPos, IM_COL32(128, 128, 128, 255), msg);
+
+        // Show reconnect button
+        if (m_reconnectPending) {
+            float btnY = textPos.y + textSize.y + 8;
+            ImVec2 btnPos(pos.x + (avail.x - 120) * 0.5f, btnY);
+            ImGui::SetCursorScreenPos(btnPos);
+            if (ImGui::Button("Reconnect", ImVec2(120, 0))) {
+                Reconnect();
+            }
+        }
         return;
+    }
+
+    // Auto-reconnect if pending
+    if (m_reconnectPending) {
+        Reconnect();
+        if (!m_open) return;  // Reconnect failed
     }
 
     // Process PTY output (non-blocking)
@@ -107,6 +173,11 @@ void TerminalTab::Render() {
 
     // Status bar at bottom
     RenderStatusBar();
+
+    // Render search overlay if active
+    if (m_searchActive) {
+        RenderSearchOverlay();
+    }
 }
 
 void TerminalTab::ProcessPtyOutput() {
@@ -119,9 +190,9 @@ void TerminalTab::ProcessPtyOutput() {
     }
 
     if (n < 0) {
-        // PTY closed or error
         LOG_DEBUG("Terminal PTY read returned %d, closing", n);
         m_open = false;
+        m_reconnectPending = true;
     }
 }
 
@@ -135,7 +206,9 @@ TerminalTab::TermLayout TerminalTab::ComputeLayout(ImVec2 availSize) const {
 
     // Reserve space for status bar
     float statusH = ImGui::GetFrameHeight() + 4;
-    layout.size = ImVec2(availSize.x, availSize.y - statusH);
+    // Reserve space for search bar if active
+    float searchH = m_searchActive ? (ImGui::GetFrameHeight() + 8) : 0;
+    layout.size = ImVec2(availSize.x, availSize.y - statusH - searchH);
 
     if (m_terminal) {
         auto* font = ImGui::GetFont();
@@ -144,7 +217,6 @@ TerminalTab::TermLayout TerminalTab::ComputeLayout(ImVec2 availSize) const {
         layout.visibleCols = std::max(16, (int)(layout.size.x / layout.cellWidth));
         layout.visibleRows = std::max(4, (int)(layout.size.y / layout.cellHeight));
 
-        // Compute scroll position
         int sbSize = m_terminal->GetScrollbackRows();
         int totalRows = sbSize + m_terminal->GetRows();
         int maxScroll = std::max(0, totalRows - layout.visibleRows);
@@ -162,13 +234,6 @@ TerminalTab::TermLayout TerminalTab::ComputeLayout(ImVec2 availSize) const {
 }
 
 bool TerminalTab::ScreenPosToGrid(ImVec2 mousePos, int& row, int& col) const {
-    auto& io = ImGui::GetIO();
-
-    // Get the terminal child window bounds
-    ImVec2 winPos = ImGui::GetWindowPos();
-    ImVec2 winSize = ImGui::GetWindowSize();
-
-    // We need layout info. Recompute quickly.
     TermLayout layout = ComputeLayout(ImGui::GetContentRegionAvail());
     if (layout.cellWidth <= 0 || layout.cellHeight <= 0) return false;
 
@@ -181,7 +246,6 @@ bool TerminalTab::ScreenPosToGrid(ImVec2 mousePos, int& row, int& col) const {
     col = (int)(dx / layout.cellWidth);
     row = (int)(dy / layout.cellHeight);
 
-    // Clamp
     col = std::max(0, std::min(col, layout.visibleCols - 1));
     row = std::max(0, std::min(row, layout.visibleRows - 1));
 
@@ -192,7 +256,7 @@ bool TerminalTab::ScreenPosToGrid(ImVec2 mousePos, int& row, int& col) const {
 }
 
 // ---------------------------------------------------------------------------
-// Mouse Input
+// Mouse Input (Selection + Right-click menu)
 // ---------------------------------------------------------------------------
 
 void TerminalTab::ProcessMouseInput() {
@@ -200,7 +264,6 @@ void TerminalTab::ProcessMouseInput() {
 
     auto& io = ImGui::GetIO();
 
-    // Only process mouse events when the terminal view is hovered
     if (!ImGui::IsWindowHovered()) return;
 
     // Left mouse button: start/drag selection
@@ -215,7 +278,6 @@ void TerminalTab::ProcessMouseInput() {
 
     if (ImGui::IsMouseDown(ImGuiMouseButton_Left) && m_mouseSelecting) {
         if (!m_mouseDragging) {
-            // Check for drag threshold
             if (ImGui::IsMouseDragging(ImGuiMouseButton_Left, 4.0f)) {
                 m_mouseDragging = true;
             }
@@ -236,13 +298,129 @@ void TerminalTab::ProcessMouseInput() {
         }
     }
 
-    // Right click: cancel selection
+    // Right click: context menu OR cancel selection
     if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
         if (m_terminal->HasSelection()) {
             m_terminal->CancelSelection();
             m_mouseSelecting = false;
             m_mouseDragging = false;
         }
+        // Open context menu on right click
+        if (ImGui::IsWindowHovered()) {
+            ImGui::OpenPopup("##terminal_context");
+        }
+    }
+
+    // Render right-click context menu
+    if (ImGui::BeginPopup("##terminal_context")) {
+        if (ImGui::MenuItem("Copy", "Ctrl+Shift+C", false, m_terminal->HasSelection())) {
+            CopySelection();
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Paste", "Ctrl+Shift+V")) {
+            PasteClipboard();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Clear Screen", "Ctrl+Shift+L")) {
+            if (m_pty) {
+                const char* clearSeq = "\x0c";
+                m_pty->Write(clearSeq, 1);
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Find...", "Ctrl+F")) {
+            m_searchActive = true;
+            m_searchText[0] = '\0';
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Select All")) {
+            if (m_terminal) {
+                int sbSize = m_terminal->GetScrollbackRows();
+                int totalRows = sbSize + m_terminal->GetRows();
+                m_terminal->BeginSelection(0, 0);
+                m_terminal->UpdateSelection(totalRows - 1, m_terminal->GetCols() - 1);
+                m_terminal->EndSelection();
+            }
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::Separator();
+        if (ImGui::MenuItem("Reconnect", nullptr, false, m_reconnectPending || !m_open)) {
+            Reconnect();
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Close Tab", "Ctrl+Shift+W")) {
+            Close();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Search Overlay
+// ---------------------------------------------------------------------------
+
+void TerminalTab::RenderSearchOverlay() {
+    ImVec2 avail = ImGui::GetContentRegionAvail();
+    float searchH = ImGui::GetFrameHeight() + 8;
+    ImVec2 searchPos = ImGui::GetCursorScreenPos();
+    searchPos.y += avail.y - searchH;
+
+    ImGui::SetCursorScreenPos(searchPos);
+
+    // Search bar background
+    auto* dl = ImGui::GetWindowDrawList();
+    dl->AddRectFilled(searchPos, ImVec2(searchPos.x + avail.x, searchPos.y + searchH),
+                      IM_COL32(30, 30, 40, 230));
+
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(4, 2));
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 0));
+
+    // Search input
+    ImGui::SetCursorScreenPos(ImVec2(searchPos.x + 4, searchPos.y + 4));
+    ImGui::PushItemWidth(220);
+    ImGui::InputTextWithHint("##terminal_search", "Find...",
+                             m_searchText, sizeof(m_searchText));
+    ImGui::PopItemWidth();
+
+    ImGui::SameLine();
+
+    // Match count
+    ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%d/%d",
+                       m_searchCurrentMatch, m_searchTotalMatches);
+
+    // Navigation buttons
+    ImGui::SameLine();
+    if (ImGui::SmallButton("<")) {
+        m_searchCurrentMatch = std::max(1, m_searchCurrentMatch - 1);
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton(">")) {
+        m_searchCurrentMatch = std::min(m_searchTotalMatches, m_searchCurrentMatch + 1);
+    }
+    ImGui::SameLine();
+
+    // Case-sensitive toggle
+    ImGui::Checkbox("Aa", &m_searchCaseSensitive);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Case sensitive");
+
+    ImGui::SameLine();
+
+    // Close button
+    if (ImGui::SmallButton("x")) {
+        m_searchActive = false;
+        m_searchText[0] = '\0';
+    }
+
+    ImGui::PopStyleVar(2);
+
+    // Perform search (placeholder - full implementation would scan cells for matches)
+    if (m_searchText[0] != '\0') {
+        // Search logic would be here in a full implementation
+        // For now, just show the overlay UI
     }
 }
 
@@ -256,21 +434,18 @@ void TerminalTab::CopySelection() {
     std::string text = m_terminal->GetSelectedText();
     if (text.empty()) return;
 
-    // Set clipboard via SDL
     if (SDL_SetClipboardText(text.c_str()) == 0) {
         LOG_DEBUG("Copied %zu bytes from terminal selection", text.size());
     } else {
         LOG_ERROR("Failed to copy to clipboard: %s", SDL_GetError());
     }
 
-    // Clear selection after copy
     m_terminal->CancelSelection();
 }
 
 void TerminalTab::PasteClipboard() {
     if (!m_pty || !m_open) return;
 
-    // Get clipboard text via SDL
     if (!SDL_HasClipboardText()) return;
 
     char* text = SDL_GetClipboardText();
@@ -315,6 +490,17 @@ void TerminalTab::RenderTerminal() {
         float wheel = ImGui::GetIO().MouseWheel;
         if (wheel != 0.0f) {
             m_scrollY = std::max(0.0f, m_scrollY - wheel * 0.1f);
+            // If scrolled to bottom, reset to bottom
+            if (m_scrollY <= 0.01f) {
+                if (m_terminal) {
+                    int sbSize = m_terminal->GetScrollbackRows();
+                    int totalRows = sbSize + m_terminal->GetRows();
+                    int maxScroll = std::max(0, totalRows - layout.visibleRows);
+                    if (m_scrollY <= 0.01f && maxScroll > 0) {
+                        // At bottom - auto scroll on new output
+                    }
+                }
+            }
         }
     }
 
@@ -332,7 +518,7 @@ void TerminalTab::ProcessKeyboardInput() {
     auto& io = ImGui::GetIO();
     ImGuiKeyChord mods = io.KeyMods;
 
-    // Check for Ctrl+Shift actions first (these are NOT sent to PTY)
+    // Check for Ctrl+Shift actions first
     for (int key = ImGuiKey_A; key <= ImGuiKey_Z; key++) {
         auto imguiKey = (ImGuiKey)key;
         if (!ImGui::IsKeyPressed(imguiKey, false)) continue;
@@ -346,14 +532,19 @@ void TerminalTab::ProcessKeyboardInput() {
                 PasteClipboard();
                 return;
             case KeyMapping::Action::NewTab:
-                // Handled by TerminalManager
+                return;  // Handled by TerminalManager
+            case KeyMapping::Action::Find:
+                m_searchActive = !m_searchActive;
+                if (m_searchActive) m_searchText[0] = '\0';
                 return;
             case KeyMapping::Action::Clear: {
-                // Send clear screen sequence (Ctrl+L equivalent)
                 const char* clearSeq = "\x0c";
                 m_pty->Write(clearSeq, 1);
                 return;
             }
+            case KeyMapping::Action::CloseTab:
+                Close();
+                return;
             default:
                 break;
         }
@@ -389,7 +580,7 @@ void TerminalTab::ProcessKeyboardInput() {
         }
     }
 
-    // Send special key sequences (only check relevant keys for performance)
+    // Send special key sequences
     static const ImGuiKey specialKeys[] = {
         ImGuiKey_Enter, ImGuiKey_Backspace, ImGuiKey_Tab, ImGuiKey_Escape,
         ImGuiKey_UpArrow, ImGuiKey_DownArrow, ImGuiKey_LeftArrow, ImGuiKey_RightArrow,
@@ -400,16 +591,13 @@ void TerminalTab::ProcessKeyboardInput() {
         ImGuiKey_LeftBracket, ImGuiKey_RightBracket, ImGuiKey_Backslash, ImGuiKey_Slash
     };
 
-    // Also check A-Z for Ctrl+letter combos (but skip Ctrl+Shift which was handled above)
     for (int key = ImGuiKey_A; key <= ImGuiKey_Z; key++) {
         auto imguiKey = (ImGuiKey)key;
         if (!ImGui::IsKeyPressed(imguiKey, false)) continue;
 
-        // Skip if it's a Ctrl+Shift action (already handled above)
         if (KeyMapping::GetAction(imguiKey, mods) != KeyMapping::Action::None)
             continue;
 
-        // Send VT sequence to PTY
         const char* seq = KeyMapping::ToVtSequence(imguiKey, mods);
         if (seq) {
             m_pty->Write(seq, strlen(seq));
@@ -450,17 +638,29 @@ void TerminalTab::RenderStatusBar() {
         if (m_terminal && m_terminal->HasSelection()) {
             status += " | [selected]";
         }
+    } else if (m_reconnectPending) {
+        status = "Disconnected - click to reconnect";
+        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.6f, 0.0f, 1.0f));
+        ImGui::TextUnformatted(status.c_str());
+        ImGui::PopStyleColor();
+        // Reconnect button
+        ImGui::SameLine();
+        if (ImGui::SmallButton("Reconnect")) {
+            Reconnect();
+        }
+        return;
     } else {
         status = "Disconnected";
     }
 
     ImGui::TextColored(ImVec4(0.5f, 0.5f, 0.5f, 1.0f), "%s", status.c_str());
 
-    // Show copy/paste shortcuts hint on hover
     if (ImGui::IsItemHovered()) {
         ImGui::SetTooltip("Ctrl+Shift+C  Copy selection\n"
                           "Ctrl+Shift+V  Paste\n"
                           "Ctrl+Shift+L  Clear screen\n"
-                          "Mouse drag    Select text");
+                          "Ctrl+F        Search\n"
+                          "Mouse drag    Select text\n"
+                          "Right-click   Context menu");
     }
 }

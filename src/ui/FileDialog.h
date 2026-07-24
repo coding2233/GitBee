@@ -43,17 +43,25 @@ static std::string FormatFileSize(uintmax_t size)
 static std::string GetDefaultPath()
 {
 #ifdef _WIN32
-    const char* userProfile = getenv("USERPROFILE");
-    if (userProfile && std::filesystem::exists(userProfile))
-        return std::string(userProfile);
-    const char* homeDrive = getenv("HOMEDRIVE");
-    const char* homePath = getenv("HOMEPATH");
-    if (homeDrive && homePath)
-    {
+    char* userProfile = nullptr;
+    size_t len = 0;
+    if (_dupenv_s(&userProfile, &len, "USERPROFILE") == 0 && userProfile) {
+        std::string result(userProfile);
+        free(userProfile);
+        if (std::filesystem::exists(result))
+            return result;
+    }
+    char* homeDrive = nullptr;
+    char* homePath = nullptr;
+    size_t hdLen = 0, hpLen = 0;
+    if (_dupenv_s(&homeDrive, &hdLen, "HOMEDRIVE") == 0 && homeDrive &&
+        _dupenv_s(&homePath, &hpLen, "HOMEPATH") == 0 && homePath) {
         std::string p = std::string(homeDrive) + homePath;
+        free(homeDrive); free(homePath);
         if (std::filesystem::exists(p))
             return p;
     }
+    free(homeDrive); free(homePath);
     return "C:\\";
 #else
     const char* home = getenv("HOME");

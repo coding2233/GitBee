@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include "../ui/FileDialog.h"
 
 class TerminalTab;
 class ConnectionStore;
@@ -49,6 +50,13 @@ private:
     bool m_showEditConnectionDialog = false;
     std::string m_editingConnId;  // which connection is being edited
 
+    // File dialog for key path selection
+    FileDialog m_keyFileDialog;
+    bool m_keyFileDialogActive = false;
+
+    // Font configuration
+    float m_fontSize = 14.0f;
+
     // Rendering methods
     void RenderSidebar();
     void RenderTabBar();
@@ -60,6 +68,7 @@ private:
     void RenderSshSection();
     void RenderSshConnectionItem(const SshConnection& conn);
     void RenderConnectionDialog(bool isNew);
+    void RenderFontConfigPopup();
     void RenderConfirmDelete(const std::string& id, const std::string& name);
 
     // Get a unique tab title
@@ -67,4 +76,7 @@ private:
 
     // Find a tab that is already connected to a given SSH connection
     int FindTabByConnection(const std::string& connId) const;
+
+    // Apply font size to all terminal tabs
+    void ApplyFontSize(float size);
 };

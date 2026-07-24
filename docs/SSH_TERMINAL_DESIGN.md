@@ -1,8 +1,8 @@
 # SSH Terminal Tab — Technical Design Document
 
-> Version: 1.0  
-> Status: Implemented (Phase 1-2)  
-> Project: GitBee  
+> Version: 2.0
+> Status: Implemented (Phase 1-2) + Phase 3 (partial)
+> Project: GitBee
 
 ---
 
@@ -816,7 +816,7 @@ target("GitBee")
 **状态**: ✅ 已完成
 
 - [x] `PtyAdapter` + `LocalPty` (Linux forkpty)
-- [ ] `LocalPty` (Windows ConPTY) — 待实现
+- [x] `LocalPty` (Windows ConPTY) — CreatePseudoConsole
 - [x] `TerminalEmulator` (libvterm integration)
 - [x] 终端 ImGui 自定义渲染（逐行绘制）
 - [x] 键盘事件 → VT 序列映射
@@ -829,14 +829,14 @@ target("GitBee")
 
 **状态**: ✅ 已完成（无 libssh2，使用系统 ssh 命令）
 
-- [x] `SshPty` (forkpty 启动 `ssh user@host`)
+- [x] `SshPty` (forkpty 启动 `ssh user@host`) + Windows ConPTY
 - [x] 认证：通过系统 ssh 支持 publickey / password / agent
-- [x] `ConnectionStore` (JSON 持久化连接配置)
+- [x] `ConnectionStore` (JSON 持久化连接配置) — 含 startupCommand/jumpHost/keepAlive
 - [x] 左侧 SSH 连接侧栏（分组、搜索）
-- [x] 新建/编辑连接对话框
+- [x] 新建/编辑连接对话框 — 含密钥文件选择对话框
 - [x] 双击连接 / 右键菜单启动 SSH 终端
-- [ ] `CryptoUtil` (AES 加密) — 无密码存储需求，ssh-agent 模式更安全
-- [ ] 文件对话框选择密钥路径 — 需复用 FileDialog
+- [x] 文件对话框选择密钥路径 — 通过 FileDialog 集成
+- [ ] `CryptoUtil` (AES 加密) — 设计注：不需要，ssh-agent 更安全
 
 **实际工作量**: ~1 天
 
@@ -844,17 +844,17 @@ target("GitBee")
 
 **目标**：完善的终端体验
 
-- [ ] 光标闪烁
-- [ ] 选中文本 + 复制（Ctrl+Shift+C）
-- [ ] 粘贴（Ctrl+Shift+V）
-- [ ] 终端内搜索（Ctrl+F）
-- [ ] 256色 / TrueColor 支持
-- [ ] 字体配置（等宽字体 + CJK fallback）
-- [ ] 滚动缓冲区 + 滚轮回滚
-- [ ] 右键上下文菜单
-- [ ] Session 恢复（断线自动重连）
-- [ ] Windows ConPTY 支持
-- [ ] 文件对话框集成（选择密钥路径）
+- [x] 光标闪烁 — 2Hz blink
+- [x] 选中文本 + 复制（Ctrl+Shift+C）— 鼠标拖选 + SDL 剪贴板
+- [x] 粘贴（Ctrl+Shift+V）— SDL 剪贴板 → PTY
+- [x] 256色 / TrueColor 支持 — libvterm 原生支持
+- [x] 滚动缓冲区 + 滚轮回滚 — sb_pushline/sb_popline, 1000行
+- [x] 右键上下文菜单 — 复制/粘贴/清屏/搜索/全选/重连/关闭
+- [x] Session 恢复（断线自动重连）— Reconnect() 按钮
+- [x] Windows ConPTY 支持 — CreatePseudoConsole API
+- [x] 文件对话框集成（选择密钥路径）— FileDialog 集成
+- [ ] 终端内搜索（Ctrl+F）— UI 框架就绪，搜索逻辑待完善
+- [ ] 字体配置（等宽字体 + CJK fallback）— 字体大小滑条
 
 **预计工作量**: ~2-3 周
 

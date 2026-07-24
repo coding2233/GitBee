@@ -119,17 +119,224 @@ bool LocalPty::IsOpen() const {
 #ifdef _WIN32
 
 bool LocalPty::OpenPty(int cols, int rows) {
-    LOG_WARN("LocalPty: ConPTY not yet implemented on Windows");
-    return false;
+    HANDLE hPipeInRd = NULL, hPipeInWr = NULL;
+    HANDLE hPipeOutRd = NULL, hPipeOutWr = NULL;
+    HANDLE hPipeErrRd = NULL, hPipeErrWr = NULL;
+    HANDLE hPC = NULL;
+    PROCESS_INFORMATION pi = {0};
+    STARTUPINFOEXW siEx = {0};
+    HPCON hpc;
+
+    // Create pipes for PTY input (host → child)
+    if (!CreatePipe(&hPipeInRd, &hPipeInWr, NULL, 0)) {
+        LOG_ERROR("ConPTY: CreatePipe failed for stdin (gle=%lu)", GetLastError());
+        return false;
+    }
+
+    // Create pipes for PTY output (child → host)
+    if (!CreatePipe(&hPipeOutRd, &hPipeOutWr, NULL, 0)) {
+        LOG_ERROR("ConPTY: CreatePipe failed for stdout (gle=%lu)", GetLastError());
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        return false;
+    }
+
+    // Create pipes for PTY error (child → host)
+    if (!CreatePipe(&hPipeErrRd, &hPipeErrWr, NULL, 0)) {
+        LOG_ERROR("ConPTY: CreatePipe failed for stderr (gle=%lu)", GetLastError());
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        return false;
+    }
+
+    // COORD for console size
+    COORD size = {(SHORT)cols, (SHORT)rows};
+
+    // Create the pseudo console
+    HRESULT hr = CreatePseudoConsole(size, hPipeInRd, hPipeOutWr, 0, &hpc);
+    if (FAILED(hr)) {
+        LOG_ERROR("ConPTY: CreatePseudoConsole failed (hr=0x%lx)", hr);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+
+    // Prepare STARTUPINFOEX for the process
+    siEx.StartupInfo.cb = sizeof(STARTUPINFOEXW);
+    siEx.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    siEx.StartupInfo.hStdInput = hPipeErrRd;  // Not used, but must be valid
+    siEx.StartupInfo.hStdOutput = hPipeErrWr;
+    siEx.StartupInfo.hStdError = hPipeErrWr;
+
+    // We need to set the pseudo console as the handle list
+    SIZE_T attrListSize = 0;
+    InitializeProcThreadAttributeList(NULL, 1, 0, &attrListSize);
+    siEx.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(
+        GetProcessHeap(), 0, attrListSize);
+    if (!siEx.lpAttributeList) {
+        LOG_ERROR("ConPTY: HeapAlloc failed for attribute list");
+        ClosePseudoConsole(hpc);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+
+    InitializeProcThreadAttributeList(siEx.lpAttributeList, 1, 0, &attrListSize);
+    UpdateProcThreadAttribute(siEx.lpAttributeList, 0,
+        PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, hpc,
+        sizeof(HPCON), NULL, NULL);
+
+    // Determine shell
+    std::wstring shellCmd;
+    if (!m_config.shellCommand.empty()) {
+        // Convert UTF-8 shell path to wide
+        int wlen = MultiByteToWideChar(CP_UTF8, 0,
+            m_config.shellCommand.c_str(), -1, NULL, 0);
+        if (wlen > 0) {
+            shellCmd.resize(wlen - 1);
+            MultiByteToWideChar(CP_UTF8, 0,
+                m_config.shellCommand.c_str(), -1,
+                &shellCmd[0], wlen);
+        }
+    }
+    if (shellCmd.empty()) {
+        shellCmd = L"cmd.exe";
+    }
+
+    // Working directory
+    std::wstring workDir;
+    if (!m_config.workingDir.empty()) {
+        int wlen = MultiByteToWideChar(CP_UTF8, 0,
+            m_config.workingDir.c_str(), -1, NULL, 0);
+        if (wlen > 0) {
+            workDir.resize(wlen - 1);
+            MultiByteToWideChar(CP_UTF8, 0,
+                m_config.workingDir.c_str(), -1,
+                &workDir[0], wlen);
+        }
+    }
+
+    // Set environment for TERM
+    SetEnvironmentVariableW(L"TERM", L"xterm-256color");
+    SetEnvironmentVariableW(L"COLORTERM", L"truecolor");
+
+    // Create the process attached to the pseudo console
+    BOOL created = CreateProcessW(
+        NULL,                       // No application name (use command line)
+        &shellCmd[0],               // Command line
+        NULL, NULL,                 // Process/thread security attributes
+        FALSE,                      // Handle inheritance
+        EXTENDED_STARTUPINFO_PRESENT, // Use STARTUPINFOEX
+        NULL,                       // Environment
+        workDir.empty() ? NULL : &workDir[0], // Working directory
+        &siEx.StartupInfo,          // Startup info
+        &pi);                       // Process info
+
+    if (!created) {
+        LOG_ERROR("ConPTY: CreateProcessW failed (gle=%lu)", GetLastError());
+        HeapFree(GetProcessHeap(), 0, siEx.lpAttributeList);
+        ClosePseudoConsole(hpc);
+        CloseHandle(hPipeInRd); CloseHandle(hPipeInWr);
+        CloseHandle(hPipeOutRd); CloseHandle(hPipeOutWr);
+        CloseHandle(hPipeErrRd); CloseHandle(hPipeErrWr);
+        return false;
+    }
+
+    // Clean up startup attribute list
+    HeapFree(GetProcessHeap(), 0, siEx.lpAttributeList);
+
+    // Store handles
+    m_masterFd = (int)hPipeOutRd;  // Reuse masterFd as output read handle
+    m_hConPtyInput = hPipeInWr;    // Store input write handle
+    m_hConPty = hpc;               // Store pseudo console handle
+    m_hProcess = pi.hProcess;      // Store process handle
+
+    // Close unneeded handles
+    CloseHandle(hPipeInRd);   // Input read end owned by ConPTY
+    CloseHandle(hPipeOutWr);  // Output write end owned by ConPTY
+    CloseHandle(hPipeErrRd);  // Error read end
+    CloseHandle(hPipeErrWr);  // Error write end
+    CloseHandle(pi.hThread);  // We don't need the thread handle
+
+    // Start the output pump thread
+    m_running = true;
+    m_pumpThread = std::thread(&LocalPty::PumpOutput, this);
+
+    LOG_INFO("LocalPty opened via ConPTY (pid=%lu)", pi.dwProcessId);
+    return true;
 }
 
 void LocalPty::ClosePty() {
-    // TODO: cleanup ConPTY handles
-    m_masterFd = -1;
+    if (m_pid > 0) {
+        // Terminate the process if still running
+        TerminateProcess(m_hProcess, 0);
+        WaitForSingleObject(m_hProcess, 1000);
+    }
+    if (m_hProcess) {
+        CloseHandle(m_hProcess);
+        m_hProcess = NULL;
+    }
+    if (m_hConPty) {
+        ClosePseudoConsole(m_hConPty);
+        m_hConPty = NULL;
+    }
+    if (m_masterFd >= 0) {
+        CloseHandle((HANDLE)m_masterFd);
+        m_masterFd = -1;
+    }
+    if (m_hConPtyInput) {
+        CloseHandle(m_hConPtyInput);
+        m_hConPtyInput = NULL;
+    }
 }
 
 void LocalPty::PumpOutput() {
-    // TODO: read from ConPTY output pipe
+    LOG_DEBUG("LocalPty ConPTY pump thread started");
+    HANDLE hOut = (HANDLE)m_masterFd;
+    char tempBuf[65536];
+
+    while (m_running) {
+        DWORD n = 0;
+        BOOL success = ReadFile(hOut, tempBuf, sizeof(tempBuf), &n, NULL);
+
+        if (!m_running) break;
+
+        if (!success) {
+            DWORD err = GetLastError();
+            if (err == ERROR_BROKEN_PIPE) {
+                LOG_INFO("LocalPty ConPTY pipe broken (process exited)");
+                break;
+            }
+            if (err == ERROR_OPERATION_ABORTED)
+                continue;  // Retry
+            LOG_ERROR("LocalPty ConPTY ReadFile error (gle=%lu)", err);
+            break;
+        }
+
+        if (n > 0) {
+            // Write into ring buffer
+            std::lock_guard<std::mutex> lock(m_ringMutex);
+            size_t available;
+            if (m_ringHead >= m_ringTail)
+                available = (RING_SIZE - m_ringHead) + m_ringTail - 1;
+            else
+                available = m_ringTail - m_ringHead - 1;
+
+            size_t toWrite = std::min((size_t)n, available);
+            size_t firstChunk = std::min(toWrite, RING_SIZE - m_ringHead);
+            memcpy(m_ringBuf + m_ringHead, tempBuf, firstChunk);
+            if (toWrite > firstChunk)
+                memcpy(m_ringBuf, tempBuf + firstChunk, toWrite - firstChunk);
+
+            m_ringHead = (m_ringHead + toWrite) % RING_SIZE;
+            m_ringCv.notify_one();
+        }
+    }
+
+    LOG_DEBUG("LocalPty ConPTY pump thread exiting");
+    m_running = false;
+    if (OnClosed) OnClosed();
 }
 
 #else

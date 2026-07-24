@@ -50,7 +50,6 @@ std::string JsonUnescape(const std::string& s) {
     return out;
 }
 
-// Trim whitespace
 std::string Trim(const std::string& s) {
     size_t start = s.find_first_not_of(" \t\r\n");
     if (start == std::string::npos) return "";
@@ -58,8 +57,6 @@ std::string Trim(const std::string& s) {
     return s.substr(start, end - start + 1);
 }
 
-// Simple recursive-descent JSON parser. Only handles the subset we need:
-// objects, arrays, strings, numbers, booleans.
 class MiniJson {
 public:
     struct Value {
@@ -67,8 +64,8 @@ public:
         std::string str;
         double num = 0;
         bool flag = false;
-        std::vector<std::pair<std::string, Value>> obj;   // object members
-        std::vector<Value> arr;                            // array items
+        std::vector<std::pair<std::string, Value>> obj;
+        std::vector<Value> arr;
     };
 
     static Value Parse(const std::string& json) {
@@ -85,7 +82,6 @@ public:
             case Value::Number: {
                 char buf[64];
                 snprintf(buf, sizeof(buf), "%g", v.num);
-                // Ensure integer numbers don't have trailing ".0"
                 if (strchr(buf, '.') || strchr(buf, 'e')) return buf;
                 return std::string(buf);
             }
@@ -137,10 +133,6 @@ public:
         return def;
     }
 
-    static std::string GetStringOr(const Value& v, const std::string& key, const char* def) {
-        return GetString(v, key, def ? std::string(def) : std::string());
-    }
-
 private:
     static void SkipSpace(const std::string& j, size_t& pos) {
         while (pos < j.size() && (j[pos] == ' ' || j[pos] == '\t' || j[pos] == '\r' || j[pos] == '\n'))
@@ -171,7 +163,7 @@ private:
     static Value ParseString(const std::string& j, size_t& pos) {
         Value v;
         v.type = Value::String;
-        if (Next(j, pos) != '"') return v;  // consume opening quote
+        if (Next(j, pos) != '"') return v;
         while (pos < j.size()) {
             if (j[pos] == '"') { pos++; break; }
             if (j[pos] == '\\' && pos + 1 < j.size()) {
@@ -183,7 +175,6 @@ private:
                 pos++;
             }
         }
-        // Unescape
         v.str = JsonUnescape(v.str);
         return v;
     }
@@ -224,14 +215,14 @@ private:
     static Value ParseObject(const std::string& j, size_t& pos) {
         Value v;
         v.type = Value::Object;
-        if (Next(j, pos) != '{') return v;  // consume '{'
+        if (Next(j, pos) != '{') return v;
         char c = Peek(j, pos);
         if (c == '}') { Next(j, pos); return v; }
         while (pos < j.size()) {
             c = Peek(j, pos);
             if (c == '}') { Next(j, pos); break; }
             if (v.obj.size() > 0) {
-                if (Next(j, pos) != ',') break;  // skip comma
+                if (Next(j, pos) != ',') break;
             }
             auto key = ParseString(j, pos);
             if (Peek(j, pos) == ':') Next(j, pos);
@@ -260,7 +251,6 @@ private:
     }
 };
 
-// Convert SshConnection::AuthMethod to/from string
 const char* AuthMethodToString(SshConnection::AuthMethod m) {
     switch (m) {
         case SshConnection::Agent:     return "agent";
@@ -306,7 +296,6 @@ std::string ConnectionStore::GetFilePath() {
 }
 
 std::string ConnectionStore::GenerateId() {
-    // Simple UUID-like string (enough for uniqueness)
     static int counter = 0;
     auto now = std::chrono::system_clock::now();
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -339,7 +328,6 @@ void ConnectionStore::Load() {
     auto root = MiniJson::Parse(content);
     auto arr = root;
     if (root.type == MiniJson::Value::Object) {
-        // Handle {"version": 1, "connections": [...]} format
         arr = MiniJson::Value();
         arr.type = MiniJson::Value::Array;
         bool found = false;
@@ -374,13 +362,16 @@ void ConnectionStore::Load() {
         conn.group = MiniJson::GetString(item, "group");
         conn.order = MiniJson::GetInt(item, "order", 0);
         conn.notes = MiniJson::GetString(item, "notes");
+        conn.startupCommand = MiniJson::GetString(item, "startupCommand");
+        conn.jumpHost = MiniJson::GetString(item, "jumpHost");
+        conn.keepAlive = MiniJson::GetBool(item, "keepAlive", true);
+        conn.keepAliveInterval = MiniJson::GetInt(item, "keepAliveInterval", 60);
 
         if (!conn.host.empty()) {
             m_connections.push_back(conn);
         }
     }
 
-    // Sort by order
     std::sort(m_connections.begin(), m_connections.end(),
               [](const SshConnection& a, const SshConnection& b) {
                   if (a.group != b.group) return a.group < b.group;
@@ -392,7 +383,6 @@ void ConnectionStore::Load() {
 }
 
 void ConnectionStore::Save() const {
-    // Build JSON manually
     std::string json;
     json += "{\n";
     json += "  \"version\": 1,\n";
@@ -410,7 +400,11 @@ void ConnectionStore::Save() const {
         json += "      \"privateKeyPath\": \"" + JsonEscape(c.privateKeyPath) + "\",\n";
         json += "      \"group\": \"" + JsonEscape(c.group) + "\",\n";
         json += "      \"order\": " + std::to_string(c.order) + ",\n";
-        json += "      \"notes\": \"" + JsonEscape(c.notes) + "\"\n";
+        json += "      \"notes\": \"" + JsonEscape(c.notes) + "\",\n";
+        json += "      \"startupCommand\": \"" + JsonEscape(c.startupCommand) + "\",\n";
+        json += "      \"jumpHost\": \"" + JsonEscape(c.jumpHost) + "\",\n";
+        json += "      \"keepAlive\": " + std::string(c.keepAlive ? "true" : "false") + ",\n";
+        json += "      \"keepAliveInterval\": " + std::to_string(c.keepAliveInterval) + "\n";
         json += "    }";
         if (i + 1 < m_connections.size()) json += ",";
         json += "\n";
@@ -419,7 +413,6 @@ void ConnectionStore::Save() const {
     json += "  ]\n";
     json += "}\n";
 
-    // Ensure directory exists
     std::error_code ec;
     std::filesystem::path dir = std::filesystem::path(m_filePath).parent_path();
     if (!std::filesystem::exists(dir, ec)) {
@@ -509,6 +502,16 @@ std::string ConnectionStore::BuildSshCommand(const SshConnection& conn) {
         cmd += " -i \"" + conn.privateKeyPath + "\"";
     }
 
+    // Jump host (SSH proxy)
+    if (!conn.jumpHost.empty()) {
+        cmd += " -J \"" + conn.jumpHost + "\"";
+    }
+
+    // KeepAlive
+    if (conn.keepAlive) {
+        cmd += " -o ServerAliveInterval=" + std::to_string(conn.keepAliveInterval);
+    }
+
     // Force PTY allocation
     cmd += " -t";
 
@@ -517,6 +520,11 @@ std::string ConnectionStore::BuildSshCommand(const SshConnection& conn) {
         cmd += " " + conn.username + "@" + conn.host;
     } else {
         cmd += " " + conn.host;
+    }
+
+    // Startup command (passed as remote command after host)
+    if (!conn.startupCommand.empty()) {
+        cmd += " \"" + conn.startupCommand + "\"";
     }
 
     return cmd;

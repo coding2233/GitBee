@@ -29,6 +29,13 @@ private:
     int m_masterFd = -1;
     int m_pid = -1;
 
+#ifdef _WIN32
+    // ConPTY handles
+    void* m_hConPty = nullptr;        // HPCON
+    void* m_hConPtyInput = nullptr;   // HANDLE for writing to ConPTY
+    void* m_hProcess = nullptr;       // HANDLE for child process
+#endif
+
     // Ring buffer for PTY output (producer: PumpOutput thread, consumer: Read)
     static constexpr size_t RING_SIZE = 256 * 1024;  // 256KB
     char* m_ringBuf = nullptr;

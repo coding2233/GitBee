@@ -1,14 +1,19 @@
+#include "../dbg_log.h"
 #include "TerminalManager.h"
 #include "TerminalTab.h"
 #include "PtyAdapter.h"
 #include "ConnectionStore.h"
 #include "KeyMapping.h"
-#include "../dbg_log.h"
 #include "imgui.h"
 #include <algorithm>
+#include <cctype>
 
 // Buffer sizes for the connection dialog form fields
 static constexpr int FORM_BUF_SIZE = 256;
+
+// ---------------------------------------------------------------------------
+// Construction
+// ---------------------------------------------------------------------------
 
 TerminalManager::TerminalManager() {
     m_store = std::make_unique<ConnectionStore>();
@@ -63,6 +68,7 @@ TerminalTab* TerminalManager::OpenSshTerminal(const SshConnection& conn) {
     config.port = conn.port;
     config.username = conn.username;
     config.privateKeyPath = conn.privateKeyPath;
+    config.startupCommand = conn.startupCommand;
 
     if (!tab->Start(config)) {
         LOG_ERROR("Failed to open SSH terminal to %s@%s", conn.username.c_str(), conn.host.c_str());
@@ -88,16 +94,18 @@ void TerminalManager::CloseTerminal(int index) {
 }
 
 int TerminalManager::FindTabByConnection(const std::string& connId) const {
-    // Simple heuristic: match by host+user for SSH tabs
     for (int i = 0; i < (int)m_tabs.size(); i++) {
         if (m_tabs[i]->GetType() == TerminalTab::Type::RemoteSsh) {
-            // We don't have direct access to the connection config,
-            // so we'll just return the first SSH tab to the same host
             if (m_tabs[i]->GetTitle().find(connId) != std::string::npos)
                 return i;
         }
     }
     return -1;
+}
+
+void TerminalManager::ApplyFontSize(float size) {
+    m_fontSize = size;
+    // Font size is applied per-tab during rendering via ImGui::SetWindowFontScale
 }
 
 // ---------------------------------------------------------------------------
@@ -107,6 +115,20 @@ int TerminalManager::FindTabByConnection(const std::string& connId) const {
 void TerminalManager::Render() {
     float sidebarWidth = m_showSidebar ? 200.0f : 0.0f;
 
+    // Handle file dialog for key selection
+    if (m_keyFileDialogActive) {
+        if (m_keyFileDialog.Render()) {
+            // Dialog closed with a result
+            if (strlen(m_keyFileDialog.resultBuffer) > 0) {
+                // Inject the selected path into the form key path field
+                // We use a static buffer that's shared with the connection dialog
+                extern char g_formKeyPath[FORM_BUF_SIZE];
+                strncpy(g_formKeyPath, m_keyFileDialog.resultBuffer, FORM_BUF_SIZE - 1);
+            }
+            m_keyFileDialogActive = false;
+        }
+    }
+
     if (m_showSidebar) {
         ImGui::BeginChild("##terminal_sidebar", ImVec2(sidebarWidth, 0), true);
         RenderSidebar();
@@ -115,6 +137,12 @@ void TerminalManager::Render() {
     }
 
     ImGui::BeginChild("##terminal_content", ImVec2(0, 0), false);
+
+    // Apply font scale for the terminal area
+    if (m_fontSize != 14.0f) {
+        float scale = m_fontSize / 14.0f;
+        ImGui::SetWindowFontScale(scale);
+    }
 
     if (m_tabs.empty()) {
         ImVec2 avail = ImGui::GetContentRegionAvail();
@@ -137,6 +165,11 @@ void TerminalManager::Render() {
         RenderActiveTab();
     }
 
+    // Reset font scale
+    if (m_fontSize != 14.0f) {
+        ImGui::SetWindowFontScale(1.0f);
+    }
+
     ImGui::EndChild();
 
     // Connection dialogs (rendered as popups)
@@ -144,6 +177,9 @@ void TerminalManager::Render() {
         RenderConnectionDialog(true);
     if (m_showEditConnectionDialog)
         RenderConnectionDialog(false);
+
+    // Font config popup
+    RenderFontConfigPopup();
 }
 
 void TerminalManager::RenderSidebar() {
@@ -164,16 +200,17 @@ void TerminalManager::RenderSidebar() {
     if (ImGui::Button("[+] New Terminal", ImVec2(-1, 0))) {
         OpenLocalTerminal();
     }
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Open a local shell");
+
+    // Settings / Font button
+    if (ImGui::Button("[A] Font Size", ImVec2(-1, 0))) {
+        ImGui::OpenPopup("FontConfig");
+    }
 
     // [+ New SSH] button
     if (ImGui::Button("[+] New SSH Connection", ImVec2(-1, 0))) {
         m_editingConnId.clear();
         m_showNewConnectionDialog = true;
     }
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Add an SSH connection profile");
 }
 
 void TerminalManager::RenderLocalSection() {
@@ -204,11 +241,24 @@ void TerminalManager::RenderLocalSection() {
             if (closed) {
                 ImGui::PopStyleColor();
             }
+            // Right-click context menu for local tabs
             if (ImGui::BeginPopupContextItem()) {
                 if (ImGui::MenuItem("Close")) { CloseTerminal(i); ImGui::CloseCurrentPopup(); }
                 if (ImGui::MenuItem("Close Others")) {
                     for (int j = (int)m_tabs.size() - 1; j >= 0; j--)
                         if (j != i) CloseTerminal(j);
+                    ImGui::CloseCurrentPopup();
+                }
+                if (ImGui::MenuItem("Reconnect")) {
+                    // Close and reopen
+                    std::string title = m_tabs[i]->GetTitle();
+                    CloseTerminal(i);
+                    OpenLocalTerminal();
+                    ImGui::CloseCurrentPopup();
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Duplicate Tab")) {
+                    OpenLocalTerminal();
                     ImGui::CloseCurrentPopup();
                 }
                 ImGui::EndPopup();
@@ -221,7 +271,6 @@ void TerminalManager::RenderLocalSection() {
 
 void TerminalManager::RenderSshSection() {
     if (ImGui::TreeNodeEx("SSH Connections", ImGuiTreeNodeFlags_DefaultOpen)) {
-        // Get all connections from store
         auto allConns = m_store->GetAll();
 
         // Apply search filter
@@ -247,12 +296,10 @@ void TerminalManager::RenderSshSection() {
                               ? "No connections. Click [+] to add."
                               : "No matches.");
         } else {
-            // Render by group
             auto groups = m_store->GetGroups();
             bool hasUngrouped = !m_store->GetUngrouped().empty();
 
             for (const auto& group : groups) {
-                // Count visible connections in this group
                 int visibleCount = 0;
                 for (auto* c : filtered)
                     if (c->group == group) visibleCount++;
@@ -268,7 +315,6 @@ void TerminalManager::RenderSshSection() {
             }
 
             if (hasUngrouped) {
-                // Render ungrouped items at top level
                 for (auto* conn : filtered) {
                     if (!conn->group.empty()) continue;
                     RenderSshConnectionItem(*conn);
@@ -302,6 +348,7 @@ void TerminalManager::RenderSshConnectionItem(const SshConnection& conn) {
         if (conn.port != 22) tip += ":" + std::to_string(conn.port);
         if (!conn.username.empty()) tip += "  user: " + conn.username;
         if (!conn.privateKeyPath.empty()) tip += "\nkey: " + conn.privateKeyPath;
+        if (!conn.startupCommand.empty()) tip += "\ncmd: " + conn.startupCommand;
         if (!conn.notes.empty()) tip += "\n" + conn.notes;
         ImGui::SetTooltip("%s", tip.c_str());
     }
@@ -311,13 +358,20 @@ void TerminalManager::RenderSshConnectionItem(const SshConnection& conn) {
         OpenSshTerminal(conn);
     }
 
-    // Context menu
+    // Right-click context menu
     if (ImGui::BeginPopupContextItem()) {
         if (ImGui::MenuItem("Connect")) { OpenSshTerminal(conn); ImGui::CloseCurrentPopup(); }
         ImGui::Separator();
         if (ImGui::MenuItem("Edit")) {
             m_editingConnId = conn.id;
             m_showEditConnectionDialog = true;
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Duplicate")) {
+            SshConnection copy = conn;
+            copy.id.clear();
+            copy.name += " (copy)";
+            m_store->SaveConnection(copy);
             ImGui::CloseCurrentPopup();
         }
         if (ImGui::MenuItem("Delete")) {
@@ -331,12 +385,15 @@ void TerminalManager::RenderSshConnectionItem(const SshConnection& conn) {
 }
 
 // ---------------------------------------------------------------------------
-// Connection Dialog
+// Connection Dialog (with File Dialog integration)
 // ---------------------------------------------------------------------------
+
+// Shared form buffers (extern'd for file dialog callback)
+char g_formKeyPath[FORM_BUF_SIZE] = {};
 
 void TerminalManager::RenderConnectionDialog(bool isNew) {
     const char* title = isNew ? "New SSH Connection" : "Edit SSH Connection";
-    ImGui::SetNextWindowSize(ImVec2(520, 420), ImGuiCond_Appearing);
+    ImGui::SetNextWindowSize(ImVec2(520, 460), ImGuiCond_Appearing);
 
     bool open = true;
     if (!ImGui::Begin(title, &open, ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse)) {
@@ -345,15 +402,15 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
         return;
     }
 
-    // Form state (track which dialog instance we're in for reset detection)
+    // Form state
     static char formName[FORM_BUF_SIZE] = {};
     static char formHost[FORM_BUF_SIZE] = {};
     static int  formPort = 22;
     static char formUser[FORM_BUF_SIZE] = {};
-    static int  formAuthMethod = 3;  // Default
-    static char formKeyPath[FORM_BUF_SIZE] = {};
+    static int  formAuthMethod = 3;
     static char formGroup[FORM_BUF_SIZE] = {};
     static char formNotes[4096] = {};
+    static char formStartupCmd[FORM_BUF_SIZE] = {};
     static bool formEverOpened = false;
 
     // Reset form fields when dialog first opens or switches mode
@@ -363,9 +420,10 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
         formPort = 22;
         memset(formUser, 0, sizeof(formUser));
         formAuthMethod = 3;
-        memset(formKeyPath, 0, sizeof(formKeyPath));
+        memset(g_formKeyPath, 0, sizeof(g_formKeyPath));
         memset(formGroup, 0, sizeof(formGroup));
         memset(formNotes, 0, sizeof(formNotes));
+        memset(formStartupCmd, 0, sizeof(formStartupCmd));
         formEverOpened = true;
     }
 
@@ -381,9 +439,10 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
                 formPort = conn->port;
                 strncpy(formUser, conn->username.c_str(), FORM_BUF_SIZE - 1);
                 formAuthMethod = (int)conn->authMethod;
-                strncpy(formKeyPath, conn->privateKeyPath.c_str(), FORM_BUF_SIZE - 1);
+                strncpy(g_formKeyPath, conn->privateKeyPath.c_str(), FORM_BUF_SIZE - 1);
                 strncpy(formGroup, conn->group.c_str(), FORM_BUF_SIZE - 1);
                 strncpy(formNotes, conn->notes.c_str(), sizeof(formNotes) - 1);
+                strncpy(formStartupCmd, conn->startupCommand.c_str(), FORM_BUF_SIZE - 1);
             }
         }
     }
@@ -431,14 +490,23 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
         ImGui::LabelText("##key_label", "Private Key");
         ImGui::SameLine();
         ImGui::PushItemWidth(260);
-        ImGui::InputText("##key", formKeyPath, FORM_BUF_SIZE);
+        ImGui::InputText("##key", g_formKeyPath, FORM_BUF_SIZE);
         ImGui::PopItemWidth();
         ImGui::SameLine();
         if (ImGui::SmallButton("Browse...")) {
-            // TODO: open file dialog for key selection
+            m_keyFileDialog.OpenDialog(FileDialog::Type::OpenFile);
+            m_keyFileDialogActive = true;
         }
         ImGui::Spacing();
     }
+
+    // Startup command (optional)
+    ImGui::LabelText("##cmd_label", "Startup Cmd");
+    ImGui::SameLine();
+    ImGui::InputText("##cmd", formStartupCmd, FORM_BUF_SIZE);
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Optional command to run after connect (e.g. 'cd /project && tmux')");
+    ImGui::Spacing();
 
     // Group
     ImGui::LabelText("##group_label", "Group");
@@ -449,7 +517,7 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
     // Notes
     ImGui::LabelText("##notes_label", "Notes");
     ImGui::InputTextMultiline("##notes", formNotes, sizeof(formNotes),
-                              ImVec2(-1, 80));
+                              ImVec2(-1, 60));
 
     ImGui::PopItemWidth();
 
@@ -470,9 +538,10 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
             conn.port = formPort;
             conn.username = formUser;
             conn.authMethod = (SshConnection::AuthMethod)formAuthMethod;
-            conn.privateKeyPath = formKeyPath;
+            conn.privateKeyPath = g_formKeyPath;
             conn.group = formGroup;
             conn.notes = formNotes;
+            conn.startupCommand = formStartupCmd;
 
             m_store->SaveConnection(conn);
             LOG_INFO("Saved SSH connection: %s@%s", conn.username.c_str(), conn.host.c_str());
@@ -484,7 +553,6 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
 
     ImGui::SameLine();
 
-    // Allow closing with X button or Cancel
     if (ImGui::Button("Cancel", ImVec2(buttonWidth, 0))) {
         m_showNewConnectionDialog = false;
         m_showEditConnectionDialog = false;
@@ -496,6 +564,43 @@ void TerminalManager::RenderConnectionDialog(bool isNew) {
         m_showNewConnectionDialog = false;
         m_showEditConnectionDialog = false;
     }
+}
+
+// ---------------------------------------------------------------------------
+// Font Configuration Popup
+// ---------------------------------------------------------------------------
+
+void TerminalManager::RenderFontConfigPopup() {
+    if (!ImGui::BeginPopup("FontConfig"))
+        return;
+
+    ImGui::Text("Terminal Font Size");
+    ImGui::Separator();
+
+    ImGui::SliderFloat("Size", &m_fontSize, 8.0f, 32.0f, "%.0f px");
+
+    // Preview
+    ImGui::Dummy(ImVec2(0, 4));
+    ImGui::TextUnformatted("Preview:");
+    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 1.0f, 0.5f, 1.0f));
+    float scale = m_fontSize / 14.0f;
+    ImGui::SetWindowFontScale(scale);
+    ImGui::Text("user@host:~$ ls -la");
+    ImGui::Text("total 42");
+    ImGui::Text("drwxr-xr-x  2 user user 4096 Jan 1 00:00 .");
+    ImGui::SetWindowFontScale(1.0f);
+    ImGui::PopStyleColor();
+
+    ImGui::Dummy(ImVec2(0, 4));
+    if (ImGui::Button("Apply")) {
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset to 14")) {
+        m_fontSize = 14.0f;
+    }
+
+    ImGui::EndPopup();
 }
 
 // ---------------------------------------------------------------------------
@@ -512,7 +617,6 @@ void TerminalManager::RenderTabBar() {
             bool open = true;
             std::string label = m_tabs[i]->GetTitle();
 
-            // Add indicator for closed tabs
             if (!m_tabs[i]->IsOpen())
                 label += " (disconnected)";
 

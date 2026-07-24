@@ -26,6 +26,12 @@ struct SshConnection {
     int order = 0;                  // sort order
     std::string notes;              // arbitrary notes
 
+    // New fields
+    std::string startupCommand;     // optional command to run after connect
+    std::string jumpHost;           // optional SSH proxy/jump host
+    bool keepAlive = true;          // TCP keepalive
+    int keepAliveInterval = 60;     // keepalive interval in seconds
+
     bool valid() const {
         return !host.empty() && port > 0 && port <= 65535;
     }
@@ -65,7 +71,6 @@ public:
     std::vector<const SshConnection*> GetUngrouped() const;
 
     /// Build an SSH command string from a connection profile.
-    /// Returns something like: ssh -p 22 user@host -i ~/.ssh/key
     static std::string BuildSshCommand(const SshConnection& conn);
 
     /// Full path to the connections.json file.
