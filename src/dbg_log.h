@@ -16,30 +16,32 @@
 
 namespace dbg {
 
+// NOTE: enum values use LvlXxx prefix to avoid conflicts with Windows
+// macros ERROR (wingdi.h) and DEBUG (often defined as 0).
 enum Level {
-    DEBUG = 0,
-    INFO  = 1,
-    WARN  = 2,
-    ERROR = 3
+    LvlDebug = 0,
+    LvlInfo  = 1,
+    LvlWarn  = 2,
+    LvlError = 3
 };
 
 inline const char* LevelStr(Level lv) {
     switch (lv) {
-        case DEBUG: return "DEBUG";
-        case INFO:  return "INFO";
-        case WARN:  return "WARN";
-        case ERROR: return "ERROR";
-        default:    return "?";
+        case LvlDebug: return "DEBUG";
+        case LvlInfo:  return "INFO";
+        case LvlWarn:  return "WARN";
+        case LvlError: return "ERROR";
+        default:       return "?";
     }
 }
 
 inline const char* LevelColor(Level lv) {
     switch (lv) {
-        case DEBUG: return "\033[90m";    // grey
-        case INFO:  return "\033[36m";    // cyan
-        case WARN:  return "\033[33m";    // yellow
-        case ERROR: return "\033[31m";    // red
-        default:    return "\033[0m";
+        case LvlDebug: return "\033[90m";    // grey
+        case LvlInfo:  return "\033[36m";    // cyan
+        case LvlWarn:  return "\033[33m";    // yellow
+        case LvlError: return "\033[31m";    // red
+        default:       return "\033[0m";
     }
 }
 
@@ -92,12 +94,12 @@ inline void Log(Level lv, const char* file, int line, const char* fmt, ...) {
 // Convenience macros — always emit ERROR/WARN, conditionally emit INFO/DEBUG
 // -----------------------------------------------------------------------
 
-#define LOG_ERROR(fmt, ...)   dbg::Log(dbg::ERROR, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#define LOG_WARN(fmt, ...)    dbg::Log(dbg::WARN,  __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define LOG_ERROR(fmt, ...)   dbg::Log(dbg::LvlError, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#define LOG_WARN(fmt, ...)    dbg::Log(dbg::LvlWarn,  __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 
 #ifdef GITBEE_DEBUG
-#  define LOG_INFO(fmt, ...)  dbg::Log(dbg::INFO,  __FILE__, __LINE__, fmt, ##__VA_ARGS__)
-#  define LOG_DEBUG(fmt, ...) dbg::Log(dbg::DEBUG, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#  define LOG_INFO(fmt, ...)  dbg::Log(dbg::LvlInfo,  __FILE__, __LINE__, fmt, ##__VA_ARGS__)
+#  define LOG_DEBUG(fmt, ...) dbg::Log(dbg::LvlDebug, __FILE__, __LINE__, fmt, ##__VA_ARGS__)
 #else
 #  define LOG_INFO(fmt, ...)  do {} while(0)
 #  define LOG_DEBUG(fmt, ...) do {} while(0)
