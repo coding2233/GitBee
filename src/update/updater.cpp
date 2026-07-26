@@ -15,6 +15,8 @@
 
 namespace updater {
 
+static const char* kUpdateRepo = "coding2233/GitBee";
+
 std::string GetCurrentVersion()
 {
 #ifdef GITBEE_VERSION
@@ -85,9 +87,9 @@ Info CheckForUpdate()
         return info;
     }
 
+    std::wstring wVersionPath = L"/" + Utf8ToWideStr(kUpdateRepo) + L"/releases/download/prerelease/latest_version.txt";
     HINTERNET hRequest = WinHttpOpenRequest(hConnect, L"GET",
-        L"/coding2233/GitBee/releases/download/prerelease/latest_version.txt",
-        NULL, NULL, NULL, WINHTTP_FLAG_SECURE);
+        wVersionPath.c_str(), NULL, NULL, NULL, WINHTTP_FLAG_SECURE);
     if (!hRequest)
     {
         WinHttpCloseHandle(hConnect);
@@ -146,8 +148,8 @@ Info CheckForUpdate()
 
     info.latestVersion = response;
     info.assetName = "GitBee-installer-" + response + ".exe";
-    info.downloadUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/"
-                       + info.assetName;
+    info.downloadUrl = "https://github.com/" + std::string(kUpdateRepo)
+                       + "/releases/download/prerelease/" + info.assetName;
     info.available = (info.latestVersion != info.currentVersion
         && !info.downloadUrl.empty());
 
@@ -230,39 +232,57 @@ bool RunInstallerSilent(const std::string& installerPath)
 #else
 
 // Non-Windows impl using curl/wget
+
+static bool HasCommand(const std::string& cmd)
+{
+    return system(("command -v " + cmd + " >/dev/null 2>&1").c_str()) == 0;
+}
+
+static std::string TryDownload(const std::string& url)
+{
+    std::string cmd;
+    if (HasCommand("curl"))
+        cmd = "curl -sS -L \"" + url + "\" 2>/dev/null";
+    else if (HasCommand("wget"))
+        cmd = "wget -q -O - \"" + url + "\" 2>/dev/null";
+    else
+        return {};
+
+    FILE* pipe = popen(cmd.c_str(), "r");
+    if (!pipe) return {};
+
+    std::string result;
+    char buf[4096];
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0)
+        result.append(buf, n);
+    pclose(pipe);
+
+    while (!result.empty() && (result.back() == '\n' || result.back() == '\r' || result.back() == ' '))
+        result.pop_back();
+    return result;
+}
+
+static std::string GetPlatformAssetName(const std::string& version)
+{
+#if defined(__APPLE__)
+    return "GitBee-" + version + ".dmg";
+#elif defined(__linux__)
+    return "GitBee-linux-" + version + ".tar.gz";
+#else
+    (void)version;
+    return "";
+#endif
+}
+
 Info CheckForUpdate()
 {
     Info info;
     info.currentVersion = GetCurrentVersion();
 
-    // Try curl first, then wget
-    auto tryDownload = [](const std::string& url) -> std::string {
-        std::string cmd;
-        // curl: -sS = silent but show errors, -L follow redirects
-        cmd = "curl -sS -L \"" + url + "\" 2>/dev/null";
-
-        FILE* pipe = popen(cmd.c_str(), "r");
-        if (!pipe) {
-            // try wget
-            cmd = "wget -q -O - \"" + url + "\" 2>/dev/null";
-            pipe = popen(cmd.c_str(), "r");
-            if (!pipe) return {};
-        }
-
-        std::string result;
-        char buf[4096];
-        size_t n;
-        while ((n = fread(buf, 1, sizeof(buf), pipe)) > 0)
-            result.append(buf, n);
-        pclose(pipe);
-
-        while (!result.empty() && (result.back() == '\n' || result.back() == '\r' || result.back() == ' '))
-            result.pop_back();
-        return result;
-    };
-
-    std::string versionUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/latest_version.txt";
-    std::string response = tryDownload(versionUrl);
+    std::string versionUrl = "https://github.com/" + std::string(kUpdateRepo)
+                             + "/releases/download/prerelease/latest_version.txt";
+    std::string response = TryDownload(versionUrl);
 
     if (response.empty())
     {
@@ -272,14 +292,21 @@ Info CheckForUpdate()
     }
 
     info.latestVersion = response;
-    info.assetName = "GitBee-installer-" + response + ".exe";
-    info.downloadUrl = "https://github.com/coding2233/GitBee/releases/download/prerelease/"
-                       + info.assetName;
+    info.assetName = GetPlatformAssetName(response);
+    if (info.assetName.empty())
+    {
+        info.error = "Unsupported platform";
+        LOG_ERROR("UpdateCheck: %s", info.error.c_str());
+        return info;
+    }
+    info.downloadUrl = "https://github.com/" + std::string(kUpdateRepo)
+                       + "/releases/download/prerelease/" + info.assetName;
     info.available = (info.latestVersion != info.currentVersion
         && !info.downloadUrl.empty());
 
-    LOG_INFO("UpdateCheck: current=%s latest=%s available=%d",
-             info.currentVersion.c_str(), info.latestVersion.c_str(), info.available);
+    LOG_INFO("UpdateCheck: current=%s latest=%s asset=%s available=%d",
+             info.currentVersion.c_str(), info.latestVersion.c_str(),
+             info.assetName.c_str(), info.available);
     return info;
 }
 
@@ -287,35 +314,74 @@ bool DownloadInstaller(const std::string& url, const std::string& destPath)
 {
     LOG_INFO("DownloadInstaller: %s -> %s", url.c_str(), destPath.c_str());
 
-    // Try curl -Lo, then wget -O
-    std::string cmd;
-    cmd = "curl -sS -L -o \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
-
-    int ret = system(cmd.c_str());
-    if (ret == 0) {
-        LOG_INFO("DownloadInstaller: curl succeeded");
-        return true;
-    }
-    LOG_WARN("DownloadInstaller: curl failed (ret=%d), trying wget...", ret);
-
-    cmd = "wget -q -O \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
-    ret = system(cmd.c_str());
-    if (ret == 0) {
-        LOG_INFO("DownloadInstaller: wget succeeded");
-        return true;
+    if (HasCommand("curl")) {
+        std::string cmd = "curl -sS -L -o \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
+        if (system(cmd.c_str()) == 0) {
+            LOG_INFO("DownloadInstaller: curl succeeded");
+            return true;
+        }
     }
 
-    LOG_ERROR("DownloadInstaller: both curl (ret=%d) and wget (ret=%d) failed",
-              ret, ret);
+    if (HasCommand("wget")) {
+        std::string cmd = "wget -q -O \"" + destPath + "\" \"" + url + "\" 2>/dev/null";
+        if (system(cmd.c_str()) == 0) {
+            LOG_INFO("DownloadInstaller: wget succeeded");
+            return true;
+        }
+    }
+
+    LOG_ERROR("DownloadInstaller: no download tool available");
     return false;
 }
 
 bool RunInstallerSilent(const std::string& installerPath)
 {
+#if defined(__APPLE__)
+    // macOS: open the .dmg (user drags to /Applications)
+    LOG_INFO("RunInstallerSilent: mounting %s", installerPath.c_str());
+    std::string cmd = "open \"" + installerPath + "\"";
+    int ret = system(cmd.c_str());
+    if (ret != 0) {
+        LOG_ERROR("RunInstallerSilent: failed to open dmg (ret=%d)", ret);
+        return false;
+    }
+    return true;
+#elif defined(__linux__)
+    // Linux: extract tar.gz to ~/.local/share/GitBee/ and symlink binary
+    LOG_INFO("RunInstallerSilent: extracting %s", installerPath.c_str());
+
+    const char* home = getenv("HOME");
+    if (!home) {
+        LOG_ERROR("RunInstallerSilent: HOME not set");
+        return false;
+    }
+    std::string installDir = std::string(home) + "/.local/share/GitBee";
+    std::string binDir = std::string(home) + "/.local/bin";
+
+    // Create directories
+    system(("mkdir -p \"" + installDir + "\"").c_str());
+    system(("mkdir -p \"" + binDir + "\"").c_str());
+
+    // Extract tar.gz
+    std::string extractCmd = "tar -xzf \"" + installerPath + "\" -C \"" + installDir + "\" --strip-components=1 2>/dev/null";
+    if (system(extractCmd.c_str()) != 0) {
+        LOG_ERROR("RunInstallerSilent: extraction failed");
+        return false;
+    }
+
+    // Make binary executable
+    system(("chmod +x \"" + installDir + "/GitBee\"").c_str());
+
+    // Symlink to ~/.local/bin
+    system(("ln -sf \"" + installDir + "/GitBee\" \"" + binDir + "/gitbee\"").c_str());
+
+    LOG_INFO("RunInstallerSilent: installed to %s", installDir.c_str());
+    return true;
+#else
     (void)installerPath;
-    // Not supported on non-Windows; user can run the installer manually
     LOG_WARN("RunInstallerSilent: not supported on this platform");
     return false;
+#endif
 }
 
 #endif

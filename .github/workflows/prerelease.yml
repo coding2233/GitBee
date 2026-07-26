@@ -87,22 +87,27 @@ jobs:
         xmake f --toolchain=clang -p ${{ matrix.plat }} -y -v
         xmake -v -y
 
-    - name: Build NSIS Installer
-      if: matrix.os == 'windows-latest'
+    - name: Build Package
+      shell: pwsh
       run: xmake pack --autobuild=n -y
 
-    - name: Find NSIS Installer
-      if: matrix.os == 'windows-latest'
-      id: find-nsis
+    - name: Find Package
+      id: find-pkg
       shell: pwsh
       run: |
-        $nsisFile = Get-ChildItem -Path build/xpack/GitBee -Filter "*.exe" | Select-Object -First 1
-        $fileName = $nsisFile.Name
-        echo "nsis_file=build/xpack/GitBee/$fileName" >> $env:GITHUB_OUTPUT
-        echo "Installer: $fileName"
+        $pkgDir = "build/xpack/GitBee"
+        if ($IsWindows) {
+          $pkgFile = Get-ChildItem -Path $pkgDir -Filter "*.exe" | Select-Object -First 1
+        } elseif ($IsMacOS) {
+          $pkgFile = Get-ChildItem -Path $pkgDir -Filter "*.dmg" | Select-Object -First 1
+        } else {
+          $pkgFile = Get-ChildItem -Path $pkgDir -Filter "*.tar.gz" | Select-Object -First 1
+        }
+        $fileName = $pkgFile.Name
+        echo "pkg_file=$($pkgFile.FullName)" >> $env:GITHUB_OUTPUT
+        echo "Package: $fileName"
 
     - name: Create version info file
-      if: matrix.os == 'windows-latest'
       shell: pwsh
       run: |
         $version = $env:GITBEE_VERSION
@@ -126,15 +131,8 @@ jobs:
         prerelease: true
         name: prerelease
         tag_name: prerelease
-        fail_on_unmatched_files: true
-        files: ${{  steps.zip.outputs.output }}
-
-    - uses: softprops/action-gh-release@v1
-      if: matrix.os == 'windows-latest'
-      with:
-        prerelease: true
-        name: prerelease
-        tag_name: prerelease
+        fail_on_unmatched_files: false
         files: |
-          ${{ steps.find-nsis.outputs.nsis_file }}
+          ${{ steps.zip.outputs.output }}
+          ${{ steps.find-pkg.outputs.pkg_file }}
           build/xpack/GitBee/latest_version.txt

@@ -1,4 +1,5 @@
 #include "app.h"
+#include "../app_icon.h"
 #include "repo_view.h"
 #include "../ui/home_view.h"
 #include "../ui/Theme.h"
@@ -183,6 +184,18 @@ void GitBeeApp::OnCreate()
 {
     LOG_INFO("GitBee starting (version %s)", GITBEE_VERSION);
     SetClearColor({0.12f, 0.12f, 0.15f, 1.0f});
+
+    // Set window icon
+    SDL_Surface* icon = SDL_CreateSurfaceFrom(
+        kAppIconWidth, kAppIconHeight,
+        SDL_PIXELFORMAT_RGBA32,
+        const_cast<uint8_t*>(kAppIconRGBA),
+        kAppIconWidth * 4);
+    if (icon) {
+        SDL_SetWindowIcon(GetWindow(), icon);
+        SDL_DestroySurface(icon);
+    }
+
     SDL_SetWindowMinimumSize(GetWindow(), 800, 600);
     ImGui::StyleColorsDark();
     Theme::ApplyDark();

@@ -23,7 +23,6 @@
 *.dll
 *.so.*
 
-
 # Fortran module files
 *.mod
 *.smod
@@ -69,4 +68,11 @@ Testing/
 .cache/
 .xmake/
 .vscode/
-build/
+
+# Build and packaging artifacts
+build/xpack/
+*.tar.gz
+*.dmg
+*.AppImage
+*.pkg.tar.zst
+pkg/

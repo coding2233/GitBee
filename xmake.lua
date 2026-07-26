@@ -14,10 +14,26 @@ if has_volt then
     includes("volt-ui")
 end
 
+-- Auto-generate src/app_icon.h from bee.ico if Python is available
+local function gen_app_icon()
+    local ico = "bee.ico"
+    local header = "src/app_icon.h"
+    if os.isfile(ico) and os.isfile(header) then
+        if os.isfile(ico) and os.isfile(header) and os.mtime(ico) <= os.mtime(header) then
+            return
+        end
+    end
+    if os.isfile(ico) then
+        os.exec("python3 scripts/gen_icon_header.py 2>/dev/null || python scripts/gen_icon_header.py 2>/dev/null || true")
+    end
+end
+gen_app_icon()
+
 target("GitBee")
     set_kind("binary")
     set_languages("c++17")
     add_files("src/*.cpp")
+    add_headerfiles("src/*.h")
     add_files("src/gitcore/*.cpp")
     add_files("src/update/*.cpp")
     if is_plat("windows") then
@@ -34,6 +50,10 @@ target("GitBee")
         os.cp("fonts", target:targetdir())
         if os.isdir("scripts") then
             os.cp("scripts", target:targetdir())
+        end
+        if not is_plat("windows") then
+            os.cp("assets/icons", target:targetdir())
+            os.cp("assets/gitbee.desktop", target:targetdir())
         end
     end)
 
@@ -107,6 +127,91 @@ if is_plat("windows") then
                 for _, fp in ipairs(os.files(path.join(scriptsDir, "**"))) do
                     package:add("installfiles", fp, {rootdir = dir})
                 end
+            end
+        end)
+end
+
+if is_plat("macosx") then
+    xpack("GitBee")
+        set_formats("app", "dmg")
+        set_basename("GitBee-" .. gitbee_hash)
+        set_title("GitBee")
+        set_author("GitBee")
+        set_description("A GUI client for Git")
+        set_homepage("https://github.com/wanderer-code/GitBee")
+        set_iconfile("assets/icons/gitbee.icns")
+        before_package(function (package)
+            import("core.project.config")
+            local buildir = config.get("buildir") or "build"
+            local plat = config.get("plat") or "macosx"
+            local arch = config.get("arch") or "arm64"
+            local dir = path.join(buildir, plat, arch, "release")
+
+            -- Copy binary
+            for _, fp in ipairs(os.files(path.join(dir, "GitBee"))) do
+                package:add("installfiles", fp, {rootdir = dir, subdir = "MacOS"})
+            end
+
+            -- Copy Info.plist
+            package:add("installfiles", "assets/Info.plist", {rootdir = "assets", subdir = ""})
+
+            -- Copy icon
+            package:add("installfiles", "assets/icons/gitbee.icns", {rootdir = "assets/icons", subdir = "Resources"})
+
+            -- Copy fonts
+            for _, fp in ipairs(os.files(path.join(dir, "fonts", "**"))) do
+                package:add("installfiles", fp, {rootdir = dir, subdir = "Resources"})
+            end
+
+            -- Copy scripts
+            local scriptsDir = path.join(dir, "scripts")
+            if os.isdir(scriptsDir) then
+                for _, fp in ipairs(os.files(path.join(scriptsDir, "**"))) do
+                    package:add("installfiles", fp, {rootdir = dir, subdir = "Resources"})
+                end
+            end
+        end)
+end
+
+if is_plat("linux") then
+    xpack("GitBee")
+        set_formats("tar.gz", "appimage")
+        set_basename("GitBee-linux-" .. gitbee_hash)
+        set_title("GitBee")
+        set_author("GitBee")
+        set_description("A GUI client for Git")
+        set_homepage("https://github.com/wanderer-code/GitBee")
+        before_package(function (package)
+            import("core.project.config")
+            local buildir = config.get("buildir") or "build"
+            local plat = config.get("plat") or "linux"
+            local arch = config.get("arch") or "x86_64"
+            local dir = path.join(buildir, plat, arch, "release")
+
+            -- Copy binary
+            for _, fp in ipairs(os.files(path.join(dir, "GitBee"))) do
+                package:add("installfiles", fp, {rootdir = dir})
+            end
+
+            -- Copy fonts
+            for _, fp in ipairs(os.files(path.join(dir, "fonts", "**"))) do
+                package:add("installfiles", fp, {rootdir = dir})
+            end
+
+            -- Copy scripts
+            local scriptsDir = path.join(dir, "scripts")
+            if os.isdir(scriptsDir) then
+                for _, fp in ipairs(os.files(path.join(scriptsDir, "**"))) do
+                    package:add("installfiles", fp, {rootdir = dir})
+                end
+            end
+
+            -- Copy desktop file
+            package:add("installfiles", "assets/gitbee.desktop", {rootdir = "assets"})
+
+            -- Copy icons
+            for _, fp in ipairs(os.files("assets/icons/hicolor/**")) do
+                package:add("installfiles", fp, {rootdir = "assets"})
             end
         end)
 end
