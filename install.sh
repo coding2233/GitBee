@@ -24,7 +24,11 @@ install -Dm755 "$BUILD_DIR/GitBee" "${DESTDIR}/usr/lib/gitbee/gitbee"
 mkdir -p "${DESTDIR}/usr/bin"
 cat > "${DESTDIR}/usr/bin/gitbee" << 'WRAPPER'
 #!/bin/sh
-cd /usr/share/gitbee && exec /usr/lib/gitbee/gitbee "$@"
+export GITBEE_DATA="/usr/share/gitbee"
+if [ -d "$GITBEE_DATA" ]; then
+    cd "$GITBEE_DATA"
+fi
+exec /usr/lib/gitbee/gitbee "$@"
 WRAPPER
 chmod 755 "${DESTDIR}/usr/bin/gitbee"
 

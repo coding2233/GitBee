@@ -189,7 +189,7 @@ void GitBeeApp::OnCreate()
     SDL_Surface* icon = SDL_CreateSurfaceFrom(
         kAppIconWidth, kAppIconHeight,
         SDL_PIXELFORMAT_RGBA32,
-        const_cast<uint8_t*>(kAppIconRGBA),
+        kAppIconRGBA,
         kAppIconWidth * 4);
     if (icon) {
         SDL_SetWindowIcon(GetWindow(), icon);

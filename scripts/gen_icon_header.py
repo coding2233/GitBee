@@ -58,9 +58,9 @@ def resize_rgba(src_w, src_h, rgba, dst_w, dst_h):
 
 def write_header(w, h, rgba, path):
     lines = ['#pragma once', '#include <cstdint>']
-    lines.append(f'static constexpr int kAppIconWidth = {w};')
-    lines.append(f'static constexpr int kAppIconHeight = {h};')
-    lines.append('static constexpr uint8_t kAppIconRGBA[] = {')
+    lines.append(f'static const int kAppIconWidth = {w};')
+    lines.append(f'static const int kAppIconHeight = {h};')
+    lines.append('static uint8_t kAppIconRGBA[] = {')
     for i in range(0, len(rgba), 12):
         chunk = ', '.join(f'0x{b:02x}' for b in rgba[i:i+12])
         lines.append(f'    {chunk},')
