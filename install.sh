@@ -17,20 +17,23 @@ fi
 
 echo "Installing GitBee..."
 
+# Remove old lowercase wrapper if present
+rm -f "${DESTDIR}/usr/bin/gitbee"
+
 # Binary
-install -Dm755 "$BUILD_DIR/GitBee" "${DESTDIR}/usr/lib/gitbee/gitbee"
+install -Dm755 "$BUILD_DIR/GitBee" "${DESTDIR}/usr/lib/gitbee/GitBee"
 
 # Wrapper script
 mkdir -p "${DESTDIR}/usr/bin"
-cat > "${DESTDIR}/usr/bin/gitbee" << 'WRAPPER'
+cat > "${DESTDIR}/usr/bin/GitBee" << 'WRAPPER'
 #!/bin/sh
 export GITBEE_DATA="/usr/share/gitbee"
 if [ -d "$GITBEE_DATA" ]; then
     cd "$GITBEE_DATA"
 fi
-exec /usr/lib/gitbee/gitbee "$@"
+exec /usr/lib/gitbee/GitBee "$@"
 WRAPPER
-chmod 755 "${DESTDIR}/usr/bin/gitbee"
+chmod 755 "${DESTDIR}/usr/bin/GitBee"
 
 # Data files
 mkdir -p "${DESTDIR}/usr/share/gitbee"
@@ -53,4 +56,4 @@ if [ -z "$DESTDIR" ] && command -v gtk-update-icon-cache >/dev/null 2>&1; then
     gtk-update-icon-cache -q -t -f /usr/share/icons/hicolor 2>/dev/null || true
 fi
 
-echo "Done. Run 'gitbee' to start."
+echo "Done. Run 'GitBee' to start."
